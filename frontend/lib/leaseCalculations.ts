@@ -65,6 +65,11 @@ export function analyzeLeaseQuote(input: LeaseQuoteInput): LeaseAnalysisResult {
     input.monthlyPayment * input.termMonths +
     input.dealerFees +
     input.leaseEndFee;
+
+  if (totalCost <= 0) {
+    throw new Error("totalCost must be greater than 0.");
+  }
+
   const trueMonthlyCost = totalCost / input.termMonths;
   const totalAllowedKm = (input.annualMileage * input.termMonths) / 12;
   const costPerKm = totalCost / totalAllowedKm;
