@@ -97,15 +97,21 @@ const advancedFeeFields: {
     name: "dealerFees",
     label: "Optional extra upfront fees",
     helperText:
-      "Only include fees paid separately and not already included in the monthly payment or due-at-signing amount.",
+      "Use this only for separate fees you pay outside the monthly payment and due-at-signing amount.",
   },
   {
     name: "leaseEndFee",
     label: "Optional lease-end / disposition fee",
     helperText:
-      "Leave this as 0 if your quote does not show a disposition or lease-end return fee.",
+      "Leave this as 0 unless the quote clearly shows a separate lease-end or disposition fee.",
   },
 ];
+
+const taxHelperText =
+  "Turn this on only if the monthly payment you entered is before tax. If your quote already shows payment with tax, leave this off.";
+
+const insightBasisText =
+  "This analysis is based on the numbers entered. A detailed quote audit can review itemized fees later.";
 
 const currencyFormatter = new Intl.NumberFormat("en-CA", {
   style: "currency",
@@ -372,6 +378,22 @@ function buildComparisonInsights(
     "upfrontRatio",
   );
   const insights: DealInsight[] = [];
+  const hasVehicleDetailMetrics = comparison.results.some(
+    (comparisonQuote) =>
+      comparisonQuote.discountFromMsrp !== undefined ||
+      comparisonQuote.discountPercentage !== undefined ||
+      comparisonQuote.residualPercentage !== undefined ||
+      comparisonQuote.depreciationAmount !== undefined,
+  );
+
+  insights.push({
+    title: hasVehicleDetailMetrics
+      ? "Vehicle details included"
+      : "Basic comparison only",
+    body: hasVehicleDetailMetrics
+      ? "Vehicle MSRP and residual details help explain discount, residual strength, and estimated depreciation alongside the payment comparison."
+      : "This comparison is focused on payment, upfront cost, term, and mileage. Add optional vehicle details when you want discount, residual, and depreciation context.",
+  });
 
   insights.push({
     title: totalCostWinner ? "Lowest total cost" : "Total cost is close",
@@ -517,6 +539,9 @@ function InsightSummary({
           <h3 className="mt-1 text-base font-semibold text-slate-950">
             {title}
           </h3>
+          <p className="mt-2 max-w-2xl text-xs leading-5 text-slate-500">
+            {insightBasisText}
+          </p>
         </div>
       </div>
       <ul className="mt-4 grid gap-3 md:grid-cols-2">
@@ -669,6 +694,22 @@ export default function LeaseQuoteCalculator() {
     );
   }
 
+  function updateComparisonVehicleName(
+    quoteId: ComparisonQuoteForm["id"],
+    value: string,
+  ) {
+    setComparisonQuotes((currentQuotes) =>
+      currentQuotes.map((currentQuote) =>
+        currentQuote.id === quoteId
+          ? {
+              ...currentQuote,
+              vehicleName: value,
+            }
+          : currentQuote,
+      ),
+    );
+  }
+
   function updateComparisonNumericQuote(
     quoteId: ComparisonQuoteForm["id"],
     field: keyof Pick<
@@ -689,6 +730,26 @@ export default function LeaseQuoteCalculator() {
           ? {
               ...currentQuote,
               [field]: Number(value),
+            }
+          : currentQuote,
+      ),
+    );
+  }
+
+  function updateComparisonOptionalNumericQuote(
+    quoteId: ComparisonQuoteForm["id"],
+    field: keyof Pick<
+      ComparisonQuoteForm,
+      "vehicleMsrp" | "sellingPrice" | "residualMsrp" | "residualValue"
+    >,
+    value: string,
+  ) {
+    setComparisonQuotes((currentQuotes) =>
+      currentQuotes.map((currentQuote) =>
+        currentQuote.id === quoteId
+          ? {
+              ...currentQuote,
+              [field]: value === "" ? undefined : Number(value),
             }
           : currentQuote,
       ),
@@ -717,6 +778,7 @@ export default function LeaseQuoteCalculator() {
       const cleanQuotes = comparisonQuotes.map((comparisonQuote) => {
         const quoteName =
           comparisonQuote.quoteName.trim() || comparisonQuote.label;
+        const vehicleName = comparisonQuote.vehicleName?.trim() || quoteName;
 
         if (
           comparisonQuote.addTaxToMonthlyPayment &&
@@ -736,13 +798,17 @@ export default function LeaseQuoteCalculator() {
         });
 
         return {
-          vehicleName: quoteName,
+          vehicleName,
           downPayment: comparisonQuote.downPayment,
           monthlyPayment: monthlyPaymentUsed,
           termMonths: comparisonQuote.termMonths,
           annualMileage: comparisonQuote.annualMileage,
           dealerFees: comparisonQuote.dealerFees,
           leaseEndFee: comparisonQuote.leaseEndFee,
+          vehicleMsrp: comparisonQuote.vehicleMsrp,
+          sellingPrice: comparisonQuote.sellingPrice,
+          residualMsrp: comparisonQuote.residualMsrp,
+          residualValue: comparisonQuote.residualValue,
         };
       });
 
@@ -780,6 +846,28 @@ export default function LeaseQuoteCalculator() {
             lease cost, true monthly cost, mileage allowance, kilometre rate,
             and upfront cost ratio.
           </p>
+          <div className="mt-6 grid gap-3">
+            <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+              <h3 className="text-sm font-semibold text-slate-950">
+                Start with the numbers you know
+              </h3>
+              <p className="mt-2 text-sm leading-6 text-slate-600">
+                You can compare offers with monthly payment, down payment, term,
+                and mileage. MSRP, selling price, and residual values are
+                optional, but they improve the analysis when available.
+              </p>
+            </div>
+            <div className="rounded-lg border border-teal-100 bg-teal-50/50 p-4">
+              <h3 className="text-sm font-semibold text-slate-950">
+                Detailed quote audit coming later
+              </h3>
+              <p className="mt-2 text-sm leading-6 text-slate-600">
+                When you have a dealer quote, screenshot, or contract, AutoLease
+                IQ will be able to extract fees, classify them, and check for
+                possible double counting or confusing charges.
+              </p>
+            </div>
+          </div>
         </div>
 
         <div className="rounded-lg border border-slate-200 bg-slate-50 p-5 shadow-sm sm:p-6">
@@ -871,8 +959,7 @@ export default function LeaseQuoteCalculator() {
               <span className="text-sm font-semibold text-slate-800">
                 Add tax to monthly payment
                 <span className="mt-1 block text-xs font-normal leading-5 text-slate-500">
-                  Turn this on only if the monthly payment you entered does not
-                  already include tax.
+                  {taxHelperText}
                 </span>
               </span>
             </label>
@@ -894,6 +981,10 @@ export default function LeaseQuoteCalculator() {
             <summary className="cursor-pointer text-sm font-semibold text-slate-800">
               Advanced optional fees
             </summary>
+            <p className="mt-3 text-xs leading-5 text-slate-500">
+              Optional. Add these only when they are paid separately and are not
+              already included in the quote numbers above.
+            </p>
             <div className="mt-4 grid gap-4 sm:grid-cols-2">
               {advancedFeeFields.map((field) => (
                 <label
@@ -1023,36 +1114,127 @@ export default function LeaseQuoteCalculator() {
         <div className="mt-8 space-y-6">
           <div className="grid gap-5 lg:grid-cols-2">
             {comparisonQuotes.map((comparisonQuote) => (
-                <article
-                  key={comparisonQuote.id}
-                  className="rounded-lg border border-slate-200 bg-slate-50 p-5 shadow-sm sm:p-6"
-                >
-                  <div className="mb-5 flex items-center justify-between gap-3">
-                    <h3 className="text-lg font-semibold text-slate-950">
-                      {comparisonQuote.label}
-                    </h3>
-                    <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-500">
-                      Offer
-                    </span>
-                  </div>
+              <article
+                key={comparisonQuote.id}
+                className="rounded-lg border border-slate-200 bg-slate-50 p-5 shadow-sm sm:p-6"
+              >
+                <div className="mb-5 flex items-center justify-between gap-3">
+                  <h3 className="text-lg font-semibold text-slate-950">
+                    {comparisonQuote.label}
+                  </h3>
+                  <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-500">
+                    Offer
+                  </span>
+                </div>
 
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <label className="flex flex-col gap-2 text-sm font-medium text-slate-700 sm:col-span-2">
-                      Quote name
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <label className="flex flex-col gap-2 text-sm font-medium text-slate-700 sm:col-span-2">
+                    Quote name
+                    <input
+                      type="text"
+                      value={comparisonQuote.quoteName}
+                      onChange={(event) =>
+                        updateComparisonTextQuote(
+                          comparisonQuote.id,
+                          event.target.value,
+                        )
+                      }
+                      className="h-11 rounded-md border border-slate-300 bg-white px-3 text-base text-slate-950 shadow-sm outline-none transition focus:border-teal-700 focus:ring-2 focus:ring-teal-700/20"
+                    />
+                  </label>
+
+                  {mainFields.map((field) => (
+                    <label
+                      key={field.name}
+                      className="flex flex-col gap-2 text-sm font-medium text-slate-700"
+                    >
+                      {field.label}
                       <input
-                        type="text"
-                        value={comparisonQuote.quoteName}
+                        type="number"
+                        min={field.min}
+                        step={field.step}
+                        value={comparisonQuote[field.name]}
                         onChange={(event) =>
-                          updateComparisonTextQuote(
+                          updateComparisonNumericQuote(
                             comparisonQuote.id,
+                            field.name,
                             event.target.value,
                           )
                         }
                         className="h-11 rounded-md border border-slate-300 bg-white px-3 text-base text-slate-950 shadow-sm outline-none transition focus:border-teal-700 focus:ring-2 focus:ring-teal-700/20"
                       />
                     </label>
+                  ))}
+                </div>
 
-                    {mainFields.map((field) => (
+                <div className="mt-5 rounded-md border border-slate-200 bg-white p-4">
+                  <label className="flex cursor-pointer items-start gap-3">
+                    <input
+                      type="checkbox"
+                      role="switch"
+                      checked={comparisonQuote.addTaxToMonthlyPayment}
+                      onChange={(event) =>
+                        updateComparisonTaxToggle(
+                          comparisonQuote.id,
+                          event.target.checked,
+                        )
+                      }
+                      className="peer sr-only"
+                    />
+                    <span className="mt-0.5 h-6 w-11 shrink-0 rounded-full bg-slate-300 p-1 transition-colors after:block after:h-4 after:w-4 after:rounded-full after:bg-white after:shadow-sm after:transition-transform peer-checked:bg-teal-700 peer-checked:after:translate-x-5 peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-teal-700" />
+                    <span className="text-sm font-semibold text-slate-800">
+                      Add tax to monthly payment
+                      <span className="mt-1 block text-xs font-normal leading-5 text-slate-500">
+                        {taxHelperText}
+                      </span>
+                    </span>
+                  </label>
+
+                  <label className="mt-4 flex max-w-40 flex-col gap-2 text-sm font-medium text-slate-700">
+                    Tax rate (%)
+                    <input
+                      type="number"
+                      min={0}
+                      step={0.1}
+                      value={comparisonQuote.taxRate}
+                      onChange={(event) =>
+                        updateComparisonNumericQuote(
+                          comparisonQuote.id,
+                          "taxRate",
+                          event.target.value,
+                        )
+                      }
+                      className="h-11 rounded-md border border-slate-300 bg-white px-3 text-base text-slate-950 shadow-sm outline-none transition focus:border-teal-700 focus:ring-2 focus:ring-teal-700/20"
+                    />
+                  </label>
+                </div>
+
+                <details className="mt-5 rounded-md border border-slate-200 bg-white p-4">
+                  <summary className="cursor-pointer text-sm font-semibold text-slate-800">
+                    Optional vehicle details
+                  </summary>
+                  <p className="mt-3 text-xs leading-5 text-slate-500">
+                    Add these when comparing different vehicles or when a quote
+                    shows MSRP, selling price, or residual values.
+                  </p>
+                  <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                    <label className="flex flex-col gap-2 text-sm font-medium text-slate-700 sm:col-span-2">
+                      Vehicle / trim name
+                      <input
+                        type="text"
+                        value={comparisonQuote.vehicleName ?? ""}
+                        onChange={(event) =>
+                          updateComparisonVehicleName(
+                            comparisonQuote.id,
+                            event.target.value,
+                          )
+                        }
+                        placeholder="2026 Toyota RAV4 XLE"
+                        className="h-11 rounded-md border border-slate-300 bg-white px-3 text-base text-slate-950 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-teal-700 focus:ring-2 focus:ring-teal-700/20"
+                      />
+                    </label>
+
+                    {vehicleDealFields.map((field) => (
                       <label
                         key={field.name}
                         className="flex flex-col gap-2 text-sm font-medium text-slate-700"
@@ -1060,8 +1242,47 @@ export default function LeaseQuoteCalculator() {
                         {field.label}
                         <input
                           type="number"
-                          min={field.min}
-                          step={field.step}
+                          min={0}
+                          step={100}
+                          value={comparisonQuote[field.name] ?? ""}
+                          onChange={(event) =>
+                            updateComparisonOptionalNumericQuote(
+                              comparisonQuote.id,
+                              field.name,
+                              event.target.value,
+                            )
+                          }
+                          className="h-11 rounded-md border border-slate-300 bg-white px-3 text-base text-slate-950 shadow-sm outline-none transition focus:border-teal-700 focus:ring-2 focus:ring-teal-700/20"
+                        />
+                        {field.helperText ? (
+                          <span className="text-xs leading-5 text-slate-500">
+                            {field.helperText}
+                          </span>
+                        ) : null}
+                      </label>
+                    ))}
+                  </div>
+                </details>
+
+                <details className="mt-5 rounded-md border border-slate-200 bg-white p-4">
+                  <summary className="cursor-pointer text-sm font-semibold text-slate-800">
+                    Advanced optional fees
+                  </summary>
+                  <p className="mt-3 text-xs leading-5 text-slate-500">
+                    Optional. Add these only when they are paid separately and
+                    are not already included in this offer.
+                  </p>
+                  <div className="mt-4 grid gap-4">
+                    {advancedFeeFields.map((field) => (
+                      <label
+                        key={field.name}
+                        className="flex flex-col gap-2 text-sm font-medium text-slate-700"
+                      >
+                        {field.label}
+                        <input
+                          type="number"
+                          min={0}
+                          step={50}
                           value={comparisonQuote[field.name]}
                           onChange={(event) =>
                             updateComparisonNumericQuote(
@@ -1072,117 +1293,49 @@ export default function LeaseQuoteCalculator() {
                           }
                           className="h-11 rounded-md border border-slate-300 bg-white px-3 text-base text-slate-950 shadow-sm outline-none transition focus:border-teal-700 focus:ring-2 focus:ring-teal-700/20"
                         />
+                        <span className="text-xs leading-5 text-slate-500">
+                          {field.helperText}
+                        </span>
                       </label>
                     ))}
                   </div>
-
-                  <div className="mt-5 rounded-md border border-slate-200 bg-white p-4">
-                    <label className="flex cursor-pointer items-start gap-3">
-                      <input
-                        type="checkbox"
-                        role="switch"
-                        checked={comparisonQuote.addTaxToMonthlyPayment}
-                        onChange={(event) =>
-                          updateComparisonTaxToggle(
-                            comparisonQuote.id,
-                            event.target.checked,
-                          )
-                        }
-                        className="peer sr-only"
-                      />
-                      <span className="mt-0.5 h-6 w-11 shrink-0 rounded-full bg-slate-300 p-1 transition-colors after:block after:h-4 after:w-4 after:rounded-full after:bg-white after:shadow-sm after:transition-transform peer-checked:bg-teal-700 peer-checked:after:translate-x-5 peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-teal-700" />
-                      <span className="text-sm font-semibold text-slate-800">
-                        Add tax to monthly payment
-                      </span>
-                    </label>
-
-                    <label className="mt-4 flex max-w-40 flex-col gap-2 text-sm font-medium text-slate-700">
-                      Tax rate (%)
-                      <input
-                        type="number"
-                        min={0}
-                        step={0.1}
-                        value={comparisonQuote.taxRate}
-                        onChange={(event) =>
-                          updateComparisonNumericQuote(
-                            comparisonQuote.id,
-                            "taxRate",
-                            event.target.value,
-                          )
-                        }
-                        className="h-11 rounded-md border border-slate-300 bg-white px-3 text-base text-slate-950 shadow-sm outline-none transition focus:border-teal-700 focus:ring-2 focus:ring-teal-700/20"
-                      />
-                    </label>
-                  </div>
-
-                  <details className="mt-5 rounded-md border border-slate-200 bg-white p-4">
-                    <summary className="cursor-pointer text-sm font-semibold text-slate-800">
-                      Advanced optional fees
-                    </summary>
-                    <div className="mt-4 grid gap-4">
-                      {advancedFeeFields.map((field) => (
-                        <label
-                          key={field.name}
-                          className="flex flex-col gap-2 text-sm font-medium text-slate-700"
-                        >
-                          {field.label}
-                          <input
-                            type="number"
-                            min={0}
-                            step={50}
-                            value={comparisonQuote[field.name]}
-                            onChange={(event) =>
-                              updateComparisonNumericQuote(
-                                comparisonQuote.id,
-                                field.name,
-                                event.target.value,
-                              )
-                            }
-                            className="h-11 rounded-md border border-slate-300 bg-white px-3 text-base text-slate-950 shadow-sm outline-none transition focus:border-teal-700 focus:ring-2 focus:ring-teal-700/20"
-                          />
-                          <span className="text-xs leading-5 text-slate-500">
-                            {field.helperText}
-                          </span>
-                        </label>
-                      ))}
-                    </div>
-                  </details>
-                </article>
+                </details>
+              </article>
             ))}
           </div>
 
-            <button
-              type="button"
-              onClick={compareOffers}
-              className="inline-flex h-12 w-full items-center justify-center rounded-md bg-teal-700 px-5 text-base font-semibold text-white shadow-sm transition-colors hover:bg-teal-800 focus:outline-none focus:ring-2 focus:ring-teal-700 focus:ring-offset-2 sm:w-auto"
-            >
-              Compare offers
-            </button>
+          <button
+            type="button"
+            onClick={compareOffers}
+            className="inline-flex h-12 w-full items-center justify-center rounded-md bg-teal-700 px-5 text-base font-semibold text-white shadow-sm transition-colors hover:bg-teal-800 focus:outline-none focus:ring-2 focus:ring-teal-700 focus:ring-offset-2 sm:w-auto"
+          >
+            Compare offers
+          </button>
 
-            {comparisonErrorMessage ? (
-              <p className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
-                {comparisonErrorMessage}
-              </p>
-            ) : null}
+          {comparisonErrorMessage ? (
+            <p className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+              {comparisonErrorMessage}
+            </p>
+          ) : null}
 
-            {comparisonResult ? (
-              <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-                <div className="mb-5">
-                  <h3 className="text-lg font-semibold text-slate-950">
-                    Comparison results
-                  </h3>
-                  <p className="mt-1 text-sm leading-6 text-slate-500">
-                    Best badges mark the lowest cost in each category.
-                  </p>
-                </div>
+          {comparisonResult ? (
+            <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+              <div className="mb-5">
+                <h3 className="text-lg font-semibold text-slate-950">
+                  Comparison results
+                </h3>
+                <p className="mt-1 text-sm leading-6 text-slate-500">
+                  Best badges mark the lowest cost in each category.
+                </p>
+              </div>
 
-                <InsightSummary
-                  title="Comparison summary"
-                  insights={buildComparisonInsights(comparisonResult)}
-                />
+              <InsightSummary
+                title="Comparison summary"
+                insights={buildComparisonInsights(comparisonResult)}
+              />
 
-                <div className="grid gap-4 xl:grid-cols-2">
-                  {comparisonResult.results.map((comparisonAnalysis, index) => {
+              <div className="grid gap-4 xl:grid-cols-2">
+                {comparisonResult.results.map((comparisonAnalysis, index) => {
                     const paymentSummaryForQuote =
                       comparisonPaymentSummaries[index];
                     const isBestTotalCost =
@@ -1273,6 +1426,42 @@ export default function LeaseQuoteCalculator() {
                               comparisonAnalysis.totalAllowedKm,
                             )}
                           />
+                          {comparisonAnalysis.discountFromMsrp !==
+                          undefined ? (
+                            <MetricCard
+                              label="Discount from vehicle MSRP"
+                              value={formatCurrency(
+                                comparisonAnalysis.discountFromMsrp,
+                              )}
+                            />
+                          ) : null}
+                          {comparisonAnalysis.discountPercentage !==
+                          undefined ? (
+                            <MetricCard
+                              label="Discount percentage"
+                              value={formatPercentage(
+                                comparisonAnalysis.discountPercentage,
+                              )}
+                            />
+                          ) : null}
+                          {comparisonAnalysis.residualPercentage !==
+                          undefined ? (
+                            <MetricCard
+                              label="Residual percentage"
+                              value={formatPercentage(
+                                comparisonAnalysis.residualPercentage,
+                              )}
+                            />
+                          ) : null}
+                          {comparisonAnalysis.depreciationAmount !==
+                          undefined ? (
+                            <MetricCard
+                              label="Depreciation amount"
+                              value={formatCurrency(
+                                comparisonAnalysis.depreciationAmount,
+                              )}
+                            />
+                          ) : null}
                         </dl>
                       </article>
                     );
