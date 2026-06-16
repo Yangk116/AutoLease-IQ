@@ -1,3 +1,5 @@
+import LeaseQuoteCalculator from "./LeaseQuoteCalculator";
+
 const features = [
   {
     title: "Compare lease offers",
@@ -40,12 +42,12 @@ export default function Home() {
             AutoLease IQ helps shoppers evaluate lease offers with a clearer
             view of monthly payments, upfront costs, mileage limits, and terms.
           </p>
-          <button
-            type="button"
+          <a
+            href="#lease-calculator"
             className="mt-8 inline-flex h-12 items-center justify-center rounded-md bg-teal-700 px-6 text-base font-semibold text-white shadow-sm transition-colors hover:bg-teal-800 focus:outline-none focus:ring-2 focus:ring-teal-700 focus:ring-offset-2"
           >
             Start Comparing
-          </button>
+          </a>
         </div>
 
         <div className="grid gap-4 md:grid-cols-3">
@@ -64,6 +66,8 @@ export default function Home() {
           ))}
         </div>
       </section>
+
+      <LeaseQuoteCalculator />
     </main>
   );
 }
