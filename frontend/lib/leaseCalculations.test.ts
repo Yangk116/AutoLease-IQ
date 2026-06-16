@@ -26,6 +26,20 @@ describe("analyzeLeaseQuote", () => {
     expect(result.upfrontRatio).toBeCloseTo(10.2041);
   });
 
+  it("calculates vehicle and deal analysis values when provided", () => {
+    const result = analyzeLeaseQuote({
+      ...validQuote,
+      msrp: 50_000,
+      sellingPrice: 46_000,
+      residualValue: 31_000,
+    });
+
+    expect(result.discountFromMsrp).toBe(4_000);
+    expect(result.discountPercentage).toBeCloseTo(8);
+    expect(result.residualPercentage).toBeCloseTo(62);
+    expect(result.depreciationAmount).toBe(15_000);
+  });
+
   it.each([
     ["termMonths", 0, "termMonths must be greater than 0."],
     ["termMonths", -1, "termMonths must be greater than 0."],
@@ -35,6 +49,9 @@ describe("analyzeLeaseQuote", () => {
     ["monthlyPayment", -1, "monthlyPayment cannot be negative."],
     ["dealerFees", -1, "dealerFees cannot be negative."],
     ["leaseEndFee", -1, "leaseEndFee cannot be negative."],
+    ["msrp", -1, "msrp cannot be negative."],
+    ["sellingPrice", -1, "sellingPrice cannot be negative."],
+    ["residualValue", -1, "residualValue cannot be negative."],
   ] as const)(
     "throws a clear error when %s is %d",
     (field, value, expectedMessage) => {

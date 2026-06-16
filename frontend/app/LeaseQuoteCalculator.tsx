@@ -54,6 +54,24 @@ const mainFields: {
   },
 ];
 
+const vehicleDealFields: {
+  name: keyof Pick<LeaseQuoteInput, "msrp" | "sellingPrice" | "residualValue">;
+  label: string;
+}[] = [
+  {
+    name: "msrp",
+    label: "MSRP",
+  },
+  {
+    name: "sellingPrice",
+    label: "Selling price",
+  },
+  {
+    name: "residualValue",
+    label: "Residual value",
+  },
+];
+
 const advancedFeeFields: {
   name: "dealerFees" | "leaseEndFee";
   label: string;
@@ -118,10 +136,27 @@ export default function LeaseQuoteCalculator() {
   );
   const [errorMessage, setErrorMessage] = useState("");
 
-  function updateQuote(field: keyof LeaseQuoteInput, value: string) {
+  function updateNumericQuote(field: keyof LeaseQuoteInput, value: string) {
     setQuote((currentQuote) => ({
       ...currentQuote,
       [field]: Number(value),
+    }));
+  }
+
+  function updateOptionalNumericQuote(
+    field: keyof Pick<LeaseQuoteInput, "msrp" | "sellingPrice" | "residualValue">,
+    value: string,
+  ) {
+    setQuote((currentQuote) => ({
+      ...currentQuote,
+      [field]: value === "" ? undefined : Number(value),
+    }));
+  }
+
+  function updateVehicleName(value: string) {
+    setQuote((currentQuote) => ({
+      ...currentQuote,
+      vehicleName: value,
     }));
   }
 
@@ -137,6 +172,7 @@ export default function LeaseQuoteCalculator() {
 
       const analysis = analyzeLeaseQuote({
         ...quote,
+        vehicleName: quote.vehicleName?.trim() || undefined,
         monthlyPayment: monthlyPaymentUsed,
       });
 
@@ -191,12 +227,59 @@ export default function LeaseQuoteCalculator() {
                   step={field.step}
                   value={quote[field.name]}
                   onChange={(event) =>
-                    updateQuote(field.name, event.target.value)
+                    updateNumericQuote(field.name, event.target.value)
                   }
                   className="h-11 rounded-md border border-slate-300 bg-white px-3 text-base text-slate-950 shadow-sm outline-none transition focus:border-teal-700 focus:ring-2 focus:ring-teal-700/20"
                 />
               </label>
             ))}
+          </div>
+
+          <div className="mt-5 rounded-md border border-slate-200 bg-white p-4">
+            <div>
+              <h3 className="text-sm font-semibold text-slate-800">
+                Vehicle and deal details
+              </h3>
+              <p className="mt-1 text-xs leading-5 text-slate-500">
+                Optional, but useful if your quote shows MSRP, selling price, or
+                residual value.
+              </p>
+            </div>
+
+            <div className="mt-4 grid gap-4 sm:grid-cols-2">
+              <label className="flex flex-col gap-2 text-sm font-medium text-slate-700 sm:col-span-2">
+                Vehicle name
+                <input
+                  type="text"
+                  value={quote.vehicleName ?? ""}
+                  onChange={(event) => updateVehicleName(event.target.value)}
+                  placeholder="2026 Toyota RAV4 XLE"
+                  className="h-11 rounded-md border border-slate-300 bg-white px-3 text-base text-slate-950 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-teal-700 focus:ring-2 focus:ring-teal-700/20"
+                />
+              </label>
+
+              {vehicleDealFields.map((field) => (
+                <label
+                  key={field.name}
+                  className="flex flex-col gap-2 text-sm font-medium text-slate-700"
+                >
+                  {field.label}
+                  <input
+                    type="number"
+                    min={0}
+                    step={100}
+                    value={quote[field.name] ?? ""}
+                    onChange={(event) =>
+                      updateOptionalNumericQuote(
+                        field.name,
+                        event.target.value,
+                      )
+                    }
+                    className="h-11 rounded-md border border-slate-300 bg-white px-3 text-base text-slate-950 shadow-sm outline-none transition focus:border-teal-700 focus:ring-2 focus:ring-teal-700/20"
+                  />
+                </label>
+              ))}
+            </div>
           </div>
 
           <div className="mt-5 grid gap-4 rounded-md border border-slate-200 bg-white p-4 sm:grid-cols-[minmax(0,1fr)_180px] sm:items-start">
@@ -250,7 +333,7 @@ export default function LeaseQuoteCalculator() {
                     step={50}
                     value={quote[field.name]}
                     onChange={(event) =>
-                      updateQuote(field.name, event.target.value)
+                      updateNumericQuote(field.name, event.target.value)
                     }
                     className="h-11 rounded-md border border-slate-300 bg-white px-3 text-base text-slate-950 shadow-sm outline-none transition focus:border-teal-700 focus:ring-2 focus:ring-teal-700/20"
                   />
@@ -334,6 +417,56 @@ export default function LeaseQuoteCalculator() {
                   {formatPercentage(result.upfrontRatio)}
                 </dd>
               </div>
+              {result.vehicleName ? (
+                <div className="rounded-md border border-slate-200 bg-white p-4">
+                  <dt className="text-sm font-medium text-slate-500">
+                    Vehicle
+                  </dt>
+                  <dd className="mt-1 text-xl font-semibold text-slate-950">
+                    {result.vehicleName}
+                  </dd>
+                </div>
+              ) : null}
+              {result.discountFromMsrp !== undefined ? (
+                <div className="rounded-md border border-slate-200 bg-white p-4">
+                  <dt className="text-sm font-medium text-slate-500">
+                    Discount from MSRP
+                  </dt>
+                  <dd className="mt-1 text-xl font-semibold text-slate-950">
+                    {formatCurrency(result.discountFromMsrp)}
+                  </dd>
+                </div>
+              ) : null}
+              {result.discountPercentage !== undefined ? (
+                <div className="rounded-md border border-slate-200 bg-white p-4">
+                  <dt className="text-sm font-medium text-slate-500">
+                    Discount percentage
+                  </dt>
+                  <dd className="mt-1 text-xl font-semibold text-slate-950">
+                    {formatPercentage(result.discountPercentage)}
+                  </dd>
+                </div>
+              ) : null}
+              {result.residualPercentage !== undefined ? (
+                <div className="rounded-md border border-slate-200 bg-white p-4">
+                  <dt className="text-sm font-medium text-slate-500">
+                    Residual percentage
+                  </dt>
+                  <dd className="mt-1 text-xl font-semibold text-slate-950">
+                    {formatPercentage(result.residualPercentage)}
+                  </dd>
+                </div>
+              ) : null}
+              {result.depreciationAmount !== undefined ? (
+                <div className="rounded-md border border-slate-200 bg-white p-4">
+                  <dt className="text-sm font-medium text-slate-500">
+                    Depreciation amount
+                  </dt>
+                  <dd className="mt-1 text-xl font-semibold text-slate-950">
+                    {formatCurrency(result.depreciationAmount)}
+                  </dd>
+                </div>
+              ) : null}
             </dl>
           ) : null}
         </div>

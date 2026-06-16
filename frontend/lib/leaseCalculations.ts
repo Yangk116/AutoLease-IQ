@@ -1,4 +1,8 @@
 export type LeaseQuoteInput = {
+  vehicleName?: string;
+  msrp?: number;
+  sellingPrice?: number;
+  residualValue?: number;
   downPayment: number;
   monthlyPayment: number;
   termMonths: number;
@@ -13,6 +17,10 @@ export type LeaseAnalysisResult = LeaseQuoteInput & {
   totalAllowedKm: number;
   costPerKm: number;
   upfrontRatio: number;
+  discountFromMsrp?: number;
+  discountPercentage?: number;
+  residualPercentage?: number;
+  depreciationAmount?: number;
 };
 
 export type LeaseComparisonResult = {
@@ -46,6 +54,18 @@ function validateLeaseQuote(input: LeaseQuoteInput) {
   if (input.leaseEndFee < 0) {
     throw new Error("leaseEndFee cannot be negative.");
   }
+
+  if (input.msrp !== undefined && input.msrp < 0) {
+    throw new Error("msrp cannot be negative.");
+  }
+
+  if (input.sellingPrice !== undefined && input.sellingPrice < 0) {
+    throw new Error("sellingPrice cannot be negative.");
+  }
+
+  if (input.residualValue !== undefined && input.residualValue < 0) {
+    throw new Error("residualValue cannot be negative.");
+  }
 }
 
 function findLowestResult(
@@ -74,6 +94,26 @@ export function analyzeLeaseQuote(input: LeaseQuoteInput): LeaseAnalysisResult {
   const totalAllowedKm = (input.annualMileage * input.termMonths) / 12;
   const costPerKm = totalCost / totalAllowedKm;
   const upfrontRatio = (input.downPayment / totalCost) * 100;
+  const discountFromMsrp =
+    input.msrp !== undefined &&
+    input.sellingPrice !== undefined &&
+    input.msrp > 0
+      ? input.msrp - input.sellingPrice
+      : undefined;
+  const discountPercentage =
+    discountFromMsrp !== undefined && input.msrp !== undefined
+      ? (discountFromMsrp / input.msrp) * 100
+      : undefined;
+  const residualPercentage =
+    input.msrp !== undefined &&
+    input.residualValue !== undefined &&
+    input.msrp > 0
+      ? (input.residualValue / input.msrp) * 100
+      : undefined;
+  const depreciationAmount =
+    input.sellingPrice !== undefined && input.residualValue !== undefined
+      ? input.sellingPrice - input.residualValue
+      : undefined;
 
   return {
     ...input,
@@ -82,6 +122,10 @@ export function analyzeLeaseQuote(input: LeaseQuoteInput): LeaseAnalysisResult {
     totalAllowedKm,
     costPerKm,
     upfrontRatio,
+    discountFromMsrp,
+    discountPercentage,
+    residualPercentage,
+    depreciationAmount,
   };
 }
 
