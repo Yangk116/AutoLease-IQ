@@ -55,20 +55,34 @@ const mainFields: {
 ];
 
 const vehicleDealFields: {
-  name: keyof Pick<LeaseQuoteInput, "msrp" | "sellingPrice" | "residualValue">;
+  name: keyof Pick<
+    LeaseQuoteInput,
+    "vehicleMsrp" | "sellingPrice" | "residualMsrp" | "residualValue"
+  >;
   label: string;
+  helperText?: string;
 }[] = [
   {
-    name: "msrp",
-    label: "MSRP",
+    name: "vehicleMsrp",
+    label: "Vehicle MSRP / retail price",
+    helperText:
+      "Use the vehicle MSRP or retail price shown on the quote. This is used to estimate dealer discount.",
   },
   {
     name: "sellingPrice",
     label: "Selling price",
   },
   {
+    name: "residualMsrp",
+    label: "Residual MSRP",
+    helperText:
+      "Use this if your quote shows a separate residual MSRP. It is used to calculate the residual percentage.",
+  },
+  {
     name: "residualValue",
     label: "Residual value",
+    helperText:
+      "This is the estimated lease-end value or buyout-related value shown on the quote.",
   },
 ];
 
@@ -144,7 +158,10 @@ export default function LeaseQuoteCalculator() {
   }
 
   function updateOptionalNumericQuote(
-    field: keyof Pick<LeaseQuoteInput, "msrp" | "sellingPrice" | "residualValue">,
+    field: keyof Pick<
+      LeaseQuoteInput,
+      "vehicleMsrp" | "sellingPrice" | "residualMsrp" | "residualValue"
+    >,
     value: string,
   ) {
     setQuote((currentQuote) => ({
@@ -241,8 +258,8 @@ export default function LeaseQuoteCalculator() {
                 Vehicle and deal details
               </h3>
               <p className="mt-1 text-xs leading-5 text-slate-500">
-                Optional, but useful if your quote shows MSRP, selling price, or
-                residual value.
+                Optional, but useful if your quote shows vehicle pricing or
+                residual values.
               </p>
             </div>
 
@@ -277,6 +294,11 @@ export default function LeaseQuoteCalculator() {
                     }
                     className="h-11 rounded-md border border-slate-300 bg-white px-3 text-base text-slate-950 shadow-sm outline-none transition focus:border-teal-700 focus:ring-2 focus:ring-teal-700/20"
                   />
+                  {field.helperText ? (
+                    <span className="text-xs leading-5 text-slate-500">
+                      {field.helperText}
+                    </span>
+                  ) : null}
                 </label>
               ))}
             </div>
@@ -430,7 +452,7 @@ export default function LeaseQuoteCalculator() {
               {result.discountFromMsrp !== undefined ? (
                 <div className="rounded-md border border-slate-200 bg-white p-4">
                   <dt className="text-sm font-medium text-slate-500">
-                    Discount from MSRP
+                    Discount from vehicle MSRP
                   </dt>
                   <dd className="mt-1 text-xl font-semibold text-slate-950">
                     {formatCurrency(result.discountFromMsrp)}

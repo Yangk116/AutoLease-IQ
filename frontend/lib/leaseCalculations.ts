@@ -1,7 +1,8 @@
 export type LeaseQuoteInput = {
   vehicleName?: string;
-  msrp?: number;
+  vehicleMsrp?: number;
   sellingPrice?: number;
+  residualMsrp?: number;
   residualValue?: number;
   downPayment: number;
   monthlyPayment: number;
@@ -55,16 +56,37 @@ function validateLeaseQuote(input: LeaseQuoteInput) {
     throw new Error("leaseEndFee cannot be negative.");
   }
 
-  if (input.msrp !== undefined && input.msrp < 0) {
-    throw new Error("msrp cannot be negative.");
+  if (input.vehicleMsrp !== undefined && input.vehicleMsrp < 0) {
+    throw new Error("vehicleMsrp cannot be negative.");
   }
 
   if (input.sellingPrice !== undefined && input.sellingPrice < 0) {
     throw new Error("sellingPrice cannot be negative.");
   }
 
+  if (input.residualMsrp !== undefined && input.residualMsrp < 0) {
+    throw new Error("residualMsrp cannot be negative.");
+  }
+
   if (input.residualValue !== undefined && input.residualValue < 0) {
     throw new Error("residualValue cannot be negative.");
+  }
+
+  if (
+    input.vehicleMsrp !== undefined &&
+    input.vehicleMsrp <= 0 &&
+    (input.sellingPrice !== undefined ||
+      (input.residualMsrp === undefined && input.residualValue !== undefined))
+  ) {
+    throw new Error("vehicleMsrp must be greater than 0.");
+  }
+
+  if (
+    input.residualMsrp !== undefined &&
+    input.residualValue !== undefined &&
+    input.residualMsrp <= 0
+  ) {
+    throw new Error("residualMsrp must be greater than 0.");
   }
 }
 
@@ -94,21 +116,23 @@ export function analyzeLeaseQuote(input: LeaseQuoteInput): LeaseAnalysisResult {
   const totalAllowedKm = (input.annualMileage * input.termMonths) / 12;
   const costPerKm = totalCost / totalAllowedKm;
   const upfrontRatio = (input.downPayment / totalCost) * 100;
+  // Some quotes only show one MSRP; use vehicle MSRP as the residual basis fallback.
+  const residualPercentageMsrp = input.residualMsrp ?? input.vehicleMsrp;
   const discountFromMsrp =
-    input.msrp !== undefined &&
+    input.vehicleMsrp !== undefined &&
     input.sellingPrice !== undefined &&
-    input.msrp > 0
-      ? input.msrp - input.sellingPrice
+    input.vehicleMsrp > 0
+      ? input.vehicleMsrp - input.sellingPrice
       : undefined;
   const discountPercentage =
-    discountFromMsrp !== undefined && input.msrp !== undefined
-      ? (discountFromMsrp / input.msrp) * 100
+    discountFromMsrp !== undefined && input.vehicleMsrp !== undefined
+      ? (discountFromMsrp / input.vehicleMsrp) * 100
       : undefined;
   const residualPercentage =
-    input.msrp !== undefined &&
+    residualPercentageMsrp !== undefined &&
     input.residualValue !== undefined &&
-    input.msrp > 0
-      ? (input.residualValue / input.msrp) * 100
+    residualPercentageMsrp > 0
+      ? (input.residualValue / residualPercentageMsrp) * 100
       : undefined;
   const depreciationAmount =
     input.sellingPrice !== undefined && input.residualValue !== undefined

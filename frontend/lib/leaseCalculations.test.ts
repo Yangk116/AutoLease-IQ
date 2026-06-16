@@ -29,15 +29,26 @@ describe("analyzeLeaseQuote", () => {
   it("calculates vehicle and deal analysis values when provided", () => {
     const result = analyzeLeaseQuote({
       ...validQuote,
-      msrp: 50_000,
+      vehicleMsrp: 50_000,
       sellingPrice: 46_000,
+      residualMsrp: 48_000,
       residualValue: 31_000,
     });
 
     expect(result.discountFromMsrp).toBe(4_000);
     expect(result.discountPercentage).toBeCloseTo(8);
-    expect(result.residualPercentage).toBeCloseTo(62);
+    expect(result.residualPercentage).toBeCloseTo(64.5833);
     expect(result.depreciationAmount).toBe(15_000);
+  });
+
+  it("uses vehicleMsrp as a residual percentage fallback", () => {
+    const result = analyzeLeaseQuote({
+      ...validQuote,
+      vehicleMsrp: 50_000,
+      residualValue: 31_000,
+    });
+
+    expect(result.residualPercentage).toBeCloseTo(62);
   });
 
   it.each([
@@ -49,8 +60,9 @@ describe("analyzeLeaseQuote", () => {
     ["monthlyPayment", -1, "monthlyPayment cannot be negative."],
     ["dealerFees", -1, "dealerFees cannot be negative."],
     ["leaseEndFee", -1, "leaseEndFee cannot be negative."],
-    ["msrp", -1, "msrp cannot be negative."],
+    ["vehicleMsrp", -1, "vehicleMsrp cannot be negative."],
     ["sellingPrice", -1, "sellingPrice cannot be negative."],
+    ["residualMsrp", -1, "residualMsrp cannot be negative."],
     ["residualValue", -1, "residualValue cannot be negative."],
   ] as const)(
     "throws a clear error when %s is %d",
@@ -63,6 +75,36 @@ describe("analyzeLeaseQuote", () => {
       ).toThrow(expectedMessage);
     },
   );
+
+  it("requires vehicleMsrp to be greater than 0 when calculating discount percentage", () => {
+    expect(() =>
+      analyzeLeaseQuote({
+        ...validQuote,
+        vehicleMsrp: 0,
+        sellingPrice: 46_000,
+      }),
+    ).toThrow("vehicleMsrp must be greater than 0.");
+  });
+
+  it("requires vehicleMsrp to be greater than 0 when it is the residual percentage fallback", () => {
+    expect(() =>
+      analyzeLeaseQuote({
+        ...validQuote,
+        vehicleMsrp: 0,
+        residualValue: 31_000,
+      }),
+    ).toThrow("vehicleMsrp must be greater than 0.");
+  });
+
+  it("requires residualMsrp to be greater than 0 when calculating residual percentage", () => {
+    expect(() =>
+      analyzeLeaseQuote({
+        ...validQuote,
+        residualMsrp: 0,
+        residualValue: 31_000,
+      }),
+    ).toThrow("residualMsrp must be greater than 0.");
+  });
 
   it("requires totalCost to be greater than 0", () => {
     expect(() =>
