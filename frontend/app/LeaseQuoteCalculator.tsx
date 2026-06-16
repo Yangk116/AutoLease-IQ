@@ -140,6 +140,11 @@ type ComparisonPaymentSummary = {
   monthlyPaymentUsed: number;
 };
 
+type DealInsight = {
+  title: string;
+  body: string;
+};
+
 const defaultComparisonQuotes: ComparisonQuoteForm[] = [
   {
     id: "quote-a",
@@ -183,6 +188,390 @@ function formatPercentage(value: number) {
 
 function formatCostPerKilometre(value: number) {
   return `${formatCurrency(value)} / km`;
+}
+
+function getQuoteDisplayName(
+  quote: Pick<LeaseAnalysisResult, "vehicleName">,
+  fallback: string,
+) {
+  return quote.vehicleName?.trim() || fallback;
+}
+
+function isCloseMetric(firstValue: number, secondValue: number) {
+  const difference = Math.abs(firstValue - secondValue);
+  const referenceValue = Math.min(
+    Math.abs(firstValue),
+    Math.abs(secondValue),
+  );
+
+  if (referenceValue === 0) {
+    return difference === 0;
+  }
+
+  return difference / referenceValue < 0.02;
+}
+
+function getLowerMetricWinner(
+  firstQuote: LeaseAnalysisResult,
+  secondQuote: LeaseAnalysisResult,
+  metric: keyof Pick<
+    LeaseAnalysisResult,
+    | "totalCost"
+    | "trueMonthlyCost"
+    | "costPerKm"
+    | "monthlyPayment"
+    | "upfrontRatio"
+  >,
+) {
+  if (isCloseMetric(firstQuote[metric], secondQuote[metric])) {
+    return null;
+  }
+
+  return firstQuote[metric] < secondQuote[metric] ? firstQuote : secondQuote;
+}
+
+function describeUpfrontPressure(upfrontRatio: number) {
+  if (upfrontRatio < 10) {
+    return {
+      level: "low",
+      body: "This points to low upfront pressure, so less of the lease cost is being paid before the monthly payments begin.",
+    };
+  }
+
+  if (upfrontRatio <= 25) {
+    return {
+      level: "moderate",
+      body: "This points to moderate upfront pressure. It can make sense, but it is worth comparing against a lower upfront structure.",
+    };
+  }
+
+  return {
+    level: "high",
+    body: "This points to high upfront pressure. A larger due-at-signing amount can make the monthly payment look lower than the full lease cost feels.",
+  };
+}
+
+function buildSingleQuoteInsights(
+  analysis: LeaseAnalysisResult,
+): DealInsight[] {
+  const insights: DealInsight[] = [];
+  const upfrontPressure = describeUpfrontPressure(analysis.upfrontRatio);
+
+  if (
+    analysis.monthlyPayment > 0 &&
+    analysis.trueMonthlyCost > analysis.monthlyPayment * 1.15
+  ) {
+    insights.push({
+      title: "True monthly cost is higher",
+      body: `${formatCurrency(
+        analysis.trueMonthlyCost,
+      )} is materially above the monthly payment of ${formatCurrency(
+        analysis.monthlyPayment,
+      )}. This may indicate upfront or end-of-lease costs are increasing the real monthly cost.`,
+    });
+  } else {
+    insights.push({
+      title: "Monthly cost is close",
+      body: `${formatCurrency(
+        analysis.trueMonthlyCost,
+      )} is close to the monthly payment used in the calculation. Upfront costs do not appear to be heavily shifting the payment picture.`,
+    });
+  }
+
+  insights.push({
+    title: `${upfrontPressure.level} upfront pressure`,
+    body: `${formatPercentage(analysis.upfrontRatio)} of the total lease cost is paid upfront. ${upfrontPressure.body}`,
+  });
+
+  if (analysis.discountPercentage !== undefined) {
+    insights.push({
+      title: "Discount from MSRP",
+      body:
+        analysis.discountPercentage > 0
+          ? `${formatPercentage(
+              analysis.discountPercentage,
+            )} below MSRP may indicate some dealer discount before the lease math is applied.`
+          : `${formatPercentage(
+              analysis.discountPercentage,
+            )} does not show a discount from MSRP. This may be worth asking about if the quote has room to move.`,
+    });
+  } else {
+    insights.push({
+      title: "Discount not shown",
+      body: "Enter MSRP and selling price to see whether the quote includes a visible discount before the lease math is applied.",
+    });
+  }
+
+  if (analysis.residualPercentage !== undefined) {
+    insights.push({
+      title: "Residual value context",
+      body: `${formatPercentage(
+        analysis.residualPercentage,
+      )} is the estimated lease-end value as a share of MSRP. If you plan to buy out the car later, this number is useful context.`,
+    });
+  } else {
+    insights.push({
+      title: "Residual percentage not shown",
+      body: "Enter residual value and MSRP details to see how much value the quote expects the vehicle to retain by lease end.",
+    });
+  }
+
+  insights.push({
+    title: "Kilometre value",
+    body: `${formatCostPerKilometre(
+      analysis.costPerKm,
+    )} is useful to compare against another quote with a different payment, term, or mileage allowance.`,
+  });
+
+  if (analysis.depreciationAmount !== undefined) {
+    insights.push({
+      title: "Estimated depreciation",
+      body: `${formatCurrency(
+        analysis.depreciationAmount,
+      )} represents the estimated value lost during the lease based on selling price and residual value.`,
+    });
+  }
+
+  return insights;
+}
+
+function buildComparisonInsights(
+  comparison: LeaseComparisonResult,
+): DealInsight[] {
+  const [firstQuote, secondQuote] = comparison.results;
+
+  if (!firstQuote || !secondQuote) {
+    return [];
+  }
+
+  const firstName = getQuoteDisplayName(firstQuote, "Quote A");
+  const secondName = getQuoteDisplayName(secondQuote, "Quote B");
+  const totalCostWinner = getLowerMetricWinner(
+    firstQuote,
+    secondQuote,
+    "totalCost",
+  );
+  const trueMonthlyWinner = getLowerMetricWinner(
+    firstQuote,
+    secondQuote,
+    "trueMonthlyCost",
+  );
+  const costPerKmWinner = getLowerMetricWinner(
+    firstQuote,
+    secondQuote,
+    "costPerKm",
+  );
+  const monthlyPaymentWinner = getLowerMetricWinner(
+    firstQuote,
+    secondQuote,
+    "monthlyPayment",
+  );
+  const upfrontRatioWinner = getLowerMetricWinner(
+    firstQuote,
+    secondQuote,
+    "upfrontRatio",
+  );
+  const insights: DealInsight[] = [];
+
+  insights.push({
+    title: totalCostWinner ? "Lowest total cost" : "Total cost is close",
+    body: totalCostWinner
+      ? `${getQuoteDisplayName(
+          totalCostWinner,
+          "One quote",
+        )} has the lowest total lease cost at ${formatCurrency(
+          totalCostWinner.totalCost,
+        )}. This is the broadest cost view after upfront, monthly, and lease-end amounts.`
+      : `${firstName} and ${secondName} are within 2% on total lease cost, so this category is close.`,
+  });
+
+  insights.push({
+    title: trueMonthlyWinner
+      ? "Lowest true monthly cost"
+      : "True monthly cost is close",
+    body: trueMonthlyWinner
+      ? `${getQuoteDisplayName(
+          trueMonthlyWinner,
+          "One quote",
+        )} has the lower true monthly cost at ${formatCurrency(
+          trueMonthlyWinner.trueMonthlyCost,
+        )}. This can be easier to compare than the advertised monthly payment alone.`
+      : `${firstName} and ${secondName} are within 2% on true monthly cost after upfront costs are spread across the term.`,
+  });
+
+  insights.push({
+    title: costPerKmWinner
+      ? "Lowest cost per kilometre"
+      : "Cost per kilometre is close",
+    body: costPerKmWinner
+      ? `${getQuoteDisplayName(
+          costPerKmWinner,
+          "One quote",
+        )} has the lower cost per kilometre at ${formatCostPerKilometre(
+          costPerKmWinner.costPerKm,
+        )}. This is useful when the offers have different mileage allowances.`
+      : `${firstName} and ${secondName} are within 2% on cost per kilometre, so the driving allowance value looks similar.`,
+  });
+
+  if (
+    monthlyPaymentWinner &&
+    totalCostWinner &&
+    totalCostWinner !== monthlyPaymentWinner
+  ) {
+    insights.push({
+      title: "Monthly payment can be misleading",
+      body: `${getQuoteDisplayName(
+        monthlyPaymentWinner,
+        "One quote",
+      )} has the lower monthly payment, but ${getQuoteDisplayName(
+        totalCostWinner,
+        "the other quote",
+      )} has the lower total cost after upfront and lease-end amounts are included.`,
+    });
+  } else if (monthlyPaymentWinner && !totalCostWinner) {
+    insights.push({
+      title: "Monthly payment does not decide it",
+      body: `${getQuoteDisplayName(
+        monthlyPaymentWinner,
+        "One quote",
+      )} has the lower monthly payment, but total lease cost is within 2%. This may indicate the upfront costs are balancing out the monthly difference.`,
+    });
+  } else if (monthlyPaymentWinner) {
+    insights.push({
+      title: "Monthly and total cost align",
+      body: `${getQuoteDisplayName(
+        monthlyPaymentWinner,
+        "One quote",
+      )} has the lower monthly payment and also leads on total lease cost. The upfront structure still matters when comparing cash needed today.`,
+    });
+  }
+
+  if (upfrontRatioWinner) {
+    const higherUpfrontQuote =
+      upfrontRatioWinner === firstQuote ? secondQuote : firstQuote;
+    const upfrontDifference = Math.abs(
+      firstQuote.upfrontRatio - secondQuote.upfrontRatio,
+    );
+
+    insights.push({
+      title:
+        upfrontDifference >= 10
+          ? "Upfront cost gap is large"
+          : "Upfront cost ratio differs",
+      body: `${getQuoteDisplayName(
+        higherUpfrontQuote,
+        "One quote",
+      )} has the higher upfront cost ratio at ${formatPercentage(
+        higherUpfrontQuote.upfrontRatio,
+      )}, while ${getQuoteDisplayName(
+        upfrontRatioWinner,
+        "the other quote",
+      )} is lower at ${formatPercentage(
+        upfrontRatioWinner.upfrontRatio,
+      )}. This can affect cash flow even when monthly payments look attractive.`,
+    });
+  } else {
+    insights.push({
+      title: "Upfront ratios are close",
+      body: `${firstName} and ${secondName} are within 2% on upfront cost ratio, so neither quote shifts much more of the cost into due-at-signing amounts.`,
+    });
+  }
+
+  const meaningfulWinners = [
+    totalCostWinner,
+    trueMonthlyWinner,
+    costPerKmWinner,
+  ].filter((winner): winner is LeaseAnalysisResult => winner !== null);
+  const winningQuoteNames = new Set(
+    meaningfulWinners.map((winner) => getQuoteDisplayName(winner, "One quote")),
+  );
+
+  if (winningQuoteNames.size > 1) {
+    insights.push({
+      title: "Trade-off to consider",
+      body: "Different quotes lead in different categories, so the better fit depends on whether total cash cost, monthly budgeting, or mileage value matters most to you.",
+    });
+  }
+
+  return insights;
+}
+
+function InsightSummary({
+  title,
+  insights,
+}: {
+  title: string;
+  insights: DealInsight[];
+}) {
+  if (insights.length === 0) {
+    return null;
+  }
+
+  return (
+    <section className="my-6 rounded-lg border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+      <div className="flex items-center justify-between gap-4">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-widest text-teal-700">
+            Analysis
+          </p>
+          <h3 className="mt-1 text-base font-semibold text-slate-950">
+            {title}
+          </h3>
+        </div>
+      </div>
+      <ul className="mt-4 grid gap-3 md:grid-cols-2">
+        {insights.map((insight) => (
+          <li
+            key={`${title}-${insight.title}`}
+            className="rounded-md border border-slate-200 bg-slate-50 p-3"
+          >
+            <p className="text-sm font-semibold text-slate-900">
+              {insight.title}
+            </p>
+            <p className="mt-1 text-sm leading-6 text-slate-600">
+              {insight.body}
+            </p>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
+function MetricCard({
+  label,
+  value,
+  helperText,
+  prominent = false,
+}: {
+  label: string;
+  value: string;
+  helperText?: string;
+  prominent?: boolean;
+}) {
+  return (
+    <div
+      className={`rounded-md border p-4 ${
+        prominent
+          ? "border-teal-200 bg-teal-50/60"
+          : "border-slate-200 bg-white"
+      }`}
+    >
+      <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+        {label}
+      </dt>
+      <dd
+        className={`mt-2 font-semibold text-slate-950 ${
+          prominent ? "text-2xl" : "text-lg"
+        }`}
+      >
+        {value}
+      </dd>
+      {helperText ? (
+        <p className="mt-1 text-xs leading-5 text-slate-500">{helperText}</p>
+      ) : null}
+    </div>
+  );
 }
 
 export default function LeaseQuoteCalculator() {
@@ -545,234 +934,125 @@ export default function LeaseQuoteCalculator() {
           ) : null}
 
           {result && paymentSummary ? (
-            <dl className="mt-6 grid gap-3 sm:grid-cols-2">
-              <div className="rounded-md border border-slate-200 bg-white p-4">
-                <dt className="text-sm font-medium text-slate-500">
-                  Entered monthly payment
-                </dt>
-                <dd className="mt-1 text-xl font-semibold text-slate-950">
-                  {formatCurrency(paymentSummary.enteredMonthlyPayment)}
-                </dd>
-              </div>
-              <div className="rounded-md border border-slate-200 bg-white p-4">
-                <dt className="text-sm font-medium text-slate-500">
-                  Monthly payment used in calculation
-                </dt>
-                <dd className="mt-1 text-xl font-semibold text-slate-950">
-                  {formatCurrency(paymentSummary.monthlyPaymentUsed)}
-                </dd>
-              </div>
-              <div className="rounded-md border border-slate-200 bg-white p-4">
-                <dt className="text-sm font-medium text-slate-500">
-                  Total lease cost
-                </dt>
-                <dd className="mt-1 text-xl font-semibold text-slate-950">
-                  {formatCurrency(result.totalCost)}
-                </dd>
-              </div>
-              <div className="rounded-md border border-slate-200 bg-white p-4">
-                <dt className="text-sm font-medium text-slate-500">
-                  True monthly cost
-                </dt>
-                <dd className="mt-1 text-xl font-semibold text-slate-950">
-                  {formatCurrency(result.trueMonthlyCost)}
-                </dd>
-              </div>
-              <div className="rounded-md border border-slate-200 bg-white p-4">
-                <dt className="text-sm font-medium text-slate-500">
-                  Total allowed kilometres
-                </dt>
-                <dd className="mt-1 text-xl font-semibold text-slate-950">
-                  {formatKilometres(result.totalAllowedKm)}
-                </dd>
-              </div>
-              <div className="rounded-md border border-slate-200 bg-white p-4">
-                <dt className="text-sm font-medium text-slate-500">
-                  Cost per kilometre
-                </dt>
-                <dd className="mt-1 text-xl font-semibold text-slate-950">
-                  {formatCostPerKilometre(result.costPerKm)}
-                </dd>
-              </div>
-              <div className="rounded-md border border-slate-200 bg-white p-4 sm:col-span-2">
-                <dt className="text-sm font-medium text-slate-500">
-                  Upfront cost ratio
-                </dt>
-                <dd className="mt-1 text-xl font-semibold text-slate-950">
-                  {formatPercentage(result.upfrontRatio)}
-                </dd>
-              </div>
-              {result.vehicleName ? (
-                <div className="rounded-md border border-slate-200 bg-white p-4">
-                  <dt className="text-sm font-medium text-slate-500">
-                    Vehicle
-                  </dt>
-                  <dd className="mt-1 text-xl font-semibold text-slate-950">
-                    {result.vehicleName}
-                  </dd>
-                </div>
-              ) : null}
-              {result.discountFromMsrp !== undefined ? (
-                <div className="rounded-md border border-slate-200 bg-white p-4">
-                  <dt className="text-sm font-medium text-slate-500">
-                    Discount from vehicle MSRP
-                  </dt>
-                  <dd className="mt-1 text-xl font-semibold text-slate-950">
-                    {formatCurrency(result.discountFromMsrp)}
-                  </dd>
-                </div>
-              ) : null}
-              {result.discountPercentage !== undefined ? (
-                <div className="rounded-md border border-slate-200 bg-white p-4">
-                  <dt className="text-sm font-medium text-slate-500">
-                    Discount percentage
-                  </dt>
-                  <dd className="mt-1 text-xl font-semibold text-slate-950">
-                    {formatPercentage(result.discountPercentage)}
-                  </dd>
-                </div>
-              ) : null}
-              {result.residualPercentage !== undefined ? (
-                <div className="rounded-md border border-slate-200 bg-white p-4">
-                  <dt className="text-sm font-medium text-slate-500">
-                    Residual percentage
-                  </dt>
-                  <dd className="mt-1 text-xl font-semibold text-slate-950">
-                    {formatPercentage(result.residualPercentage)}
-                  </dd>
-                </div>
-              ) : null}
-              {result.depreciationAmount !== undefined ? (
-                <div className="rounded-md border border-slate-200 bg-white p-4">
-                  <dt className="text-sm font-medium text-slate-500">
-                    Depreciation amount
-                  </dt>
-                  <dd className="mt-1 text-xl font-semibold text-slate-950">
-                    {formatCurrency(result.depreciationAmount)}
-                  </dd>
-                </div>
-              ) : null}
-            </dl>
+            <>
+              <dl className="mt-6 grid gap-3 sm:grid-cols-2">
+                <MetricCard
+                  label="True monthly cost"
+                  value={formatCurrency(result.trueMonthlyCost)}
+                  prominent
+                />
+                <MetricCard
+                  label="Total lease cost"
+                  value={formatCurrency(result.totalCost)}
+                  prominent
+                />
+                <MetricCard
+                  label="Cost per kilometre"
+                  value={formatCostPerKilometre(result.costPerKm)}
+                  prominent
+                />
+                <MetricCard
+                  label="Upfront cost ratio"
+                  value={formatPercentage(result.upfrontRatio)}
+                  prominent
+                />
+                <MetricCard
+                  label="Monthly payment used"
+                  value={formatCurrency(paymentSummary.monthlyPaymentUsed)}
+                  helperText={`Entered payment: ${formatCurrency(
+                    paymentSummary.enteredMonthlyPayment,
+                  )}`}
+                />
+                <MetricCard
+                  label="Total allowed kilometres"
+                  value={formatKilometres(result.totalAllowedKm)}
+                />
+                {result.vehicleName ? (
+                  <MetricCard label="Vehicle" value={result.vehicleName} />
+                ) : null}
+                {result.discountFromMsrp !== undefined ? (
+                  <MetricCard
+                    label="Discount from vehicle MSRP"
+                    value={formatCurrency(result.discountFromMsrp)}
+                  />
+                ) : null}
+                {result.discountPercentage !== undefined ? (
+                  <MetricCard
+                    label="Discount percentage"
+                    value={formatPercentage(result.discountPercentage)}
+                  />
+                ) : null}
+                {result.residualPercentage !== undefined ? (
+                  <MetricCard
+                    label="Residual percentage"
+                    value={formatPercentage(result.residualPercentage)}
+                  />
+                ) : null}
+                {result.depreciationAmount !== undefined ? (
+                  <MetricCard
+                    label="Depreciation amount"
+                    value={formatCurrency(result.depreciationAmount)}
+                  />
+                ) : null}
+              </dl>
+
+              <InsightSummary
+                title="Deal quality summary"
+                insights={buildSingleQuoteInsights(result)}
+              />
+            </>
           ) : null}
         </div>
       </div>
 
       <div className="mx-auto mt-16 w-full max-w-6xl border-t border-slate-200 pt-12">
-        <div className="max-w-3xl">
+        <div>
           <p className="mb-4 text-sm font-semibold uppercase tracking-widest text-teal-700">
             Multiple Offers
           </p>
           <h2 className="text-3xl font-semibold tracking-tight text-slate-950 sm:text-4xl">
             Compare multiple lease offers
           </h2>
-          <p className="mt-5 text-base leading-7 text-slate-600">
+          <p className="mt-5 max-w-3xl text-base leading-7 text-slate-600">
             Enter the main numbers from two offers to compare total lease cost,
             true monthly cost, kilometre value, and how much of the deal is paid
             upfront.
           </p>
         </div>
 
-        <div className="mt-8 space-y-5">
+        <div className="mt-8 space-y-6">
           <div className="grid gap-5 lg:grid-cols-2">
             {comparisonQuotes.map((comparisonQuote) => (
-              <article
-                key={comparisonQuote.id}
-                className="rounded-lg border border-slate-200 bg-slate-50 p-5 shadow-sm sm:p-6"
-              >
-                <div className="mb-5 flex items-center justify-between gap-3">
-                  <h3 className="text-lg font-semibold text-slate-950">
-                    {comparisonQuote.label}
-                  </h3>
-                  <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-500">
-                    Offer
-                  </span>
-                </div>
+                <article
+                  key={comparisonQuote.id}
+                  className="rounded-lg border border-slate-200 bg-slate-50 p-5 shadow-sm sm:p-6"
+                >
+                  <div className="mb-5 flex items-center justify-between gap-3">
+                    <h3 className="text-lg font-semibold text-slate-950">
+                      {comparisonQuote.label}
+                    </h3>
+                    <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-500">
+                      Offer
+                    </span>
+                  </div>
 
-                <label className="flex flex-col gap-2 text-sm font-medium text-slate-700">
-                  Quote name
-                  <input
-                    type="text"
-                    value={comparisonQuote.quoteName}
-                    onChange={(event) =>
-                      updateComparisonTextQuote(
-                        comparisonQuote.id,
-                        event.target.value,
-                      )
-                    }
-                    className="h-11 rounded-md border border-slate-300 bg-white px-3 text-base text-slate-950 shadow-sm outline-none transition focus:border-teal-700 focus:ring-2 focus:ring-teal-700/20"
-                  />
-                </label>
-
-                <div className="mt-5 grid gap-4 sm:grid-cols-2">
-                  {mainFields.map((field) => (
-                    <label
-                      key={field.name}
-                      className="flex flex-col gap-2 text-sm font-medium text-slate-700"
-                    >
-                      {field.label}
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <label className="flex flex-col gap-2 text-sm font-medium text-slate-700 sm:col-span-2">
+                      Quote name
                       <input
-                        type="number"
-                        min={field.min}
-                        step={field.step}
-                        value={comparisonQuote[field.name]}
+                        type="text"
+                        value={comparisonQuote.quoteName}
                         onChange={(event) =>
-                          updateComparisonNumericQuote(
+                          updateComparisonTextQuote(
                             comparisonQuote.id,
-                            field.name,
                             event.target.value,
                           )
                         }
                         className="h-11 rounded-md border border-slate-300 bg-white px-3 text-base text-slate-950 shadow-sm outline-none transition focus:border-teal-700 focus:ring-2 focus:ring-teal-700/20"
                       />
                     </label>
-                  ))}
-                </div>
 
-                <div className="mt-5 space-y-4 rounded-md border border-slate-200 bg-white p-4">
-                  <label className="flex cursor-pointer items-start gap-3">
-                    <input
-                      type="checkbox"
-                      role="switch"
-                      checked={comparisonQuote.addTaxToMonthlyPayment}
-                      onChange={(event) =>
-                        updateComparisonTaxToggle(
-                          comparisonQuote.id,
-                          event.target.checked,
-                        )
-                      }
-                      className="peer sr-only"
-                    />
-                    <span className="mt-0.5 h-6 w-11 shrink-0 rounded-full bg-slate-300 p-1 transition-colors after:block after:h-4 after:w-4 after:rounded-full after:bg-white after:shadow-sm after:transition-transform peer-checked:bg-teal-700 peer-checked:after:translate-x-5 peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-teal-700" />
-                    <span className="text-sm font-semibold leading-6 text-slate-800">
-                      Add tax to monthly payment
-                    </span>
-                  </label>
-
-                  <label className="flex max-w-44 flex-col gap-2 text-sm font-medium text-slate-700">
-                    Tax rate (%)
-                    <input
-                      type="number"
-                      min={0}
-                      step={0.1}
-                      value={comparisonQuote.taxRate}
-                      onChange={(event) =>
-                        updateComparisonNumericQuote(
-                          comparisonQuote.id,
-                          "taxRate",
-                          event.target.value,
-                        )
-                      }
-                      className="h-11 rounded-md border border-slate-300 bg-white px-3 text-base text-slate-950 shadow-sm outline-none transition focus:border-teal-700 focus:ring-2 focus:ring-teal-700/20"
-                    />
-                  </label>
-                </div>
-
-                <details className="mt-5 rounded-md border border-slate-200 bg-white p-4">
-                  <summary className="cursor-pointer text-sm font-semibold text-slate-800">
-                    Advanced optional fees
-                  </summary>
-                  <div className="mt-4 grid gap-4 sm:grid-cols-2">
-                    {advancedFeeFields.map((field) => (
+                    {mainFields.map((field) => (
                       <label
                         key={field.name}
                         className="flex flex-col gap-2 text-sm font-medium text-slate-700"
@@ -780,8 +1060,8 @@ export default function LeaseQuoteCalculator() {
                         {field.label}
                         <input
                           type="number"
-                          min={0}
-                          step={50}
+                          min={field.min}
+                          step={field.step}
                           value={comparisonQuote[field.name]}
                           onChange={(event) =>
                             updateComparisonNumericQuote(
@@ -795,151 +1075,211 @@ export default function LeaseQuoteCalculator() {
                       </label>
                     ))}
                   </div>
-                </details>
-              </article>
+
+                  <div className="mt-5 rounded-md border border-slate-200 bg-white p-4">
+                    <label className="flex cursor-pointer items-start gap-3">
+                      <input
+                        type="checkbox"
+                        role="switch"
+                        checked={comparisonQuote.addTaxToMonthlyPayment}
+                        onChange={(event) =>
+                          updateComparisonTaxToggle(
+                            comparisonQuote.id,
+                            event.target.checked,
+                          )
+                        }
+                        className="peer sr-only"
+                      />
+                      <span className="mt-0.5 h-6 w-11 shrink-0 rounded-full bg-slate-300 p-1 transition-colors after:block after:h-4 after:w-4 after:rounded-full after:bg-white after:shadow-sm after:transition-transform peer-checked:bg-teal-700 peer-checked:after:translate-x-5 peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-teal-700" />
+                      <span className="text-sm font-semibold text-slate-800">
+                        Add tax to monthly payment
+                      </span>
+                    </label>
+
+                    <label className="mt-4 flex max-w-40 flex-col gap-2 text-sm font-medium text-slate-700">
+                      Tax rate (%)
+                      <input
+                        type="number"
+                        min={0}
+                        step={0.1}
+                        value={comparisonQuote.taxRate}
+                        onChange={(event) =>
+                          updateComparisonNumericQuote(
+                            comparisonQuote.id,
+                            "taxRate",
+                            event.target.value,
+                          )
+                        }
+                        className="h-11 rounded-md border border-slate-300 bg-white px-3 text-base text-slate-950 shadow-sm outline-none transition focus:border-teal-700 focus:ring-2 focus:ring-teal-700/20"
+                      />
+                    </label>
+                  </div>
+
+                  <details className="mt-5 rounded-md border border-slate-200 bg-white p-4">
+                    <summary className="cursor-pointer text-sm font-semibold text-slate-800">
+                      Advanced optional fees
+                    </summary>
+                    <div className="mt-4 grid gap-4">
+                      {advancedFeeFields.map((field) => (
+                        <label
+                          key={field.name}
+                          className="flex flex-col gap-2 text-sm font-medium text-slate-700"
+                        >
+                          {field.label}
+                          <input
+                            type="number"
+                            min={0}
+                            step={50}
+                            value={comparisonQuote[field.name]}
+                            onChange={(event) =>
+                              updateComparisonNumericQuote(
+                                comparisonQuote.id,
+                                field.name,
+                                event.target.value,
+                              )
+                            }
+                            className="h-11 rounded-md border border-slate-300 bg-white px-3 text-base text-slate-950 shadow-sm outline-none transition focus:border-teal-700 focus:ring-2 focus:ring-teal-700/20"
+                          />
+                          <span className="text-xs leading-5 text-slate-500">
+                            {field.helperText}
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+                  </details>
+                </article>
             ))}
           </div>
 
-          <button
-            type="button"
-            onClick={compareOffers}
-            className="inline-flex h-12 w-full items-center justify-center rounded-md bg-teal-700 px-5 text-base font-semibold text-white shadow-sm transition-colors hover:bg-teal-800 focus:outline-none focus:ring-2 focus:ring-teal-700 focus:ring-offset-2 sm:w-auto"
-          >
-            Compare offers
-          </button>
+            <button
+              type="button"
+              onClick={compareOffers}
+              className="inline-flex h-12 w-full items-center justify-center rounded-md bg-teal-700 px-5 text-base font-semibold text-white shadow-sm transition-colors hover:bg-teal-800 focus:outline-none focus:ring-2 focus:ring-teal-700 focus:ring-offset-2 sm:w-auto"
+            >
+              Compare offers
+            </button>
 
-          {comparisonErrorMessage ? (
-            <p className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
-              {comparisonErrorMessage}
-            </p>
-          ) : null}
+            {comparisonErrorMessage ? (
+              <p className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+                {comparisonErrorMessage}
+              </p>
+            ) : null}
 
-          {comparisonResult ? (
-            <div className="pt-3">
-              <div className="mb-5">
-                <h3 className="text-lg font-semibold text-slate-950">
-                  Comparison results
-                </h3>
-                <p className="mt-1 text-sm leading-6 text-slate-500">
-                  Best badges mark the lowest cost in each category.
-                </p>
-              </div>
+            {comparisonResult ? (
+              <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+                <div className="mb-5">
+                  <h3 className="text-lg font-semibold text-slate-950">
+                    Comparison results
+                  </h3>
+                  <p className="mt-1 text-sm leading-6 text-slate-500">
+                    Best badges mark the lowest cost in each category.
+                  </p>
+                </div>
 
-              <div className="grid gap-4 lg:grid-cols-2">
-                {comparisonResult.results.map((comparisonAnalysis, index) => {
-                  const paymentSummaryForQuote =
-                    comparisonPaymentSummaries[index];
-                  const isBestTotalCost =
-                    comparisonAnalysis.totalCost ===
-                    comparisonResult.lowestTotalCost.totalCost;
-                  const isBestTrueMonthlyCost =
-                    comparisonAnalysis.trueMonthlyCost ===
-                    comparisonResult.lowestTrueMonthlyCost.trueMonthlyCost;
-                  const isBestCostPerKm =
-                    comparisonAnalysis.costPerKm ===
-                    comparisonResult.lowestCostPerKm.costPerKm;
+                <InsightSummary
+                  title="Comparison summary"
+                  insights={buildComparisonInsights(comparisonResult)}
+                />
 
-                  return (
-                    <article
-                      key={`${comparisonAnalysis.vehicleName ?? "quote"}-${index}`}
-                      className="rounded-md border border-slate-200 bg-slate-50 p-4"
-                    >
-                      <div className="flex flex-wrap items-start justify-between gap-3">
-                        <h4 className="text-base font-semibold text-slate-950">
-                          {comparisonAnalysis.vehicleName}
-                        </h4>
-                        <div className="flex flex-wrap gap-2">
-                          {isBestTotalCost ? (
-                            <span className="rounded-full bg-teal-100 px-3 py-1 text-xs font-semibold text-teal-800">
-                              Best total cost
-                            </span>
-                          ) : null}
-                          {isBestTrueMonthlyCost ? (
-                            <span className="rounded-full bg-sky-100 px-3 py-1 text-xs font-semibold text-sky-800">
-                              Best true monthly cost
-                            </span>
-                          ) : null}
-                          {isBestCostPerKm ? (
-                            <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-800">
-                              Best cost per kilometre
-                            </span>
-                          ) : null}
+                <div className="grid gap-4 xl:grid-cols-2">
+                  {comparisonResult.results.map((comparisonAnalysis, index) => {
+                    const paymentSummaryForQuote =
+                      comparisonPaymentSummaries[index];
+                    const isBestTotalCost =
+                      comparisonAnalysis.totalCost ===
+                      comparisonResult.lowestTotalCost.totalCost;
+                    const isBestTrueMonthlyCost =
+                      comparisonAnalysis.trueMonthlyCost ===
+                      comparisonResult.lowestTrueMonthlyCost.trueMonthlyCost;
+                    const isBestCostPerKm =
+                      comparisonAnalysis.costPerKm ===
+                      comparisonResult.lowestCostPerKm.costPerKm;
+
+                    return (
+                      <article
+                        key={`${comparisonAnalysis.vehicleName ?? "quote"}-${index}`}
+                        className="rounded-lg border border-slate-200 bg-slate-50 p-4 sm:p-5"
+                      >
+                        <div className="space-y-3">
+                          <h4 className="text-lg font-semibold text-slate-950">
+                            {getQuoteDisplayName(
+                              comparisonAnalysis,
+                              `Quote ${index + 1}`,
+                            )}
+                          </h4>
+                          <div className="flex flex-wrap gap-2">
+                            {isBestTotalCost ? (
+                              <span className="rounded-full border border-teal-200 bg-white px-3 py-1 text-xs font-semibold text-teal-800">
+                                Best total cost
+                              </span>
+                            ) : null}
+                            {isBestTrueMonthlyCost ? (
+                              <span className="rounded-full border border-teal-200 bg-white px-3 py-1 text-xs font-semibold text-teal-800">
+                                Best true monthly cost
+                              </span>
+                            ) : null}
+                            {isBestCostPerKm ? (
+                              <span className="rounded-full border border-teal-200 bg-white px-3 py-1 text-xs font-semibold text-teal-800">
+                                Best cost per kilometre
+                              </span>
+                            ) : null}
+                          </div>
                         </div>
-                      </div>
 
-                      <dl className="mt-4 grid gap-3 sm:grid-cols-2">
-                        <div className="rounded-md border border-slate-200 bg-white p-3">
-                          <dt className="text-xs font-medium uppercase tracking-wide text-slate-500">
-                            Total lease cost
-                          </dt>
-                          <dd className="mt-1 text-lg font-semibold text-slate-950">
-                            {formatCurrency(comparisonAnalysis.totalCost)}
-                          </dd>
-                        </div>
-                        <div className="rounded-md border border-slate-200 bg-white p-3">
-                          <dt className="text-xs font-medium uppercase tracking-wide text-slate-500">
-                            True monthly cost
-                          </dt>
-                          <dd className="mt-1 text-lg font-semibold text-slate-950">
-                            {formatCurrency(
+                        <dl className="mt-4 grid gap-3 sm:grid-cols-2">
+                          <MetricCard
+                            label="True monthly cost"
+                            value={formatCurrency(
                               comparisonAnalysis.trueMonthlyCost,
                             )}
-                          </dd>
-                        </div>
-                        <div className="rounded-md border border-slate-200 bg-white p-3">
-                          <dt className="text-xs font-medium uppercase tracking-wide text-slate-500">
-                            Total allowed kilometres
-                          </dt>
-                          <dd className="mt-1 text-lg font-semibold text-slate-950">
-                            {formatKilometres(
-                              comparisonAnalysis.totalAllowedKm,
-                            )}
-                          </dd>
-                        </div>
-                        <div className="rounded-md border border-slate-200 bg-white p-3">
-                          <dt className="text-xs font-medium uppercase tracking-wide text-slate-500">
-                            Cost per kilometre
-                          </dt>
-                          <dd className="mt-1 text-lg font-semibold text-slate-950">
-                            {formatCostPerKilometre(
+                            prominent
+                          />
+                          <MetricCard
+                            label="Total lease cost"
+                            value={formatCurrency(comparisonAnalysis.totalCost)}
+                            prominent
+                          />
+                          <MetricCard
+                            label="Cost per kilometre"
+                            value={formatCostPerKilometre(
                               comparisonAnalysis.costPerKm,
                             )}
-                          </dd>
-                        </div>
-                        <div className="rounded-md border border-slate-200 bg-white p-3">
-                          <dt className="text-xs font-medium uppercase tracking-wide text-slate-500">
-                            Upfront cost ratio
-                          </dt>
-                          <dd className="mt-1 text-lg font-semibold text-slate-950">
-                            {formatPercentage(comparisonAnalysis.upfrontRatio)}
-                          </dd>
-                        </div>
-                        <div className="rounded-md border border-slate-200 bg-white p-3">
-                          <dt className="text-xs font-medium uppercase tracking-wide text-slate-500">
-                            Monthly payment used
-                          </dt>
-                          <dd className="mt-1 text-lg font-semibold text-slate-950">
-                            {formatCurrency(
+                            prominent
+                          />
+                          <MetricCard
+                            label="Upfront cost ratio"
+                            value={formatPercentage(
+                              comparisonAnalysis.upfrontRatio,
+                            )}
+                            prominent
+                          />
+                          <MetricCard
+                            label="Monthly payment used"
+                            value={formatCurrency(
                               paymentSummaryForQuote?.monthlyPaymentUsed ??
                                 comparisonAnalysis.monthlyPayment,
                             )}
-                          </dd>
-                          {paymentSummaryForQuote ? (
-                            <p className="mt-1 text-xs leading-5 text-slate-500">
-                              Entered payment:{" "}
-                              {formatCurrency(
-                                paymentSummaryForQuote.enteredMonthlyPayment,
-                              )}
-                            </p>
-                          ) : null}
-                        </div>
-                      </dl>
-                    </article>
-                  );
-                })}
+                            helperText={
+                              paymentSummaryForQuote
+                                ? `Entered payment: ${formatCurrency(
+                                    paymentSummaryForQuote.enteredMonthlyPayment,
+                                  )}`
+                                : undefined
+                            }
+                          />
+                          <MetricCard
+                            label="Total allowed kilometres"
+                            value={formatKilometres(
+                              comparisonAnalysis.totalAllowedKm,
+                            )}
+                          />
+                        </dl>
+                      </article>
+                    );
+                  })}
+                </div>
               </div>
-            </div>
-          ) : null}
+            ) : null}
         </div>
       </div>
     </section>
