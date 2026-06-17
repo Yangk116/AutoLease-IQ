@@ -10,6 +10,9 @@ import {
   type LeaseQuoteInput,
 } from "@/lib/leaseCalculations";
 
+import { InsightSummary, type DealInsight } from "./components/InsightSummary";
+import { MetricCard } from "./components/MetricCard";
+
 const defaultQuote: LeaseQuoteInput = {
   downPayment: 8_000,
   monthlyPayment: 362.02,
@@ -110,9 +113,6 @@ const advancedFeeFields: {
 const taxHelperText =
   "Turn this on only if the monthly payment you entered is before tax. If your quote already shows payment with tax, leave this off.";
 
-const insightBasisText =
-  "This analysis is based on the numbers entered. A detailed quote audit can review itemized fees later.";
-
 const currencyFormatter = new Intl.NumberFormat("en-CA", {
   style: "currency",
   currency: "CAD",
@@ -152,11 +152,6 @@ type DecisionMode =
   | "lowest-upfront-cash"
   | "best-mileage-value"
   | "possible-future-buyout";
-
-type DealInsight = {
-  title: string;
-  body: string;
-};
 
 type GoalRecommendation = {
   title: string;
@@ -672,87 +667,6 @@ function buildComparisonInsights(
   }
 
   return insights;
-}
-
-function InsightSummary({
-  title,
-  insights,
-}: {
-  title: string;
-  insights: DealInsight[];
-}) {
-  if (insights.length === 0) {
-    return null;
-  }
-
-  return (
-    <section className="my-6 rounded-lg border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
-      <div className="flex items-center justify-between gap-4">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-widest text-teal-700">
-            Analysis
-          </p>
-          <h3 className="mt-1 text-base font-semibold text-slate-950">
-            {title}
-          </h3>
-          <p className="mt-2 max-w-2xl text-xs leading-5 text-slate-500">
-            {insightBasisText}
-          </p>
-        </div>
-      </div>
-      <ul className="mt-4 grid gap-3 md:grid-cols-2">
-        {insights.map((insight) => (
-          <li
-            key={`${title}-${insight.title}`}
-            className="rounded-md border border-slate-200 bg-slate-50 p-3"
-          >
-            <p className="text-sm font-semibold text-slate-900">
-              {insight.title}
-            </p>
-            <p className="mt-1 text-sm leading-6 text-slate-600">
-              {insight.body}
-            </p>
-          </li>
-        ))}
-      </ul>
-    </section>
-  );
-}
-
-function MetricCard({
-  label,
-  value,
-  helperText,
-  prominent = false,
-}: {
-  label: string;
-  value: string;
-  helperText?: string;
-  prominent?: boolean;
-}) {
-  return (
-    <div
-      className={`rounded-md border p-4 ${
-        prominent
-          ? "border-teal-200 bg-teal-50/60"
-          : "border-slate-200 bg-white"
-      }`}
-    >
-      <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-        {label}
-      </dt>
-      <dd
-        className={`mt-2 font-semibold text-slate-950 ${
-          prominent ? "text-2xl" : "text-lg"
-        }`}
-      >
-        {value}
-      </dd>
-      {helperText ? (
-        <p className="mt-1 text-xs leading-5 text-slate-500">{helperText}</p>
-      ) : null}
-    </div>
-  );
 }
 
 export default function LeaseQuoteCalculator() {
