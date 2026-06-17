@@ -146,10 +146,46 @@ type ComparisonPaymentSummary = {
   monthlyPaymentUsed: number;
 };
 
+type DecisionMode =
+  | "lowest-total-cost"
+  | "lowest-monthly-budget"
+  | "lowest-upfront-cash"
+  | "best-mileage-value"
+  | "possible-future-buyout";
+
 type DealInsight = {
   title: string;
   body: string;
 };
+
+type GoalRecommendation = {
+  title: string;
+  body: string;
+  winningQuote: LeaseAnalysisResult | null;
+};
+
+const decisionModeOptions: { value: DecisionMode; label: string }[] = [
+  {
+    value: "lowest-total-cost",
+    label: "Lowest total cost",
+  },
+  {
+    value: "lowest-monthly-budget",
+    label: "Lowest monthly budget",
+  },
+  {
+    value: "lowest-upfront-cash",
+    label: "Lowest upfront cash",
+  },
+  {
+    value: "best-mileage-value",
+    label: "Best mileage value",
+  },
+  {
+    value: "possible-future-buyout",
+    label: "Possible future buyout",
+  },
+];
 
 const defaultComparisonQuotes: ComparisonQuoteForm[] = [
   {
@@ -234,6 +270,114 @@ function getLowerMetricWinner(
   }
 
   return firstQuote[metric] < secondQuote[metric] ? firstQuote : secondQuote;
+}
+
+function getDecisionModeRecommendation(
+  comparison: LeaseComparisonResult,
+  decisionMode: DecisionMode,
+): GoalRecommendation | null {
+  const [firstQuote, secondQuote] = comparison.results;
+
+  if (!firstQuote || !secondQuote) {
+    return null;
+  }
+
+  if (decisionMode === "lowest-total-cost") {
+    const winningQuote = getLowerMetricWinner(
+      firstQuote,
+      secondQuote,
+      "totalCost",
+    );
+
+    return {
+      title: "Best fit for your goal",
+      body: winningQuote
+        ? `Since you selected lowest total cost, ${getQuoteDisplayName(
+            winningQuote,
+            "one quote",
+          )} looks more aligned based on the lowest total lease cost after upfront, monthly, and lease-end amounts.`
+        : "Since you selected lowest total cost, focus on total lease cost. These offers are close on that metric based on the numbers entered.",
+      winningQuote,
+    };
+  }
+
+  if (decisionMode === "lowest-monthly-budget") {
+    const winningQuote = getLowerMetricWinner(
+      firstQuote,
+      secondQuote,
+      "trueMonthlyCost",
+    );
+
+    return {
+      title: "Best fit for your goal",
+      body: winningQuote
+        ? `Since you selected lowest monthly budget, ${getQuoteDisplayName(
+            winningQuote,
+            "one quote",
+          )} may be stronger because it has the lower true monthly cost. This is more useful than the advertised monthly payment alone.`
+        : "Since you selected lowest monthly budget, focus on true monthly cost rather than advertised monthly payment alone. These offers are close on that metric.",
+      winningQuote,
+    };
+  }
+
+  if (decisionMode === "lowest-upfront-cash") {
+    const winningQuote = getLowerMetricWinner(
+      firstQuote,
+      secondQuote,
+      "upfrontRatio",
+    );
+
+    return {
+      title: "Best fit for your goal",
+      body: winningQuote
+        ? `Since you selected lowest upfront cash, ${getQuoteDisplayName(
+            winningQuote,
+            "one quote",
+          )} looks more aligned because its upfront cost ratio is lower. Due-at-signing cash still matters alongside the monthly payment.`
+        : "Since you selected lowest upfront cash, upfront cost ratio and due-at-signing amount matter more. These offers are close on upfront cost ratio.",
+      winningQuote,
+    };
+  }
+
+  if (decisionMode === "best-mileage-value") {
+    const winningQuote = getLowerMetricWinner(
+      firstQuote,
+      secondQuote,
+      "costPerKm",
+    );
+
+    return {
+      title: "Best fit for your goal",
+      body: winningQuote
+        ? `Since you selected best mileage value, ${getQuoteDisplayName(
+            winningQuote,
+            "one quote",
+          )} may be stronger because it has the lower cost per kilometre.`
+        : "Since you selected best mileage value, cost per kilometre is especially important. These offers are close on kilometre value.",
+      winningQuote,
+    };
+  }
+
+  const quotesWithResidualDetails = comparison.results.filter(
+    (quote) =>
+      quote.residualValue !== undefined ||
+      quote.residualPercentage !== undefined ||
+      quote.depreciationAmount !== undefined,
+  );
+
+  if (quotesWithResidualDetails.length === 0) {
+    return {
+      title: "Best fit for your goal",
+      body: "Since you selected possible future buyout, residual value and residual percentage become important context. Add optional vehicle details to improve this analysis.",
+      winningQuote: null,
+    };
+  }
+
+  return {
+    title: "Best fit for your goal",
+    body: "Since you selected possible future buyout, residual value and residual percentage become more important context. A high residual can lower lease payments but may make a future buyout more expensive, so this mode is best read as a trade-off rather than a guaranteed winner.",
+    winningQuote: null,
+  };
 }
 
 function describeUpfrontPressure(upfrontRatio: number) {
@@ -343,6 +487,7 @@ function buildSingleQuoteInsights(
 
 function buildComparisonInsights(
   comparison: LeaseComparisonResult,
+  decisionMode: DecisionMode,
 ): DealInsight[] {
   const [firstQuote, secondQuote] = comparison.results;
 
@@ -378,6 +523,10 @@ function buildComparisonInsights(
     "upfrontRatio",
   );
   const insights: DealInsight[] = [];
+  const goalRecommendation = getDecisionModeRecommendation(
+    comparison,
+    decisionMode,
+  );
   const hasVehicleDetailMetrics = comparison.results.some(
     (comparisonQuote) =>
       comparisonQuote.discountFromMsrp !== undefined ||
@@ -385,6 +534,13 @@ function buildComparisonInsights(
       comparisonQuote.residualPercentage !== undefined ||
       comparisonQuote.depreciationAmount !== undefined,
   );
+
+  if (goalRecommendation) {
+    insights.push({
+      title: "Goal-based recommendation",
+      body: `${goalRecommendation.body} This is based on the numbers entered, not a guaranteed best offer.`,
+    });
+  }
 
   insights.push({
     title: hasVehicleDetailMetrics
@@ -617,6 +773,8 @@ export default function LeaseQuoteCalculator() {
     ComparisonPaymentSummary[]
   >([]);
   const [comparisonErrorMessage, setComparisonErrorMessage] = useState("");
+  const [selectedDecisionMode, setSelectedDecisionMode] =
+    useState<DecisionMode>("lowest-total-cost");
 
   function updateNumericQuote(field: keyof LeaseQuoteInput, value: string) {
     setQuote((currentQuote) => ({
@@ -827,6 +985,10 @@ export default function LeaseQuoteCalculator() {
       );
     }
   }
+
+  const selectedGoalRecommendation = comparisonResult
+    ? getDecisionModeRecommendation(comparisonResult, selectedDecisionMode)
+    : null;
 
   return (
     <section
@@ -1304,6 +1466,32 @@ export default function LeaseQuoteCalculator() {
             ))}
           </div>
 
+          <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+            <h3 className="text-sm font-semibold text-slate-950">
+              What matters most to you?
+            </h3>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {decisionModeOptions.map((option) => {
+                const isSelected = selectedDecisionMode === option.value;
+
+                return (
+                  <button
+                    key={option.value}
+                    type="button"
+                    onClick={() => setSelectedDecisionMode(option.value)}
+                    className={`rounded-full border px-3 py-2 text-sm font-semibold transition-colors ${
+                      isSelected
+                        ? "border-teal-700 bg-teal-700 text-white"
+                        : "border-slate-200 bg-white text-slate-700 hover:border-teal-200 hover:bg-teal-50"
+                    }`}
+                  >
+                    {option.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
           <button
             type="button"
             onClick={compareOffers}
@@ -1329,9 +1517,27 @@ export default function LeaseQuoteCalculator() {
                 </p>
               </div>
 
+              {selectedGoalRecommendation ? (
+                <div className="mb-5 rounded-lg border border-teal-100 bg-teal-50/50 p-4">
+                  <p className="text-xs font-semibold uppercase tracking-widest text-teal-700">
+                    Goal-based recommendation
+                  </p>
+                  <h4 className="mt-1 text-base font-semibold text-slate-950">
+                    {selectedGoalRecommendation.title}
+                  </h4>
+                  <p className="mt-2 text-sm leading-6 text-slate-600">
+                    {selectedGoalRecommendation.body} This is based on the
+                    numbers entered, not a guaranteed best offer.
+                  </p>
+                </div>
+              ) : null}
+
               <InsightSummary
                 title="Comparison summary"
-                insights={buildComparisonInsights(comparisonResult)}
+                insights={buildComparisonInsights(
+                  comparisonResult,
+                  selectedDecisionMode,
+                )}
               />
 
               <div className="grid gap-4 xl:grid-cols-2">
@@ -1347,6 +1553,9 @@ export default function LeaseQuoteCalculator() {
                     const isBestCostPerKm =
                       comparisonAnalysis.costPerKm ===
                       comparisonResult.lowestCostPerKm.costPerKm;
+                    const isBestFitForSelectedGoal =
+                      selectedGoalRecommendation?.winningQuote ===
+                      comparisonAnalysis;
 
                     return (
                       <article
@@ -1374,6 +1583,11 @@ export default function LeaseQuoteCalculator() {
                             {isBestCostPerKm ? (
                               <span className="rounded-full border border-teal-200 bg-white px-3 py-1 text-xs font-semibold text-teal-800">
                                 Best cost per kilometre
+                              </span>
+                            ) : null}
+                            {isBestFitForSelectedGoal ? (
+                              <span className="rounded-full border border-slate-300 bg-white px-3 py-1 text-xs font-semibold text-slate-700">
+                                Best fit for selected goal
                               </span>
                             ) : null}
                           </div>
