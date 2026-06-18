@@ -148,6 +148,14 @@ type DecisionMode =
   | "best-mileage-value"
   | "possible-future-buyout";
 
+type ComparisonPreset = {
+  id: "low-monthly-vs-low-total" | "low-upfront-vs-high-upfront" | "buyout";
+  name: string;
+  purpose: string;
+  decisionMode: DecisionMode;
+  quotes: [ComparisonQuoteForm, ComparisonQuoteForm];
+};
+
 const decisionModeOptions: { value: DecisionMode; label: string }[] = [
   {
     value: "lowest-total-cost",
@@ -197,6 +205,124 @@ const defaultComparisonQuotes: ComparisonQuoteForm[] = [
     leaseEndFee: 0,
     addTaxToMonthlyPayment: false,
     taxRate: defaultTaxRate,
+  },
+];
+
+const comparisonPresets: ComparisonPreset[] = [
+  {
+    id: "low-monthly-vs-low-total",
+    name: "Low monthly vs low total",
+    purpose:
+      "See why the lower advertised payment may not produce the lower total lease cost.",
+    decisionMode: "lowest-total-cost",
+    quotes: [
+      {
+        id: "quote-a",
+        label: "Quote A",
+        quoteName: "Lower advertised monthly",
+        downPayment: 7_000,
+        monthlyPayment: 390,
+        termMonths: 24,
+        annualMileage: 20_000,
+        dealerFees: 600,
+        leaseEndFee: 500,
+        addTaxToMonthlyPayment: false,
+        taxRate: defaultTaxRate,
+      },
+      {
+        id: "quote-b",
+        label: "Quote B",
+        quoteName: "Higher monthly, lower upfront",
+        downPayment: 2_500,
+        monthlyPayment: 520,
+        termMonths: 24,
+        annualMileage: 20_000,
+        dealerFees: 600,
+        leaseEndFee: 500,
+        addTaxToMonthlyPayment: false,
+        taxRate: defaultTaxRate,
+      },
+    ],
+  },
+  {
+    id: "low-upfront-vs-high-upfront",
+    name: "Low upfront vs high upfront",
+    purpose:
+      "Compare a lower due-at-signing amount with a larger upfront payment and lower monthly bill.",
+    decisionMode: "lowest-upfront-cash",
+    quotes: [
+      {
+        id: "quote-a",
+        label: "Quote A",
+        quoteName: "Low upfront offer",
+        downPayment: 1_500,
+        monthlyPayment: 610,
+        termMonths: 36,
+        annualMileage: 16_000,
+        dealerFees: 500,
+        leaseEndFee: 450,
+        addTaxToMonthlyPayment: false,
+        taxRate: defaultTaxRate,
+      },
+      {
+        id: "quote-b",
+        label: "Quote B",
+        quoteName: "High upfront offer",
+        downPayment: 8_000,
+        monthlyPayment: 420,
+        termMonths: 36,
+        annualMileage: 16_000,
+        dealerFees: 500,
+        leaseEndFee: 450,
+        addTaxToMonthlyPayment: false,
+        taxRate: defaultTaxRate,
+      },
+    ],
+  },
+  {
+    id: "buyout",
+    name: "Buyout-focused example",
+    purpose:
+      "See how different residual values change the future buyout context for similar vehicles.",
+    decisionMode: "possible-future-buyout",
+    quotes: [
+      {
+        id: "quote-a",
+        label: "Quote A",
+        quoteName: "Higher residual offer",
+        downPayment: 4_000,
+        monthlyPayment: 480,
+        termMonths: 24,
+        annualMileage: 20_000,
+        dealerFees: 700,
+        leaseEndFee: 500,
+        vehicleName: "Sample SUV lease",
+        vehicleMsrp: 50_000,
+        sellingPrice: 47_500,
+        residualMsrp: 50_000,
+        residualValue: 35_000,
+        addTaxToMonthlyPayment: false,
+        taxRate: defaultTaxRate,
+      },
+      {
+        id: "quote-b",
+        label: "Quote B",
+        quoteName: "Lower residual offer",
+        downPayment: 4_000,
+        monthlyPayment: 560,
+        termMonths: 24,
+        annualMileage: 20_000,
+        dealerFees: 700,
+        leaseEndFee: 500,
+        vehicleName: "Sample SUV lease",
+        vehicleMsrp: 50_000,
+        sellingPrice: 47_000,
+        residualMsrp: 50_000,
+        residualValue: 30_000,
+        addTaxToMonthlyPayment: false,
+        taxRate: defaultTaxRate,
+      },
+    ],
   },
 ];
 
@@ -494,6 +620,14 @@ export default function LeaseQuoteCalculator() {
           : currentQuote,
       ),
     );
+  }
+
+  function loadComparisonPreset(preset: ComparisonPreset) {
+    setComparisonQuotes(preset.quotes.map((presetQuote) => ({ ...presetQuote })));
+    setSelectedDecisionMode(preset.decisionMode);
+    setComparisonResult(null);
+    setComparisonPaymentSummaries([]);
+    setComparisonErrorMessage("");
   }
 
   function compareOffers() {
@@ -836,6 +970,41 @@ export default function LeaseQuoteCalculator() {
         </div>
 
         <div className="mt-8 space-y-6">
+          <div className="rounded-lg border border-teal-100 bg-teal-50/50 p-4 sm:p-5">
+            <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
+              <div>
+                <h3 className="text-sm font-semibold text-slate-950">
+                  Try an example
+                </h3>
+                <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">
+                  Load sample offers to see how true monthly cost, upfront cash,
+                  mileage value, and buyout context can change the decision.
+                </p>
+              </div>
+              <span className="mt-1 shrink-0 text-xs font-medium text-slate-500">
+                Samples only — not recommendations
+              </span>
+            </div>
+
+            <div className="mt-4 grid gap-3 md:grid-cols-3">
+              {comparisonPresets.map((preset) => (
+                <button
+                  key={preset.id}
+                  type="button"
+                  onClick={() => loadComparisonPreset(preset)}
+                  className="rounded-md border border-slate-200 bg-white p-3 text-left shadow-sm transition hover:border-teal-300 hover:bg-teal-50 focus:outline-none focus:ring-2 focus:ring-teal-700 focus:ring-offset-2"
+                >
+                  <span className="block text-sm font-semibold text-teal-800">
+                    {preset.name}
+                  </span>
+                  <span className="mt-1 block text-xs leading-5 text-slate-600">
+                    {preset.purpose}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+
           <div className="grid gap-5 lg:grid-cols-2">
             {comparisonQuotes.map((comparisonQuote) => (
               <ComparisonQuoteCard
