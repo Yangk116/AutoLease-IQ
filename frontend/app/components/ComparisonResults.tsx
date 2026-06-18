@@ -1,3 +1,5 @@
+import { useEffect, useRef, useState } from "react";
+
 import {
   type LeaseAnalysisResult,
   type LeaseComparisonResult,
@@ -31,6 +33,13 @@ type ComparisonResultsProps = {
   selectedDecisionMode: DecisionMode;
 };
 
+type CopyStatus = "idle" | "copied" | "failed";
+
+type ReportMetric =
+  | "totalCost"
+  | "trueMonthlyCost"
+  | "costPerKm";
+
 const currencyFormatter = new Intl.NumberFormat("en-CA", {
   style: "currency",
   currency: "CAD",
@@ -60,6 +69,14 @@ function formatPercentage(value: number) {
 function formatCostPerKilometre(value: number) {
   return `${formatCurrency(value)} / km`;
 }
+
+const decisionModeLabels: Record<DecisionMode, string> = {
+  "lowest-total-cost": "Lowest total cost",
+  "lowest-monthly-budget": "Lowest monthly budget",
+  "lowest-upfront-cash": "Lowest upfront cash",
+  "best-mileage-value": "Best mileage value",
+  "possible-future-buyout": "Possible future buyout",
+};
 
 function getQuoteDisplayName(
   quote: Pick<LeaseAnalysisResult, "vehicleName">,
@@ -395,25 +412,207 @@ function buildComparisonInsights(
   return insights;
 }
 
+function getReportQuoteName(
+  comparison: LeaseComparisonResult,
+  paymentSummaries: ComparisonPaymentSummary[],
+  quote: LeaseAnalysisResult,
+) {
+  const quoteIndex = comparison.results.indexOf(quote);
+
+  return (
+    paymentSummaries[quoteIndex]?.quoteName ||
+    getQuoteDisplayName(quote, `Quote ${quoteIndex + 1}`)
+  );
+}
+
+function getReportMetricWinner(
+  comparison: LeaseComparisonResult,
+  paymentSummaries: ComparisonPaymentSummary[],
+  metric: ReportMetric,
+) {
+  const [firstQuote, secondQuote] = comparison.results;
+
+  if (!firstQuote || !secondQuote) {
+    return "Not available";
+  }
+
+  const winner =
+    firstQuote[metric] <= secondQuote[metric] ? firstQuote : secondQuote;
+
+  return getReportQuoteName(comparison, paymentSummaries, winner);
+}
+
+export function buildComparisonReport(
+  comparison: LeaseComparisonResult,
+  paymentSummaries: ComparisonPaymentSummary[],
+  decisionMode: DecisionMode,
+) {
+  const quoteNames = comparison.results.map((quote, index) => {
+    return (
+      paymentSummaries[index]?.quoteName ||
+      getQuoteDisplayName(quote, `Quote ${index + 1}`)
+    );
+  });
+  const quoteSections = comparison.results.map((quote, index) => {
+    const paymentSummary = paymentSummaries[index];
+    const quoteLabel = `Quote ${String.fromCharCode(65 + index)}`;
+    const lines = [
+      `${quoteLabel}: ${quoteNames[index]}`,
+      `- True monthly cost: ${formatCurrency(quote.trueMonthlyCost)}`,
+      `- Total lease cost: ${formatCurrency(quote.totalCost)}`,
+      `- Cost per kilometre: ${formatCostPerKilometre(quote.costPerKm)}`,
+      `- Monthly payment used: ${formatCurrency(
+        paymentSummary?.monthlyPaymentUsed ?? quote.monthlyPayment,
+      )}`,
+      `- Upfront cost ratio: ${formatPercentage(quote.upfrontRatio)}`,
+      `- Total allowed kilometres: ${formatKilometres(quote.totalAllowedKm)}`,
+    ];
+
+    if (quote.discountPercentage !== undefined) {
+      lines.push(
+        `- Discount percentage: ${formatPercentage(
+          quote.discountPercentage,
+        )}`,
+      );
+    }
+
+    if (quote.residualPercentage !== undefined) {
+      lines.push(
+        `- Residual percentage: ${formatPercentage(
+          quote.residualPercentage,
+        )}`,
+      );
+    }
+
+    if (quote.depreciationAmount !== undefined) {
+      lines.push(
+        `- Depreciation amount: ${formatCurrency(
+          quote.depreciationAmount,
+        )}`,
+      );
+    }
+
+    return lines.join("\n");
+  });
+  const goalRecommendation = getDecisionModeRecommendation(
+    comparison,
+    decisionMode,
+  );
+  const conclusionLines = [
+    `- Best total cost quote: ${getReportMetricWinner(
+      comparison,
+      paymentSummaries,
+      "totalCost",
+    )}`,
+    `- Best true monthly cost quote: ${getReportMetricWinner(
+      comparison,
+      paymentSummaries,
+      "trueMonthlyCost",
+    )}`,
+    `- Best cost per kilometre quote: ${getReportMetricWinner(
+      comparison,
+      paymentSummaries,
+      "costPerKm",
+    )}`,
+  ];
+
+  if (goalRecommendation) {
+    conclusionLines.push(
+      `- Selected goal recommendation: ${goalRecommendation.body}`,
+    );
+  }
+
+  return [
+    "AutoLease IQ Comparison Report",
+    "",
+    `Selected decision mode: ${decisionModeLabels[decisionMode]}`,
+    `Quote A name: ${quoteNames[0] ?? "Quote A"}`,
+    `Quote B name: ${quoteNames[1] ?? "Quote B"}`,
+    "",
+    quoteSections.join("\n\n"),
+    "",
+    "Comparison conclusion",
+    ...conclusionLines,
+    "",
+    "This report is based only on the numbers entered and is not financial advice.",
+  ].join("\n");
+}
+
 export function ComparisonResults({
   comparisonResult,
   comparisonPaymentSummaries,
   selectedDecisionMode,
 }: ComparisonResultsProps) {
+  const [copyStatus, setCopyStatus] = useState<CopyStatus>("idle");
+  const copyStatusTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const selectedGoalRecommendation = getDecisionModeRecommendation(
     comparisonResult,
     selectedDecisionMode,
   );
 
+  useEffect(() => {
+    return () => {
+      if (copyStatusTimeout.current) {
+        clearTimeout(copyStatusTimeout.current);
+      }
+    };
+  }, []);
+
+  function resetCopyStatusAfterDelay() {
+    if (copyStatusTimeout.current) {
+      clearTimeout(copyStatusTimeout.current);
+    }
+
+    copyStatusTimeout.current = setTimeout(() => {
+      setCopyStatus("idle");
+    }, 2_000);
+  }
+
+  async function copyReport() {
+    try {
+      const reportText = buildComparisonReport(
+        comparisonResult,
+        comparisonPaymentSummaries,
+        selectedDecisionMode,
+      );
+
+      await navigator.clipboard.writeText(reportText);
+      setCopyStatus("copied");
+    } catch {
+      setCopyStatus("failed");
+    }
+
+    resetCopyStatusAfterDelay();
+  }
+
   return (
     <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-      <div className="mb-5">
-        <h3 className="text-lg font-semibold text-slate-950">
-          Comparison results
-        </h3>
-        <p className="mt-1 text-sm leading-6 text-slate-500">
-          Best badges mark the lowest cost in each category.
-        </p>
+      <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h3 className="text-lg font-semibold text-slate-950">
+            Comparison results
+          </h3>
+          <p className="mt-1 text-sm leading-6 text-slate-500">
+            Best badges mark the lowest cost in each category.
+          </p>
+        </div>
+        <div className="sm:text-right">
+          <button
+            type="button"
+            onClick={copyReport}
+            aria-live="polite"
+            className="rounded-md border border-teal-200 bg-white px-3 py-2 text-sm font-semibold text-teal-800 transition-colors hover:border-teal-300 hover:bg-teal-50 focus:outline-none focus:ring-2 focus:ring-teal-700 focus:ring-offset-2"
+          >
+            {copyStatus === "copied"
+              ? "Copied"
+              : copyStatus === "failed"
+                ? "Copy failed"
+                : "Copy report"}
+          </button>
+          <p className="mt-1 text-xs leading-5 text-slate-500">
+            Copy a plain-language summary you can save or share.
+          </p>
+        </div>
       </div>
 
       {selectedGoalRecommendation ? (
