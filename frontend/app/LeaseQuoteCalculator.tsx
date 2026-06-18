@@ -213,7 +213,7 @@ const comparisonPresets: ComparisonPreset[] = [
     id: "low-monthly-vs-low-total",
     name: "Low monthly vs low total",
     purpose:
-      "See why the lower advertised payment may not produce the lower total lease cost.",
+      "See why a lower advertised monthly payment can still cost more after upfront cash and fees.",
     decisionMode: "lowest-total-cost",
     quotes: [
       {
@@ -248,7 +248,7 @@ const comparisonPresets: ComparisonPreset[] = [
     id: "low-upfront-vs-high-upfront",
     name: "Low upfront vs high upfront",
     purpose:
-      "Compare a lower due-at-signing amount with a larger upfront payment and lower monthly bill.",
+      "Compare an offer with less due today against one that lowers monthly payments with a bigger down payment.",
     decisionMode: "lowest-upfront-cash",
     quotes: [
       {
@@ -283,7 +283,7 @@ const comparisonPresets: ComparisonPreset[] = [
     id: "buyout",
     name: "Buyout-focused example",
     purpose:
-      "See how different residual values change the future buyout context for similar vehicles.",
+      "Explore how residual value can lower lease payments but affect a future buyout decision.",
     decisionMode: "possible-future-buyout",
     quotes: [
       {
@@ -977,8 +977,8 @@ export default function LeaseQuoteCalculator() {
                   Try an example
                 </h3>
                 <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">
-                  Load sample offers to see how true monthly cost, upfront cash,
-                  mileage value, and buyout context can change the decision.
+                  Load sample offers to see how AutoLease IQ compares more than
+                  the advertised monthly payment.
                 </p>
               </div>
               <span className="mt-1 shrink-0 text-xs font-medium text-slate-500">
@@ -986,15 +986,18 @@ export default function LeaseQuoteCalculator() {
               </span>
             </div>
 
-            <div className="mt-4 grid gap-3 md:grid-cols-3">
+            <div
+              className="mt-4 grid gap-3 md:grid-cols-3"
+              aria-label="Example lease comparisons"
+            >
               {comparisonPresets.map((preset) => (
                 <button
                   key={preset.id}
                   type="button"
                   onClick={() => loadComparisonPreset(preset)}
-                  className="rounded-md border border-slate-200 bg-white p-3 text-left shadow-sm transition hover:border-teal-300 hover:bg-teal-50 focus:outline-none focus:ring-2 focus:ring-teal-700 focus:ring-offset-2"
+                  className="group cursor-pointer rounded-md border border-slate-200 bg-white p-3 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-teal-300 hover:bg-teal-50 hover:shadow-md active:translate-y-0 focus:outline-none focus:ring-2 focus:ring-teal-700 focus:ring-offset-2"
                 >
-                  <span className="block text-sm font-semibold text-teal-800">
+                  <span className="block text-sm font-semibold text-teal-800 transition-colors group-hover:text-teal-900">
                     {preset.name}
                   </span>
                   <span className="mt-1 block text-xs leading-5 text-slate-600">
