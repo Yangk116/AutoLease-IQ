@@ -40,6 +40,14 @@ type ReportMetric =
   | "trueMonthlyCost"
   | "costPerKm";
 
+const baselineDealerQuestions = [
+  "Is the monthly payment tax-included or before tax?",
+  "Can you confirm the exact amount due at signing?",
+  "Are all dealer/admin fees included in the numbers shown here?",
+  "What is the lease-end disposition fee?",
+  "Are there any mandatory add-ons, protection packages, or accessories not shown in this quote?",
+] as const;
+
 const currencyFormatter = new Intl.NumberFormat("en-CA", {
   style: "currency",
   currency: "CAD",
@@ -442,6 +450,61 @@ function getReportMetricWinner(
   return getReportQuoteName(comparison, paymentSummaries, winner);
 }
 
+export function buildDealerQuestions(
+  comparison: LeaseComparisonResult,
+  decisionMode: DecisionMode,
+): string[] {
+  const questions: string[] = [...baselineDealerQuestions];
+  const [firstQuote, secondQuote] = comparison.results;
+  const hasResidualMetrics = comparison.results.some(
+    (quote) =>
+      quote.residualValue !== undefined ||
+      quote.residualPercentage !== undefined,
+  );
+  const hasHighUpfrontRatio = comparison.results.some(
+    (quote) => quote.upfrontRatio > 25,
+  );
+  const hasEnteredFees = comparison.results.some(
+    (quote) => quote.dealerFees > 0 || quote.leaseEndFee > 0,
+  );
+  const hasMeaningfulCostPerKmDifference =
+    firstQuote !== undefined &&
+    secondQuote !== undefined &&
+    !isCloseMetric(firstQuote.costPerKm, secondQuote.costPerKm);
+
+  if (hasResidualMetrics) {
+    questions.push(
+      "Can you confirm the residual value, residual percentage, and estimated buyout amount?",
+    );
+  }
+
+  if (decisionMode === "possible-future-buyout") {
+    questions.push(
+      "If I plan to buy out the vehicle later, what exact amount would I owe at lease end before taxes and fees?",
+    );
+  }
+
+  if (hasHighUpfrontRatio) {
+    questions.push(
+      "Can this offer be structured with less money due upfront, and how would that change the monthly payment?",
+    );
+  }
+
+  if (hasEnteredFees) {
+    questions.push(
+      "Are these fees mandatory, negotiable, or already included in the advertised payment?",
+    );
+  }
+
+  if (hasMeaningfulCostPerKmDifference) {
+    questions.push(
+      "Can you confirm the annual kilometre allowance and the charge for extra kilometres?",
+    );
+  }
+
+  return questions;
+}
+
 export function buildComparisonReport(
   comparison: LeaseComparisonResult,
   paymentSummaries: ComparisonPaymentSummary[],
@@ -522,6 +585,8 @@ export function buildComparisonReport(
     );
   }
 
+  const dealerQuestions = buildDealerQuestions(comparison, decisionMode);
+
   return [
     "AutoLease IQ Comparison Report",
     "",
@@ -533,6 +598,9 @@ export function buildComparisonReport(
     "",
     "Comparison conclusion",
     ...conclusionLines,
+    "",
+    "Questions to ask the dealer",
+    ...dealerQuestions.map((question, index) => `${index + 1}. ${question}`),
     "",
     "This report is based only on the numbers entered and is not financial advice.",
   ].join("\n");
@@ -549,6 +617,17 @@ export function ComparisonResults({
     comparisonResult,
     selectedDecisionMode,
   );
+  const dealerQuestions = buildDealerQuestions(
+    comparisonResult,
+    selectedDecisionMode,
+  );
+  const conditionalDealerQuestions = dealerQuestions.slice(
+    baselineDealerQuestions.length,
+  );
+  const dealerQuestionPreview = [
+    ...dealerQuestions.slice(0, 3),
+    ...conditionalDealerQuestions.slice(0, 2),
+  ];
 
   useEffect(() => {
     return () => {
@@ -634,6 +713,22 @@ export function ComparisonResults({
         title="Comparison summary"
         insights={buildComparisonInsights(comparisonResult, selectedDecisionMode)}
       />
+
+      <details className="mb-5 rounded-lg border border-slate-200 bg-slate-50 p-4">
+        <summary className="cursor-pointer text-sm font-semibold text-slate-900">
+          Questions to ask the dealer
+        </summary>
+        <ol className="mt-3 list-decimal space-y-2 pl-5 text-sm leading-6 text-slate-600">
+          {dealerQuestionPreview.map((question) => (
+            <li key={question}>{question}</li>
+          ))}
+        </ol>
+        {dealerQuestions.length > dealerQuestionPreview.length ? (
+          <p className="mt-3 text-xs leading-5 text-slate-500">
+            The copied report includes the full question list.
+          </p>
+        ) : null}
+      </details>
 
       <div className="grid gap-4 xl:grid-cols-2">
         {comparisonResult.results.map((comparisonAnalysis, index) => {
