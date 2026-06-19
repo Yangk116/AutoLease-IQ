@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import {
   analyzeLeaseQuote,
@@ -467,6 +467,16 @@ export default function LeaseQuoteCalculator() {
   const [comparisonErrorMessage, setComparisonErrorMessage] = useState("");
   const [selectedDecisionMode, setSelectedDecisionMode] =
     useState<DecisionMode>("lowest-total-cost");
+  const [isComparing, setIsComparing] = useState(false);
+  const comparisonTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (comparisonTimeout.current) {
+        clearTimeout(comparisonTimeout.current);
+      }
+    };
+  }, []);
 
   function updateNumericQuote(field: keyof LeaseQuoteInput, value: string) {
     setQuote((currentQuote) => ({
@@ -623,6 +633,12 @@ export default function LeaseQuoteCalculator() {
   }
 
   function loadComparisonPreset(preset: ComparisonPreset) {
+    if (comparisonTimeout.current) {
+      clearTimeout(comparisonTimeout.current);
+      comparisonTimeout.current = null;
+    }
+
+    setIsComparing(false);
     setComparisonQuotes(preset.quotes.map((presetQuote) => ({ ...presetQuote })));
     setSelectedDecisionMode(preset.decisionMode);
     setComparisonResult(null);
@@ -631,65 +647,77 @@ export default function LeaseQuoteCalculator() {
   }
 
   function compareOffers() {
-    try {
-      const paymentSummaries: ComparisonPaymentSummary[] = [];
-      const cleanQuotes = comparisonQuotes.map((comparisonQuote) => {
-        const quoteName =
-          comparisonQuote.quoteName.trim() || comparisonQuote.label;
-        const vehicleName = comparisonQuote.vehicleName?.trim() || quoteName;
+    if (comparisonTimeout.current) {
+      clearTimeout(comparisonTimeout.current);
+    }
 
-        if (
-          comparisonQuote.addTaxToMonthlyPayment &&
-          comparisonQuote.taxRate < 0
-        ) {
-          throw new Error(`${quoteName}: Tax rate cannot be negative.`);
-        }
+    setIsComparing(true);
+    setComparisonResult(null);
+    setComparisonPaymentSummaries([]);
+    setComparisonErrorMessage("");
 
-        const monthlyPaymentUsed = comparisonQuote.addTaxToMonthlyPayment
-          ? comparisonQuote.monthlyPayment * (1 + comparisonQuote.taxRate / 100)
-          : comparisonQuote.monthlyPayment;
+    comparisonTimeout.current = setTimeout(() => {
+      try {
+        const paymentSummaries: ComparisonPaymentSummary[] = [];
+        const cleanQuotes = comparisonQuotes.map((comparisonQuote) => {
+          const quoteName =
+            comparisonQuote.quoteName.trim() || comparisonQuote.label;
+          const vehicleName = comparisonQuote.vehicleName?.trim() || quoteName;
 
-        paymentSummaries.push({
-          quoteName,
-          enteredMonthlyPayment: comparisonQuote.monthlyPayment,
-          monthlyPaymentUsed,
+          if (
+            comparisonQuote.addTaxToMonthlyPayment &&
+            comparisonQuote.taxRate < 0
+          ) {
+            throw new Error(`${quoteName}: Tax rate cannot be negative.`);
+          }
+
+          const monthlyPaymentUsed = comparisonQuote.addTaxToMonthlyPayment
+            ? comparisonQuote.monthlyPayment *
+              (1 + comparisonQuote.taxRate / 100)
+            : comparisonQuote.monthlyPayment;
+
+          paymentSummaries.push({
+            quoteName,
+            enteredMonthlyPayment: comparisonQuote.monthlyPayment,
+            monthlyPaymentUsed,
+          });
+
+          return {
+            vehicleName,
+            downPayment: comparisonQuote.downPayment,
+            monthlyPayment: monthlyPaymentUsed,
+            termMonths: comparisonQuote.termMonths,
+            annualMileage: comparisonQuote.annualMileage,
+            dealerFees: comparisonQuote.dealerFees,
+            leaseEndFee: comparisonQuote.leaseEndFee,
+            vehicleMsrp: comparisonQuote.vehicleMsrp,
+            sellingPrice: comparisonQuote.sellingPrice,
+            residualMsrp: comparisonQuote.residualMsrp,
+            residualValue: comparisonQuote.residualValue,
+          };
         });
 
-        return {
-          vehicleName,
-          downPayment: comparisonQuote.downPayment,
-          monthlyPayment: monthlyPaymentUsed,
-          termMonths: comparisonQuote.termMonths,
-          annualMileage: comparisonQuote.annualMileage,
-          dealerFees: comparisonQuote.dealerFees,
-          leaseEndFee: comparisonQuote.leaseEndFee,
-          vehicleMsrp: comparisonQuote.vehicleMsrp,
-          sellingPrice: comparisonQuote.sellingPrice,
-          residualMsrp: comparisonQuote.residualMsrp,
-          residualValue: comparisonQuote.residualValue,
-        };
-      });
+        const analysis = compareLeaseQuotes(cleanQuotes);
 
-      const analysis = compareLeaseQuotes(cleanQuotes);
-
-      setComparisonResult(analysis);
-      setComparisonPaymentSummaries(paymentSummaries);
-      setComparisonErrorMessage("");
-    } catch (error) {
-      setComparisonResult(null);
-      setComparisonPaymentSummaries([]);
-      setComparisonErrorMessage(
-        error instanceof Error
-          ? error.message
-          : "Please check both offers and try again.",
-      );
-    }
+        setComparisonResult(analysis);
+        setComparisonPaymentSummaries(paymentSummaries);
+      } catch (error) {
+        setComparisonErrorMessage(
+          error instanceof Error
+            ? error.message
+            : "Please check both offers and try again.",
+        );
+      } finally {
+        setIsComparing(false);
+        comparisonTimeout.current = null;
+      }
+    }, 650);
   }
 
   return (
     <section
       id="lease-calculator"
-      className="border-t border-slate-200 bg-white px-6 py-16 sm:px-8 sm:py-20"
+      className="border-t border-slate-200/80 bg-gradient-to-b from-white via-slate-50/40 to-white px-6 py-16 sm:px-8 sm:py-20"
     >
       <div className="mx-auto grid w-full max-w-6xl gap-10 lg:grid-cols-[minmax(0,0.95fr)_minmax(320px,1.05fr)] lg:items-start">
         <div>
@@ -728,7 +756,7 @@ export default function LeaseQuoteCalculator() {
           </div>
         </div>
 
-        <div className="rounded-lg border border-slate-200 bg-slate-50 p-5 shadow-sm sm:p-6">
+        <div className="rounded-2xl border border-slate-200/80 bg-white/90 p-5 shadow-[0_20px_60px_-35px_rgba(15,23,42,0.35)] backdrop-blur sm:p-6">
           <div className="grid gap-4 sm:grid-cols-2">
             {mainFields.map((field) => (
               <label
@@ -871,7 +899,7 @@ export default function LeaseQuoteCalculator() {
           <button
             type="button"
             onClick={calculateLeaseQuote}
-            className="mt-5 inline-flex h-12 w-full items-center justify-center rounded-md bg-teal-700 px-5 text-base font-semibold text-white shadow-sm transition-colors hover:bg-teal-800 focus:outline-none focus:ring-2 focus:ring-teal-700 focus:ring-offset-2 sm:w-auto"
+            className="mt-5 inline-flex h-12 w-full items-center justify-center rounded-xl bg-teal-700 px-6 text-base font-semibold text-white shadow-[0_10px_25px_-12px_rgba(13,148,136,0.9)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-teal-800 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-teal-700 focus:ring-offset-2 active:translate-y-0 active:scale-[0.98] sm:w-auto"
           >
             Calculate
           </button>
@@ -970,7 +998,7 @@ export default function LeaseQuoteCalculator() {
         </div>
 
         <div className="mt-8 space-y-6">
-          <div className="rounded-lg border border-teal-100 bg-teal-50/50 p-4 sm:p-5">
+          <div className="rounded-2xl border border-teal-100 bg-gradient-to-br from-teal-50/80 to-white p-4 shadow-[0_12px_35px_-28px_rgba(13,148,136,0.8)] sm:p-5">
             <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
               <div>
                 <h3 className="text-sm font-semibold text-slate-950">
@@ -995,7 +1023,7 @@ export default function LeaseQuoteCalculator() {
                   key={preset.id}
                   type="button"
                   onClick={() => loadComparisonPreset(preset)}
-                  className="group cursor-pointer rounded-md border border-slate-200 bg-white p-3 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-teal-300 hover:bg-teal-50 hover:shadow-md active:translate-y-0 focus:outline-none focus:ring-2 focus:ring-teal-700 focus:ring-offset-2"
+                  className="group cursor-pointer rounded-xl border border-slate-200 bg-white p-3.5 text-left shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-teal-300 hover:bg-teal-50 hover:shadow-md active:translate-y-0 active:scale-[0.99] focus:outline-none focus:ring-2 focus:ring-teal-700 focus:ring-offset-2"
                 >
                   <span className="block text-sm font-semibold text-teal-800 transition-colors group-hover:text-teal-900">
                     {preset.name}
@@ -1022,7 +1050,7 @@ export default function LeaseQuoteCalculator() {
             ))}
           </div>
 
-          <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+          <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-[0_12px_35px_-28px_rgba(15,23,42,0.45)]">
             <h3 className="text-sm font-semibold text-slate-950">
               What matters most to you?
             </h3>
@@ -1035,10 +1063,10 @@ export default function LeaseQuoteCalculator() {
                     key={option.value}
                     type="button"
                     onClick={() => setSelectedDecisionMode(option.value)}
-                    className={`rounded-full border px-3 py-2 text-sm font-semibold transition-colors ${
+                    className={`rounded-full border px-3.5 py-2 text-sm font-semibold transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-teal-600/30 focus:ring-offset-2 active:scale-[0.97] ${
                       isSelected
-                        ? "border-teal-700 bg-teal-700 text-white"
-                        : "border-slate-200 bg-white text-slate-700 hover:border-teal-200 hover:bg-teal-50"
+                        ? "border-teal-700 bg-teal-700 text-white shadow-sm"
+                        : "border-slate-200 bg-white text-slate-700 hover:-translate-y-0.5 hover:border-teal-300 hover:bg-teal-50 hover:text-teal-900 hover:shadow-sm"
                     }`}
                   >
                     {option.label}
@@ -1051,9 +1079,20 @@ export default function LeaseQuoteCalculator() {
           <button
             type="button"
             onClick={compareOffers}
-            className="inline-flex h-12 w-full items-center justify-center rounded-md bg-teal-700 px-5 text-base font-semibold text-white shadow-sm transition-colors hover:bg-teal-800 focus:outline-none focus:ring-2 focus:ring-teal-700 focus:ring-offset-2 sm:w-auto"
+            disabled={isComparing}
+            className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-teal-700 px-6 text-base font-semibold text-white shadow-[0_10px_25px_-12px_rgba(13,148,136,0.9)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-teal-800 hover:shadow-[0_14px_30px_-12px_rgba(13,148,136,0.8)] focus:outline-none focus:ring-2 focus:ring-teal-600 focus:ring-offset-2 active:translate-y-0 active:scale-[0.98] disabled:cursor-wait disabled:opacity-80 disabled:hover:translate-y-0 sm:w-auto"
           >
-            Compare offers
+            {isComparing ? (
+              <>
+                <span
+                  aria-hidden="true"
+                  className="h-4 w-4 animate-spin rounded-full border-2 border-white/35 border-t-white"
+                />
+                Comparing offers…
+              </>
+            ) : (
+              "Compare offers"
+            )}
           </button>
 
           {comparisonErrorMessage ? (
@@ -1062,12 +1101,42 @@ export default function LeaseQuoteCalculator() {
             </p>
           ) : null}
 
-          {comparisonResult ? (
-            <ComparisonResults
-              comparisonResult={comparisonResult}
-              comparisonPaymentSummaries={comparisonPaymentSummaries}
-              selectedDecisionMode={selectedDecisionMode}
-            />
+          {isComparing ? (
+            <div
+              className="comparison-loading rounded-2xl border border-slate-200/80 bg-white p-5 shadow-[0_18px_50px_-35px_rgba(15,23,42,0.5)] sm:p-6"
+              role="status"
+              aria-live="polite"
+            >
+              <div className="flex items-center gap-3">
+                <span className="h-9 w-9 animate-spin rounded-full border-[3px] border-teal-100 border-t-teal-700" />
+                <div>
+                  <p className="font-semibold text-slate-950">
+                    Comparing the full lease cost
+                  </p>
+                  <p className="mt-0.5 text-sm text-slate-500">
+                    Normalizing payments, upfront cash, mileage, and fees.
+                  </p>
+                </div>
+              </div>
+              <div className="mt-6 grid gap-3 sm:grid-cols-2">
+                {[0, 1, 2, 3].map((item) => (
+                  <div
+                    key={item}
+                    className="h-24 animate-pulse rounded-xl border border-slate-100 bg-slate-100/80"
+                  />
+                ))}
+              </div>
+            </div>
+          ) : null}
+
+          {comparisonResult && !isComparing ? (
+            <div className="comparison-results-reveal">
+              <ComparisonResults
+                comparisonResult={comparisonResult}
+                comparisonPaymentSummaries={comparisonPaymentSummaries}
+                selectedDecisionMode={selectedDecisionMode}
+              />
+            </div>
           ) : null}
         </div>
       </div>

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 
 import {
   type LeaseAnalysisResult,
@@ -27,6 +28,15 @@ type GoalRecommendation = {
   winningQuote: LeaseAnalysisResult | null;
 };
 
+type FinalVerdictKind = "winner" | "mixed" | "needs-data";
+
+export type FinalVerdict = {
+  kind: FinalVerdictKind;
+  headline: string;
+  reasons: string[];
+  winningQuote: LeaseAnalysisResult | null;
+};
+
 type ComparisonResultsProps = {
   comparisonResult: LeaseComparisonResult;
   comparisonPaymentSummaries: ComparisonPaymentSummary[];
@@ -40,13 +50,49 @@ type ReportMetric =
   | "trueMonthlyCost"
   | "costPerKm";
 
-const baselineDealerQuestions = [
-  "Is the monthly payment tax-included or before tax?",
-  "Can you confirm the exact amount due at signing?",
-  "Are all dealer/admin fees included in the numbers shown here?",
-  "What is the lease-end disposition fee?",
-  "Are there any mandatory add-ons, protection packages, or accessories not shown in this quote?",
-] as const;
+export type DealerNegotiationItem = {
+  title: string;
+  whyItMatters: string;
+  suggestedQuestion: string;
+};
+
+const baselineDealerNegotiationItems: readonly DealerNegotiationItem[] = [
+  {
+    title: "Tax clarity",
+    whyItMatters:
+      "A payment shown before tax can make an offer look cheaper than the amount you will actually pay.",
+    suggestedQuestion:
+      "Is the monthly payment fully tax-included, and can you show the before-tax and after-tax amounts separately?",
+  },
+  {
+    title: "Due-at-signing breakdown",
+    whyItMatters:
+      "The total cash needed on delivery can include more than the stated down payment.",
+    suggestedQuestion:
+      "Can you itemize the exact amount due at signing, including the first payment, security deposit, fees, taxes, and any down payment?",
+  },
+  {
+    title: "Fee breakdown",
+    whyItMatters:
+      "Separating required charges from dealer-added fees makes offers easier to compare and can reveal room to negotiate.",
+    suggestedQuestion:
+      "Can you provide an itemized list of every fee and identify which charges are government, manufacturer, or dealer-added?",
+  },
+  {
+    title: "Mandatory add-ons",
+    whyItMatters:
+      "Protection packages and accessories can raise the lease cost even when they are not prominent in the advertised payment.",
+    suggestedQuestion:
+      "Are any protection packages, accessories, warranties, or other add-ons required, and can they be removed?",
+  },
+  {
+    title: "Lease-end fee",
+    whyItMatters:
+      "Disposition and return charges affect the full lease cost and may be due even if they are absent from the monthly payment.",
+    suggestedQuestion:
+      "What lease-end or disposition fees would I owe if I return the vehicle, and are any of them waived if I lease another vehicle?",
+  },
+];
 
 const currencyFormatter = new Intl.NumberFormat("en-CA", {
   style: "currency",
@@ -123,6 +169,235 @@ function getLowerMetricWinner(
   return firstQuote[metric] < secondQuote[metric] ? firstQuote : secondQuote;
 }
 
+function getStrictLowerMetricWinner(
+  firstQuote: LeaseAnalysisResult,
+  secondQuote: LeaseAnalysisResult,
+  metric: keyof Pick<
+    LeaseAnalysisResult,
+    "totalCost" | "trueMonthlyCost" | "costPerKm" | "upfrontRatio"
+  >,
+) {
+  if (firstQuote[metric] === secondQuote[metric]) {
+    return null;
+  }
+
+  return firstQuote[metric] < secondQuote[metric] ? firstQuote : secondQuote;
+}
+
+function getQuoteLetter(
+  comparison: LeaseComparisonResult,
+  quote: LeaseAnalysisResult,
+) {
+  const quoteIndex = comparison.results.indexOf(quote);
+
+  return quoteIndex >= 0 ? `Quote ${String.fromCharCode(65 + quoteIndex)}` : "Quote";
+}
+
+function getVerdictQuoteName(
+  comparison: LeaseComparisonResult,
+  quote: LeaseAnalysisResult,
+) {
+  const quoteLetter = getQuoteLetter(comparison, quote);
+  const displayName = getQuoteDisplayName(quote, quoteLetter);
+
+  return displayName === quoteLetter
+    ? quoteLetter
+    : `${quoteLetter} (${displayName})`;
+}
+
+function getMixedMetricSummary(comparison: LeaseComparisonResult) {
+  const [firstQuote, secondQuote] = comparison.results;
+
+  if (!firstQuote || !secondQuote) {
+    return "The quotes need more information before they can be compared.";
+  }
+
+  const metricWinners = [
+    {
+      label: "total cost",
+      quote: getStrictLowerMetricWinner(firstQuote, secondQuote, "totalCost"),
+    },
+    {
+      label: "true monthly cost",
+      quote: getStrictLowerMetricWinner(
+        firstQuote,
+        secondQuote,
+        "trueMonthlyCost",
+      ),
+    },
+    {
+      label: "upfront cash",
+      quote: getStrictLowerMetricWinner(firstQuote, secondQuote, "upfrontRatio"),
+    },
+    {
+      label: "mileage value",
+      quote: getStrictLowerMetricWinner(firstQuote, secondQuote, "costPerKm"),
+    },
+  ];
+  const firstQuoteWin = metricWinners.find(
+    (metricWinner) => metricWinner.quote === firstQuote,
+  );
+  const secondQuoteWin = metricWinners.find(
+    (metricWinner) => metricWinner.quote === secondQuote,
+  );
+
+  if (firstQuoteWin && secondQuoteWin) {
+    return `${getQuoteLetter(comparison, firstQuote)} wins on ${firstQuoteWin.label}, but ${getQuoteLetter(comparison, secondQuote)} wins on ${secondQuoteWin.label}.`;
+  }
+
+  return "The quotes are tied on the selected goal, so the supporting cost metrics should decide the better fit.";
+}
+
+export function buildFinalVerdict(
+  comparison: LeaseComparisonResult,
+  decisionMode: DecisionMode,
+): FinalVerdict | null {
+  const [firstQuote, secondQuote] = comparison.results;
+
+  if (!firstQuote || !secondQuote) {
+    return null;
+  }
+
+  if (decisionMode === "possible-future-buyout") {
+    const quotesWithResidualDetails = comparison.results.filter(
+      (quote) =>
+        quote.residualValue !== undefined ||
+        quote.residualPercentage !== undefined ||
+        quote.depreciationAmount !== undefined,
+    );
+
+    if (quotesWithResidualDetails.length === 0) {
+      return {
+        kind: "needs-data",
+        headline:
+          "Residual details are needed for a stronger future buyout verdict.",
+        reasons: [
+          "The lease-end purchase price is not available.",
+          "Residual value and lease-end fees drive future buyout cost.",
+        ],
+        winningQuote: null,
+      };
+    }
+
+    const residualValues = comparison.results.filter(
+      (
+        quote,
+      ): quote is LeaseAnalysisResult & {
+        residualValue: number;
+      } => quote.residualValue !== undefined,
+    );
+    const lowerResidualQuote =
+      residualValues.length === 2 &&
+      residualValues[0].residualValue !== residualValues[1].residualValue
+        ? residualValues[0].residualValue < residualValues[1].residualValue
+          ? residualValues[0]
+          : residualValues[1]
+        : null;
+    const headline = lowerResidualQuote
+      ? `Mixed result: ${getQuoteLetter(
+          comparison,
+          lowerResidualQuote,
+        )} has the lower residual, but that does not guarantee the better lease.`
+      : "Mixed result: residual strength affects lease payments and future buyout cost differently.";
+    const reasons = lowerResidualQuote
+      ? [
+          `${getVerdictQuoteName(
+            comparison,
+            lowerResidualQuote,
+          )} has the lower entered residual value at ${formatCurrency(
+            lowerResidualQuote.residualValue,
+          )}.`,
+          "A lower residual may reduce the future purchase price.",
+          "A higher residual may lower lease payments but raise buyout cost.",
+        ]
+      : [
+          "A higher residual may lower lease payments.",
+          "That same residual can make a future buyout more expensive.",
+          "Confirm the exact purchase-option price and lease-end fees.",
+        ];
+
+    return {
+      kind: "mixed",
+      headline,
+      reasons,
+      winningQuote: null,
+    };
+  }
+
+  const verdictConfig: Record<
+    Exclude<DecisionMode, "possible-future-buyout">,
+    {
+      metric: "totalCost" | "trueMonthlyCost" | "upfrontRatio" | "costPerKm";
+      reasons: (winningQuote: LeaseAnalysisResult) => string[];
+    }
+  > = {
+    "lowest-total-cost": {
+      metric: "totalCost",
+      reasons: (winningQuote) => [
+        `Lower total lease cost at ${formatCurrency(winningQuote.totalCost)}.`,
+        "Includes upfront cash, monthly payments, fees, and lease-end cost.",
+      ],
+    },
+    "lowest-monthly-budget": {
+      metric: "trueMonthlyCost",
+      reasons: (winningQuote) => [
+        `Lower true monthly cost at ${formatCurrency(
+          winningQuote.trueMonthlyCost,
+        )}.`,
+        "Spreads upfront cash and fees across the full lease term.",
+      ],
+    },
+    "lowest-upfront-cash": {
+      metric: "upfrontRatio",
+      reasons: (winningQuote) => [
+        `Lower upfront cost ratio at ${formatPercentage(
+          winningQuote.upfrontRatio,
+        )}.`,
+        "Less of the total lease cost is tied up at signing.",
+      ],
+    },
+    "best-mileage-value": {
+      metric: "costPerKm",
+      reasons: (winningQuote) => [
+        `Lower cost per kilometre at ${formatCostPerKilometre(
+          winningQuote.costPerKm,
+        )}.`,
+        "Better value for the mileage allowance entered.",
+      ],
+    },
+  };
+  const config = verdictConfig[decisionMode];
+  const winningQuote = getStrictLowerMetricWinner(
+    firstQuote,
+    secondQuote,
+    config.metric,
+  );
+
+  if (!winningQuote) {
+    return {
+      kind: "mixed",
+      headline: `Mixed result: ${getMixedMetricSummary(comparison)}`,
+      reasons: [
+        `The quotes are tied on ${decisionModeLabels[
+          decisionMode
+        ].toLowerCase()}.`,
+        "Use the supporting cost metrics and lease structure to break the tie.",
+      ],
+      winningQuote: null,
+    };
+  }
+
+  return {
+    kind: "winner",
+    headline: `${getVerdictQuoteName(
+      comparison,
+      winningQuote,
+    )} looks stronger for ${decisionModeLabels[decisionMode].toLowerCase()}.`,
+    reasons: config.reasons(winningQuote),
+    winningQuote,
+  };
+}
+
 function getDecisionModeRecommendation(
   comparison: LeaseComparisonResult,
   decisionMode: DecisionMode,
@@ -134,7 +409,7 @@ function getDecisionModeRecommendation(
   }
 
   if (decisionMode === "lowest-total-cost") {
-    const winningQuote = getLowerMetricWinner(
+    const winningQuote = getStrictLowerMetricWinner(
       firstQuote,
       secondQuote,
       "totalCost",
@@ -153,7 +428,7 @@ function getDecisionModeRecommendation(
   }
 
   if (decisionMode === "lowest-monthly-budget") {
-    const winningQuote = getLowerMetricWinner(
+    const winningQuote = getStrictLowerMetricWinner(
       firstQuote,
       secondQuote,
       "trueMonthlyCost",
@@ -172,7 +447,7 @@ function getDecisionModeRecommendation(
   }
 
   if (decisionMode === "lowest-upfront-cash") {
-    const winningQuote = getLowerMetricWinner(
+    const winningQuote = getStrictLowerMetricWinner(
       firstQuote,
       secondQuote,
       "upfrontRatio",
@@ -191,7 +466,7 @@ function getDecisionModeRecommendation(
   }
 
   if (decisionMode === "best-mileage-value") {
-    const winningQuote = getLowerMetricWinner(
+    const winningQuote = getStrictLowerMetricWinner(
       firstQuote,
       secondQuote,
       "costPerKm",
@@ -233,7 +508,6 @@ function getDecisionModeRecommendation(
 
 function buildComparisonInsights(
   comparison: LeaseComparisonResult,
-  decisionMode: DecisionMode,
 ): DealInsight[] {
   const [firstQuote, secondQuote] = comparison.results;
 
@@ -269,10 +543,6 @@ function buildComparisonInsights(
     "upfrontRatio",
   );
   const insights: DealInsight[] = [];
-  const goalRecommendation = getDecisionModeRecommendation(
-    comparison,
-    decisionMode,
-  );
   const hasVehicleDetailMetrics = comparison.results.some(
     (comparisonQuote) =>
       comparisonQuote.discountFromMsrp !== undefined ||
@@ -280,13 +550,6 @@ function buildComparisonInsights(
       comparisonQuote.residualPercentage !== undefined ||
       comparisonQuote.depreciationAmount !== undefined,
   );
-
-  if (goalRecommendation) {
-    insights.push({
-      title: "Goal-based recommendation",
-      body: `${goalRecommendation.body} This is based on the numbers entered, not a guaranteed best offer.`,
-    });
-  }
 
   insights.push({
     title: hasVehicleDetailMetrics
@@ -450,12 +713,12 @@ function getReportMetricWinner(
   return getReportQuoteName(comparison, paymentSummaries, winner);
 }
 
-export function buildDealerQuestions(
+export function buildDealerNegotiationItems(
   comparison: LeaseComparisonResult,
   decisionMode: DecisionMode,
-): string[] {
-  const questions: string[] = [...baselineDealerQuestions];
+): DealerNegotiationItem[] {
   const [firstQuote, secondQuote] = comparison.results;
+  const conditionalItems: DealerNegotiationItem[] = [];
   const hasResidualMetrics = comparison.results.some(
     (quote) =>
       quote.residualValue !== undefined ||
@@ -471,38 +734,84 @@ export function buildDealerQuestions(
     firstQuote !== undefined &&
     secondQuote !== undefined &&
     !isCloseMetric(firstQuote.costPerKm, secondQuote.costPerKm);
-
-  if (hasResidualMetrics) {
-    questions.push(
-      "Can you confirm the residual value, residual percentage, and estimated buyout amount?",
-    );
-  }
-
-  if (decisionMode === "possible-future-buyout") {
-    questions.push(
-      "If I plan to buy out the vehicle later, what exact amount would I owe at lease end before taxes and fees?",
-    );
-  }
+  const monthlyPaymentWinner =
+    firstQuote && secondQuote && firstQuote.monthlyPayment !== secondQuote.monthlyPayment
+      ? firstQuote.monthlyPayment < secondQuote.monthlyPayment
+        ? firstQuote
+        : secondQuote
+      : null;
+  const otherQuote =
+    monthlyPaymentWinner && firstQuote && secondQuote
+      ? monthlyPaymentWinner === firstQuote
+        ? secondQuote
+        : firstQuote
+      : null;
+  const hasLowMonthlyPaymentTradeOff =
+    monthlyPaymentWinner !== null &&
+    otherQuote !== null &&
+    monthlyPaymentWinner.trueMonthlyCost >= otherQuote.trueMonthlyCost;
 
   if (hasHighUpfrontRatio) {
-    questions.push(
-      "Can this offer be structured with less money due upfront, and how would that change the monthly payment?",
-    );
+    conditionalItems.push({
+      title: "Upfront cash pressure",
+      whyItMatters:
+        "The lease may be using a larger upfront payment to make the monthly payment look lower.",
+      suggestedQuestion:
+        "Can you show this same lease with less money due upfront, such as $2,000 down, so I can compare the true monthly cost?",
+    });
+  }
+
+  if (hasLowMonthlyPaymentTradeOff) {
+    conditionalItems.push({
+      title: "Low monthly payment trade-off",
+      whyItMatters:
+        "The lower advertised monthly payment may not be the cheaper deal after upfront cash and fees.",
+      suggestedQuestion:
+        "Can you match the other offer's due-at-signing amount so I can compare the monthly payment fairly?",
+    });
   }
 
   if (hasEnteredFees) {
-    questions.push(
-      "Are these fees mandatory, negotiable, or already included in the advertised payment?",
-    );
+    conditionalItems.push({
+      title: "Fee negotiation angle",
+      whyItMatters:
+        "Some fees may be mandatory, but dealer/admin items or add-ons may sometimes be reduced or removed.",
+      suggestedQuestion:
+        "Can you separate mandatory government/manufacturer fees from dealer-added fees, and tell me which ones are negotiable?",
+    });
+  }
+
+  if (hasResidualMetrics) {
+    conditionalItems.push({
+      title: "Residual and buyout risk",
+      whyItMatters:
+        "A high residual can lower lease payments, but it can also make a future buyout more expensive.",
+      suggestedQuestion:
+        "If I want to buy the vehicle at lease end, what exact buyout amount would I owe including taxes and fees?",
+    });
+  }
+
+  if (decisionMode === "possible-future-buyout") {
+    conditionalItems.push({
+      title: "Buyout-focused confirmation",
+      whyItMatters:
+        "Since you may buy out later, the residual value and lease-end charges matter more.",
+      suggestedQuestion:
+        "Can you provide the lease-end purchase option price and all extra fees I would pay if I buy the vehicle later?",
+    });
   }
 
   if (hasMeaningfulCostPerKmDifference) {
-    questions.push(
-      "Can you confirm the annual kilometre allowance and the charge for extra kilometres?",
-    );
+    conditionalItems.push({
+      title: "Mileage value check",
+      whyItMatters:
+        "The cheaper-looking quote may offer less value if mileage allowance or excess kilometre charges differ.",
+      suggestedQuestion:
+        "What is the annual kilometre allowance and what is the exact charge for each extra kilometre?",
+    });
   }
 
-  return questions;
+  return [...conditionalItems, ...baselineDealerNegotiationItems];
 }
 
 export function buildComparisonReport(
@@ -561,6 +870,7 @@ export function buildComparisonReport(
     comparison,
     decisionMode,
   );
+  const finalVerdict = buildFinalVerdict(comparison, decisionMode);
   const conclusionLines = [
     `- Best total cost quote: ${getReportMetricWinner(
       comparison,
@@ -585,7 +895,20 @@ export function buildComparisonReport(
     );
   }
 
-  const dealerQuestions = buildDealerQuestions(comparison, decisionMode);
+  const dealerNegotiationItems = buildDealerNegotiationItems(
+    comparison,
+    decisionMode,
+  );
+  const finalVerdictLines = finalVerdict
+    ? [
+        `- Selected goal: ${decisionModeLabels[decisionMode]}`,
+        `- Verdict: ${finalVerdict.headline}`,
+        ...finalVerdict.reasons.map((reason) => `- Reason: ${reason}`),
+      ]
+    : [
+        `- Selected goal: ${decisionModeLabels[decisionMode]}`,
+        "- Verdict: Not available",
+      ];
 
   return [
     "AutoLease IQ Comparison Report",
@@ -594,13 +917,20 @@ export function buildComparisonReport(
     `Quote A name: ${quoteNames[0] ?? "Quote A"}`,
     `Quote B name: ${quoteNames[1] ?? "Quote B"}`,
     "",
+    "Final Verdict",
+    ...finalVerdictLines,
+    "",
     quoteSections.join("\n\n"),
     "",
     "Comparison conclusion",
     ...conclusionLines,
     "",
-    "Questions to ask the dealer",
-    ...dealerQuestions.map((question, index) => `${index + 1}. ${question}`),
+    "Dealer Negotiation Assistant",
+    ...dealerNegotiationItems.flatMap((item, index) => [
+      `${index + 1}. ${item.title}`,
+      `   Why it matters: ${item.whyItMatters}`,
+      `   Suggested question: ${item.suggestedQuestion}`,
+    ]),
     "",
     "This report is based only on the numbers entered and is not financial advice.",
   ].join("\n");
@@ -612,30 +942,90 @@ export function ComparisonResults({
   selectedDecisionMode,
 }: ComparisonResultsProps) {
   const [copyStatus, setCopyStatus] = useState<CopyStatus>("idle");
+  const [isAssistantMounted, setIsAssistantMounted] = useState(false);
+  const [isAssistantOpen, setIsAssistantOpen] = useState(false);
   const copyStatusTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const assistantCloseTimeout = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
+  const assistantTriggerRef = useRef<HTMLButtonElement | null>(null);
+  const assistantCloseButtonRef = useRef<HTMLButtonElement | null>(null);
   const selectedGoalRecommendation = getDecisionModeRecommendation(
     comparisonResult,
     selectedDecisionMode,
   );
-  const dealerQuestions = buildDealerQuestions(
+  const finalVerdict = buildFinalVerdict(
     comparisonResult,
     selectedDecisionMode,
   );
-  const conditionalDealerQuestions = dealerQuestions.slice(
-    baselineDealerQuestions.length,
+  const dealerNegotiationItems = buildDealerNegotiationItems(
+    comparisonResult,
+    selectedDecisionMode,
   );
-  const dealerQuestionPreview = [
-    ...dealerQuestions.slice(0, 3),
-    ...conditionalDealerQuestions.slice(0, 2),
-  ];
 
   useEffect(() => {
     return () => {
       if (copyStatusTimeout.current) {
         clearTimeout(copyStatusTimeout.current);
       }
+
+      if (assistantCloseTimeout.current) {
+        clearTimeout(assistantCloseTimeout.current);
+      }
     };
   }, []);
+
+  useEffect(() => {
+    if (!isAssistantMounted) {
+      return;
+    }
+
+    const originalOverflow = document.body.style.overflow;
+
+    document.body.style.overflow = "hidden";
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        closeAssistant();
+      }
+    }
+
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.body.style.overflow = originalOverflow;
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isAssistantMounted]);
+
+  function openAssistant() {
+    if (assistantCloseTimeout.current) {
+      clearTimeout(assistantCloseTimeout.current);
+      assistantCloseTimeout.current = null;
+    }
+
+    setIsAssistantMounted(true);
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        setIsAssistantOpen(true);
+        assistantCloseButtonRef.current?.focus();
+      });
+    });
+  }
+
+  function closeAssistant() {
+    setIsAssistantOpen(false);
+
+    if (assistantCloseTimeout.current) {
+      clearTimeout(assistantCloseTimeout.current);
+    }
+
+    assistantCloseTimeout.current = setTimeout(() => {
+      setIsAssistantMounted(false);
+      assistantTriggerRef.current?.focus();
+      assistantCloseTimeout.current = null;
+    }, 300);
+  }
 
   function resetCopyStatusAfterDelay() {
     if (copyStatusTimeout.current) {
@@ -664,35 +1054,220 @@ export function ComparisonResults({
     resetCopyStatusAfterDelay();
   }
 
-  return (
-    <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-      <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <h3 className="text-lg font-semibold text-slate-950">
-            Comparison results
-          </h3>
-          <p className="mt-1 text-sm leading-6 text-slate-500">
-            Best badges mark the lowest cost in each category.
-          </p>
-        </div>
-        <div className="sm:text-right">
-          <button
-            type="button"
-            onClick={copyReport}
-            aria-live="polite"
-            className="rounded-md border border-teal-200 bg-white px-3 py-2 text-sm font-semibold text-teal-800 transition-colors hover:border-teal-300 hover:bg-teal-50 focus:outline-none focus:ring-2 focus:ring-teal-700 focus:ring-offset-2"
+  const quoteResultCards = (
+    <div className="mb-5 grid gap-4 xl:grid-cols-2">
+      {comparisonResult.results.map((comparisonAnalysis, index) => {
+        const paymentSummaryForQuote = comparisonPaymentSummaries[index];
+        const isBestTotalCost =
+          comparisonAnalysis.totalCost ===
+          comparisonResult.lowestTotalCost.totalCost;
+        const isBestTrueMonthlyCost =
+          comparisonAnalysis.trueMonthlyCost ===
+          comparisonResult.lowestTrueMonthlyCost.trueMonthlyCost;
+        const isBestCostPerKm =
+          comparisonAnalysis.costPerKm ===
+          comparisonResult.lowestCostPerKm.costPerKm;
+        const isBestFitForSelectedGoal =
+          finalVerdict?.winningQuote === comparisonAnalysis;
+        const quoteLabel = `Quote ${String.fromCharCode(65 + index)}`;
+
+        return (
+          <article
+            key={`${comparisonAnalysis.vehicleName ?? "quote"}-${index}`}
+            className={`rounded-2xl border p-4 transition-all duration-300 sm:p-5 ${
+              isBestFitForSelectedGoal
+                ? "border-teal-300 bg-gradient-to-br from-teal-50 via-white to-white shadow-[0_20px_45px_-30px_rgba(13,148,136,0.75)] ring-1 ring-teal-100"
+                : "border-slate-200/80 bg-slate-50/70 shadow-[0_12px_35px_-30px_rgba(15,23,42,0.5)] hover:-translate-y-0.5 hover:bg-white hover:shadow-md"
+            }`}
           >
-            {copyStatus === "copied"
-              ? "Copied"
-              : copyStatus === "failed"
-                ? "Copy failed"
-                : "Copy report"}
-          </button>
-          <p className="mt-1 text-xs leading-5 text-slate-500">
-            Copy a plain-language summary you can save or share.
-          </p>
+            <div className="space-y-3">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-widest text-slate-500">
+                  {quoteLabel}
+                </p>
+                <h4 className="mt-1 text-xl font-bold text-slate-950">
+                  {getQuoteDisplayName(comparisonAnalysis, quoteLabel)}
+                </h4>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {isBestFitForSelectedGoal ? (
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-teal-700 bg-teal-700 px-3 py-1 text-xs font-semibold text-white shadow-sm">
+                    <span aria-hidden="true">★</span>
+                    Best option
+                  </span>
+                ) : null}
+                {isBestTotalCost ? (
+                  <span className="rounded-full border border-teal-200 bg-white px-3 py-1 text-xs font-semibold text-teal-800">
+                    Best total cost
+                  </span>
+                ) : null}
+                {isBestTrueMonthlyCost ? (
+                  <span className="rounded-full border border-teal-200 bg-white px-3 py-1 text-xs font-semibold text-teal-800">
+                    Best true monthly cost
+                  </span>
+                ) : null}
+                {isBestCostPerKm ? (
+                  <span className="rounded-full border border-teal-200 bg-white px-3 py-1 text-xs font-semibold text-teal-800">
+                    Best cost per kilometre
+                  </span>
+                ) : null}
+              </div>
+            </div>
+
+            <dl className="mt-4 grid gap-3 sm:grid-cols-2">
+              <MetricCard
+                label="True monthly cost"
+                value={formatCurrency(comparisonAnalysis.trueMonthlyCost)}
+                prominent
+              />
+              <MetricCard
+                label="Total lease cost"
+                value={formatCurrency(comparisonAnalysis.totalCost)}
+                prominent
+              />
+              <MetricCard
+                label="Cost per kilometre"
+                value={formatCostPerKilometre(comparisonAnalysis.costPerKm)}
+                prominent
+              />
+              <MetricCard
+                label="Upfront cost ratio"
+                value={formatPercentage(comparisonAnalysis.upfrontRatio)}
+                prominent
+              />
+              <MetricCard
+                label="Monthly payment used"
+                value={formatCurrency(
+                  paymentSummaryForQuote?.monthlyPaymentUsed ??
+                    comparisonAnalysis.monthlyPayment,
+                )}
+                helperText={
+                  paymentSummaryForQuote
+                    ? `Entered payment: ${formatCurrency(
+                        paymentSummaryForQuote.enteredMonthlyPayment,
+                      )}`
+                    : undefined
+                }
+              />
+              <MetricCard
+                label="Total allowed kilometres"
+                value={formatKilometres(comparisonAnalysis.totalAllowedKm)}
+              />
+              {comparisonAnalysis.discountFromMsrp !== undefined ? (
+                <MetricCard
+                  label="Discount from vehicle MSRP"
+                  value={formatCurrency(comparisonAnalysis.discountFromMsrp)}
+                />
+              ) : null}
+              {comparisonAnalysis.discountPercentage !== undefined ? (
+                <MetricCard
+                  label="Discount percentage"
+                  value={formatPercentage(
+                    comparisonAnalysis.discountPercentage,
+                  )}
+                />
+              ) : null}
+              {comparisonAnalysis.residualPercentage !== undefined ? (
+                <MetricCard
+                  label="Residual percentage"
+                  value={formatPercentage(
+                    comparisonAnalysis.residualPercentage,
+                  )}
+                />
+              ) : null}
+              {comparisonAnalysis.depreciationAmount !== undefined ? (
+                <MetricCard
+                  label="Depreciation amount"
+                  value={formatCurrency(
+                    comparisonAnalysis.depreciationAmount,
+                  )}
+                />
+              ) : null}
+            </dl>
+          </article>
+        );
+      })}
+    </div>
+  );
+
+  return (
+    <>
+      <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-[0_24px_70px_-45px_rgba(15,23,42,0.55)] sm:p-6">
+        <div className="mb-6 flex items-start gap-3">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-teal-50 text-teal-700 ring-1 ring-teal-100">
+            <svg
+              aria-hidden="true"
+              viewBox="0 0 24 24"
+              fill="none"
+              className="h-5 w-5"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
+              <path
+                d="M5 12.5 9 16l10-10"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </span>
+          <div>
+            <h3 className="text-lg font-semibold tracking-tight text-slate-950">
+              Comparison results
+            </h3>
+            <p className="mt-1 text-sm leading-6 text-slate-500">
+              Start with the verdict, then review the metrics and trade-offs.
+            </p>
+          </div>
         </div>
-      </div>
+
+      {finalVerdict ? (
+        <section
+          className={`mb-5 overflow-hidden rounded-2xl border p-5 shadow-[0_18px_45px_-32px_rgba(15,23,42,0.5)] sm:p-6 ${
+            finalVerdict.kind === "winner"
+              ? "border-teal-200 bg-[radial-gradient(circle_at_top_right,rgba(20,184,166,0.12),transparent_42%),linear-gradient(to_bottom_right,#f0fdfa,#ffffff)]"
+              : "border-amber-200 bg-gradient-to-br from-amber-50/80 to-white"
+          }`}
+        >
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-widest text-teal-700">
+                Best fit for your selected goal
+              </p>
+              <h4 className="mt-1 text-xl font-bold text-slate-950 sm:text-2xl">
+                Final Verdict
+              </h4>
+            </div>
+            {finalVerdict.kind !== "winner" ? (
+              <span className="rounded-full border border-amber-300 bg-white px-3 py-1 text-xs font-semibold text-amber-800">
+                {finalVerdict.kind === "mixed"
+                  ? "Trade-off"
+                  : "More data needed"}
+              </span>
+            ) : null}
+          </div>
+
+          <p className="mt-4 text-lg font-semibold leading-7 text-slate-950">
+            {finalVerdict.headline}
+          </p>
+          <div className="mt-4">
+            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Why this matters
+            </p>
+            <ul className="mt-2 space-y-2 text-sm leading-6 text-slate-700">
+              {finalVerdict.reasons.map((reason) => (
+                <li key={reason} className="flex gap-2">
+                  <span aria-hidden="true" className="font-bold text-teal-700">
+                    &bull;
+                  </span>
+                  <span>{reason}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </section>
+      ) : null}
+
+      {quoteResultCards}
 
       {selectedGoalRecommendation ? (
         <div className="mb-5 rounded-lg border border-teal-100 bg-teal-50/50 p-4">
@@ -711,150 +1286,215 @@ export function ComparisonResults({
 
       <InsightSummary
         title="Comparison summary"
-        insights={buildComparisonInsights(comparisonResult, selectedDecisionMode)}
+        insights={buildComparisonInsights(comparisonResult)}
       />
 
-      <details className="mb-5 rounded-lg border border-slate-200 bg-slate-50 p-4">
-        <summary className="cursor-pointer text-sm font-semibold text-slate-900">
-          Questions to ask the dealer
-        </summary>
-        <ol className="mt-3 list-decimal space-y-2 pl-5 text-sm leading-6 text-slate-600">
-          {dealerQuestionPreview.map((question) => (
-            <li key={question}>{question}</li>
-          ))}
-        </ol>
-        {dealerQuestions.length > dealerQuestionPreview.length ? (
-          <p className="mt-3 text-xs leading-5 text-slate-500">
-            The copied report includes the full question list.
-          </p>
-        ) : null}
-      </details>
-
-      <div className="grid gap-4 xl:grid-cols-2">
-        {comparisonResult.results.map((comparisonAnalysis, index) => {
-          const paymentSummaryForQuote = comparisonPaymentSummaries[index];
-          const isBestTotalCost =
-            comparisonAnalysis.totalCost ===
-            comparisonResult.lowestTotalCost.totalCost;
-          const isBestTrueMonthlyCost =
-            comparisonAnalysis.trueMonthlyCost ===
-            comparisonResult.lowestTrueMonthlyCost.trueMonthlyCost;
-          const isBestCostPerKm =
-            comparisonAnalysis.costPerKm ===
-            comparisonResult.lowestCostPerKm.costPerKm;
-          const isBestFitForSelectedGoal =
-            selectedGoalRecommendation?.winningQuote === comparisonAnalysis;
-
-          return (
-            <article
-              key={`${comparisonAnalysis.vehicleName ?? "quote"}-${index}`}
-              className="rounded-lg border border-slate-200 bg-slate-50 p-4 sm:p-5"
+      <button
+        ref={assistantTriggerRef}
+        type="button"
+        onClick={openAssistant}
+        className="negotiation-teaser-reveal group mb-5 flex w-full items-center justify-between gap-4 overflow-hidden rounded-2xl border border-teal-200 bg-[radial-gradient(circle_at_top_right,rgba(20,184,166,0.16),transparent_40%),linear-gradient(to_bottom_right,#f0fdfa,#ffffff)] p-4 text-left shadow-[0_18px_45px_-32px_rgba(13,148,136,0.7)] transition-all duration-300 hover:-translate-y-0.5 hover:border-teal-300 hover:shadow-[0_22px_50px_-30px_rgba(13,148,136,0.65)] focus:outline-none focus:ring-2 focus:ring-teal-600/40 focus:ring-offset-2 active:translate-y-0 active:scale-[0.995] sm:p-5"
+        aria-haspopup="dialog"
+      >
+        <span className="flex min-w-0 items-start gap-3.5">
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-teal-700 text-white shadow-sm transition-transform duration-300 group-hover:scale-105">
+            <svg
+              aria-hidden="true"
+              viewBox="0 0 24 24"
+              fill="none"
+              className="h-5 w-5"
+              stroke="currentColor"
+              strokeWidth="1.8"
             >
-              <div className="space-y-3">
-                <h4 className="text-lg font-semibold text-slate-950">
-                  {getQuoteDisplayName(
-                    comparisonAnalysis,
-                    `Quote ${index + 1}`,
-                  )}
-                </h4>
-                <div className="flex flex-wrap gap-2">
-                  {isBestTotalCost ? (
-                    <span className="rounded-full border border-teal-200 bg-white px-3 py-1 text-xs font-semibold text-teal-800">
-                      Best total cost
-                    </span>
-                  ) : null}
-                  {isBestTrueMonthlyCost ? (
-                    <span className="rounded-full border border-teal-200 bg-white px-3 py-1 text-xs font-semibold text-teal-800">
-                      Best true monthly cost
-                    </span>
-                  ) : null}
-                  {isBestCostPerKm ? (
-                    <span className="rounded-full border border-teal-200 bg-white px-3 py-1 text-xs font-semibold text-teal-800">
-                      Best cost per kilometre
-                    </span>
-                  ) : null}
-                  {isBestFitForSelectedGoal ? (
-                    <span className="rounded-full border border-slate-300 bg-white px-3 py-1 text-xs font-semibold text-slate-700">
-                      Best fit for selected goal
-                    </span>
-                  ) : null}
-                </div>
+              <path d="M8 10h8M8 14h5" strokeLinecap="round" />
+              <path d="M5 19l1.2-3.1A7 7 0 1 1 19 12a7 7 0 0 1-10.6 6Z" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </span>
+          <span>
+            <span className="block text-xs font-semibold uppercase tracking-widest text-teal-700">
+              Before you sign
+            </span>
+            <span className="mt-1 block text-base font-semibold text-slate-950">
+              Open your Negotiation Assistant
+            </span>
+            <span className="mt-1 block text-sm leading-6 text-slate-600">
+              Get {dealerNegotiationItems.length} tailored questions to clarify
+              fees and negotiate a cleaner deal.
+            </span>
+          </span>
+        </span>
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-teal-200 bg-white text-teal-800 shadow-sm transition-all duration-200 group-hover:translate-x-0.5 group-hover:border-teal-300">
+          <svg
+            aria-hidden="true"
+            viewBox="0 0 20 20"
+            fill="none"
+            className="h-4 w-4"
+            stroke="currentColor"
+            strokeWidth="2"
+          >
+            <path d="m7 4 6 6-6 6" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </span>
+      </button>
+
+      <div className="rounded-xl border border-slate-200/80 bg-slate-50/80 p-4 sm:flex sm:items-center sm:justify-between sm:gap-4">
+        <div>
+          <p className="text-sm font-semibold text-slate-950">
+            Save or share the full comparison
+          </p>
+          <p className="mt-1 text-xs leading-5 text-slate-500">
+            Includes the final verdict, all report metrics, and the Dealer
+            Negotiation Assistant.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={copyReport}
+          aria-live="polite"
+          className="mt-3 w-full rounded-xl border border-teal-700 bg-teal-700 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-teal-800 hover:bg-teal-800 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-teal-700 focus:ring-offset-2 active:translate-y-0 active:scale-[0.98] sm:mt-0 sm:w-auto"
+        >
+          {copyStatus === "copied"
+            ? "Copied"
+            : copyStatus === "failed"
+              ? "Copy failed"
+              : "Copy report"}
+        </button>
+      </div>
+      </div>
+
+      {isAssistantMounted
+        ? createPortal(
+            <>
+              <div
+                className={`fixed inset-0 z-40 bg-slate-950/20 backdrop-blur-[2px] transition-opacity duration-300 ${
+                  isAssistantOpen ? "opacity-100" : "opacity-0"
+                }`}
+                onMouseDown={closeAssistant}
+                aria-hidden="true"
+              />
+          <aside
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="negotiation-assistant-title"
+            className={`fixed inset-x-0 bottom-0 z-50 flex h-[90dvh] max-h-[90dvh] min-h-0 w-full flex-col overflow-hidden rounded-t-[1.75rem] border border-slate-200/80 bg-slate-50 shadow-[0_-24px_70px_-25px_rgba(15,23,42,0.35)] transition-transform duration-300 ease-out md:inset-y-0 md:left-auto md:right-0 md:h-[100dvh] md:max-h-[100dvh] md:w-full md:max-w-xl md:rounded-none md:rounded-l-[1.75rem] md:shadow-[-24px_0_70px_-30px_rgba(15,23,42,0.35)] ${
+              isAssistantOpen
+                ? "translate-y-0 md:translate-x-0"
+                : "translate-y-full md:translate-x-full md:translate-y-0"
+            }`}
+            onMouseDown={(event) => event.stopPropagation()}
+          >
+            <div className="mx-auto mt-2 h-1.5 w-12 shrink-0 rounded-full bg-slate-300 md:hidden" />
+            <header className="flex shrink-0 items-start justify-between gap-4 border-b border-slate-200/80 bg-white px-5 py-4 sm:px-6 sm:py-5">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-widest text-teal-700">
+                  Personalized to this comparison
+                </p>
+                <h2
+                  id="negotiation-assistant-title"
+                  className="mt-1 text-xl font-semibold tracking-tight text-slate-950"
+                >
+                  Negotiation Assistant
+                </h2>
+                <p className="mt-1 text-sm leading-6 text-slate-500">
+                  Clear questions you can use with the dealer.
+                </p>
+              </div>
+              <button
+                ref={assistantCloseButtonRef}
+                type="button"
+                onClick={closeAssistant}
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 shadow-sm transition-all duration-200 hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900 focus:outline-none focus:ring-2 focus:ring-teal-600/40 active:scale-95"
+                aria-label="Close negotiation assistant"
+              >
+                <svg
+                  aria-hidden="true"
+                  viewBox="0 0 20 20"
+                  fill="none"
+                  className="h-5 w-5"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
+                  <path d="m5 5 10 10M15 5 5 15" strokeLinecap="round" />
+                </svg>
+              </button>
+            </header>
+
+            <div className="min-h-0 flex-1 touch-pan-y overflow-y-auto overscroll-contain px-4 pb-8 pt-4 sm:px-6 sm:pb-12 sm:pt-5">
+              <div className="rounded-2xl border border-teal-200 bg-gradient-to-br from-teal-50 to-white p-4 shadow-sm">
+                <p className="text-sm font-semibold text-slate-950">
+                  Your conversation plan
+                </p>
+                <p className="mt-1 text-sm leading-6 text-slate-600">
+                  Ask for written, itemized answers so you can compare both
+                  offers on the same basis.
+                </p>
               </div>
 
-              <dl className="mt-4 grid gap-3 sm:grid-cols-2">
-                <MetricCard
-                  label="True monthly cost"
-                  value={formatCurrency(comparisonAnalysis.trueMonthlyCost)}
-                  prominent
-                />
-                <MetricCard
-                  label="Total lease cost"
-                  value={formatCurrency(comparisonAnalysis.totalCost)}
-                  prominent
-                />
-                <MetricCard
-                  label="Cost per kilometre"
-                  value={formatCostPerKilometre(comparisonAnalysis.costPerKm)}
-                  prominent
-                />
-                <MetricCard
-                  label="Upfront cost ratio"
-                  value={formatPercentage(comparisonAnalysis.upfrontRatio)}
-                  prominent
-                />
-                <MetricCard
-                  label="Monthly payment used"
-                  value={formatCurrency(
-                    paymentSummaryForQuote?.monthlyPaymentUsed ??
-                      comparisonAnalysis.monthlyPayment,
-                  )}
-                  helperText={
-                    paymentSummaryForQuote
-                      ? `Entered payment: ${formatCurrency(
-                          paymentSummaryForQuote.enteredMonthlyPayment,
-                        )}`
-                      : undefined
-                  }
-                />
-                <MetricCard
-                  label="Total allowed kilometres"
-                  value={formatKilometres(comparisonAnalysis.totalAllowedKm)}
-                />
-                {comparisonAnalysis.discountFromMsrp !== undefined ? (
-                  <MetricCard
-                    label="Discount from vehicle MSRP"
-                    value={formatCurrency(comparisonAnalysis.discountFromMsrp)}
-                  />
-                ) : null}
-                {comparisonAnalysis.discountPercentage !== undefined ? (
-                  <MetricCard
-                    label="Discount percentage"
-                    value={formatPercentage(
-                      comparisonAnalysis.discountPercentage,
-                    )}
-                  />
-                ) : null}
-                {comparisonAnalysis.residualPercentage !== undefined ? (
-                  <MetricCard
-                    label="Residual percentage"
-                    value={formatPercentage(
-                      comparisonAnalysis.residualPercentage,
-                    )}
-                  />
-                ) : null}
-                {comparisonAnalysis.depreciationAmount !== undefined ? (
-                  <MetricCard
-                    label="Depreciation amount"
-                    value={formatCurrency(
-                      comparisonAnalysis.depreciationAmount,
-                    )}
-                  />
-                ) : null}
-              </dl>
-            </article>
-          );
-        })}
-      </div>
-    </div>
+              <div className="mt-4 space-y-3">
+                {dealerNegotiationItems.map((item, index) => (
+                  <article
+                    key={item.title}
+                    className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-[0_10px_28px_-24px_rgba(15,23,42,0.65)]"
+                  >
+                    <div className="flex items-start gap-3">
+                      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-teal-50 text-xs font-bold text-teal-700 ring-1 ring-teal-100">
+                        {index + 1}
+                      </span>
+                      <div>
+                        <h3 className="text-sm font-semibold text-slate-950">
+                          {item.title}
+                        </h3>
+                        <p className="mt-1 text-sm leading-6 text-slate-500">
+                          {item.whyItMatters}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="mt-3 rounded-xl border border-slate-100 bg-slate-50 p-3">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-teal-700">
+                        Ask the dealer
+                      </p>
+                      <p className="mt-1 text-sm font-medium leading-6 text-slate-800">
+                        “{item.suggestedQuestion}”
+                      </p>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            </div>
+
+            <footer className="shrink-0 border-t border-slate-200/80 bg-white p-4 sm:px-6">
+              <button
+                type="button"
+                onClick={copyReport}
+                className={`inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl px-4 text-sm font-semibold text-white shadow-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-teal-600 focus:ring-offset-2 active:scale-[0.98] ${
+                  copyStatus === "copied"
+                    ? "bg-emerald-600 hover:bg-emerald-700"
+                    : copyStatus === "failed"
+                      ? "bg-rose-600 hover:bg-rose-700"
+                      : "bg-teal-700 hover:-translate-y-0.5 hover:bg-teal-800 hover:shadow-md"
+                }`}
+                aria-live="polite"
+              >
+                {copyStatus === "copied" ? (
+                  <>
+                    <span aria-hidden="true">✓</span>
+                    Copied
+                  </>
+                ) : copyStatus === "failed" ? (
+                  "Copy failed — try again"
+                ) : (
+                  "Copy full report and questions"
+                )}
+              </button>
+              <p className="mt-2 text-center text-xs text-slate-400">
+                Press Escape or click outside to close.
+              </p>
+            </footer>
+          </aside>
+            </>,
+            document.body,
+          )
+        : null}
+    </>
   );
 }

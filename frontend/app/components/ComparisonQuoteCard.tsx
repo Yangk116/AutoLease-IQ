@@ -154,12 +154,12 @@ export function ComparisonQuoteCard({
   onTaxToggleChange,
 }: ComparisonQuoteCardProps) {
   return (
-    <article className="rounded-lg border border-slate-200 bg-slate-50 p-5 shadow-sm sm:p-6">
+    <article className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-[0_18px_50px_-38px_rgba(15,23,42,0.55)] transition-all duration-300 hover:border-slate-300 hover:shadow-[0_22px_55px_-35px_rgba(15,23,42,0.45)] sm:p-6">
       <div className="mb-5 flex items-center justify-between gap-3">
         <h3 className="text-lg font-semibold text-slate-950">
           {quote.label}
         </h3>
-        <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-500">
+        <span className="rounded-full border border-teal-100 bg-teal-50 px-3 py-1 text-xs font-semibold text-teal-700">
           Offer
         </span>
       </div>
