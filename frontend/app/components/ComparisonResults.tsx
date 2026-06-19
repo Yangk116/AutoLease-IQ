@@ -8,14 +8,15 @@ import {
 
 import { InsightSummary, type DealInsight } from "./InsightSummary";
 import { MetricCard } from "./MetricCard";
+import { ReportPreview } from "./ReportPreview";
 
-type ComparisonPaymentSummary = {
+export type ComparisonPaymentSummary = {
   quoteName: string;
   enteredMonthlyPayment: number;
   monthlyPaymentUsed: number;
 };
 
-type DecisionMode =
+export type DecisionMode =
   | "lowest-total-cost"
   | "lowest-monthly-budget"
   | "lowest-upfront-cash"
@@ -792,7 +793,7 @@ export function buildDealerNegotiationItems(
   return [...conditionalItems, ...baselineDealerNegotiationItems];
 }
 
-function buildReportKeyTakeaways(
+export function buildReportKeyTakeaways(
   comparison: LeaseComparisonResult,
   paymentSummaries: ComparisonPaymentSummary[],
   decisionMode: DecisionMode,
@@ -1039,6 +1040,7 @@ export function ComparisonResults({
   selectedDecisionMode,
 }: ComparisonResultsProps) {
   const [copyStatus, setCopyStatus] = useState<CopyStatus>("idle");
+  const [isReportPreviewOpen, setIsReportPreviewOpen] = useState(false);
   const [isAssistantMounted, setIsAssistantMounted] = useState(false);
   const [isAssistantOpen, setIsAssistantOpen] = useState(false);
   const copyStatusTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -1058,6 +1060,12 @@ export function ComparisonResults({
   const dealerNegotiationItems = buildDealerNegotiationItems(
     comparisonResult,
     selectedDecisionMode,
+  );
+  const reportKeyTakeaways = buildReportKeyTakeaways(
+    comparisonResult,
+    comparisonPaymentSummaries,
+    selectedDecisionMode,
+    finalVerdict,
   );
 
   useEffect(() => {
@@ -1385,6 +1393,86 @@ export function ComparisonResults({
         title="Comparison summary"
         insights={buildComparisonInsights(comparisonResult)}
       />
+
+      <div className="mb-5">
+        <button
+          type="button"
+          onClick={() => setIsReportPreviewOpen((isOpen) => !isOpen)}
+          aria-expanded={isReportPreviewOpen}
+          aria-controls="lease-report-preview"
+          className="group flex w-full items-center justify-between gap-4 overflow-hidden rounded-2xl border border-slate-800 bg-[radial-gradient(circle_at_top_right,rgba(45,212,191,0.2),transparent_40%),linear-gradient(to_bottom_right,#0f172a,#172554)] p-4 text-left text-white shadow-[0_22px_55px_-32px_rgba(15,23,42,0.9)] transition-all duration-300 hover:-translate-y-0.5 hover:border-teal-500/70 hover:shadow-[0_26px_60px_-30px_rgba(15,118,110,0.65)] focus:outline-none focus:ring-2 focus:ring-teal-600/50 focus:ring-offset-2 active:translate-y-0 active:scale-[0.995] sm:p-5"
+        >
+          <span className="flex min-w-0 items-start gap-3.5">
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-teal-400 text-slate-950 shadow-lg shadow-slate-950/30 transition-transform duration-300 group-hover:scale-105">
+              <svg
+                aria-hidden="true"
+                viewBox="0 0 24 24"
+                fill="none"
+                className="h-5 w-5"
+                stroke="currentColor"
+                strokeWidth="1.8"
+              >
+                <path
+                  d="M7 3.75h7l3 3V20.25H7V3.75Z"
+                  strokeLinejoin="round"
+                />
+                <path d="M14 3.75v3h3M9.5 11h5M9.5 14.5h5" strokeLinecap="round" />
+              </svg>
+            </span>
+            <span>
+              <span className="block text-xs font-semibold uppercase tracking-widest text-teal-300">
+                Premium visual summary
+              </span>
+              <span className="mt-1 block text-base font-semibold">
+                {isReportPreviewOpen
+                  ? "Hide report preview"
+                  : "View report preview"}
+              </span>
+              <span className="mt-1 block text-sm leading-6 text-slate-300">
+                Review a polished, share-ready view of the verdict, costs, and
+                negotiation plan.
+              </span>
+            </span>
+          </span>
+          <span
+            className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-white/15 bg-white/10 text-teal-100 transition-transform duration-300 ${
+              isReportPreviewOpen ? "rotate-180" : ""
+            }`}
+          >
+            <svg
+              aria-hidden="true"
+              viewBox="0 0 20 20"
+              fill="none"
+              className="h-4 w-4"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
+              <path d="m4 7 6 6 6-6" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </span>
+        </button>
+
+        <div
+          id="lease-report-preview"
+          aria-hidden={!isReportPreviewOpen}
+          className={`grid transition-all duration-500 ease-out ${
+            isReportPreviewOpen
+              ? "mt-4 grid-rows-[1fr] opacity-100"
+              : "grid-rows-[0fr] opacity-0"
+          }`}
+        >
+          <div className="overflow-hidden">
+            <ReportPreview
+              comparisonResult={comparisonResult}
+              comparisonPaymentSummaries={comparisonPaymentSummaries}
+              selectedDecisionMode={selectedDecisionMode}
+              finalVerdict={finalVerdict}
+              keyTakeaways={reportKeyTakeaways}
+              negotiationItems={dealerNegotiationItems}
+            />
+          </div>
+        </div>
+      </div>
 
       <button
         ref={assistantTriggerRef}
