@@ -45,11 +45,6 @@ type ComparisonResultsProps = {
 
 type CopyStatus = "idle" | "copied" | "failed";
 
-type ReportMetric =
-  | "totalCost"
-  | "trueMonthlyCost"
-  | "costPerKm";
-
 export type DealerNegotiationItem = {
   title: string;
   whyItMatters: string;
@@ -696,23 +691,6 @@ function getReportQuoteName(
   );
 }
 
-function getReportMetricWinner(
-  comparison: LeaseComparisonResult,
-  paymentSummaries: ComparisonPaymentSummary[],
-  metric: ReportMetric,
-) {
-  const [firstQuote, secondQuote] = comparison.results;
-
-  if (!firstQuote || !secondQuote) {
-    return "Not available";
-  }
-
-  const winner =
-    firstQuote[metric] <= secondQuote[metric] ? firstQuote : secondQuote;
-
-  return getReportQuoteName(comparison, paymentSummaries, winner);
-}
-
 export function buildDealerNegotiationItems(
   comparison: LeaseComparisonResult,
   decisionMode: DecisionMode,
@@ -814,123 +792,242 @@ export function buildDealerNegotiationItems(
   return [...conditionalItems, ...baselineDealerNegotiationItems];
 }
 
+function buildReportKeyTakeaways(
+  comparison: LeaseComparisonResult,
+  paymentSummaries: ComparisonPaymentSummary[],
+  decisionMode: DecisionMode,
+  finalVerdict: FinalVerdict | null,
+) {
+  const [firstQuote, secondQuote] = comparison.results;
+
+  if (!firstQuote || !secondQuote) {
+    return ["More quote information is needed to generate comparison takeaways."];
+  }
+
+  const getName = (quote: LeaseAnalysisResult) =>
+    getReportQuoteName(comparison, paymentSummaries, quote);
+  const takeaways: string[] = [];
+
+  if (finalVerdict?.winningQuote) {
+    takeaways.push(
+      `${getName(finalVerdict.winningQuote)} is stronger for ${decisionModeLabels[
+        decisionMode
+      ].toLowerCase()} based on the entered numbers.`,
+    );
+  } else if (finalVerdict?.kind === "needs-data") {
+    takeaways.push(
+      "More residual and lease-end information is needed for a stronger buyout verdict.",
+    );
+  } else {
+    takeaways.push(
+      "No single quote wins the selected goal; the supporting metrics show a trade-off.",
+    );
+  }
+
+  const quotesWithPaymentGap = comparison.results.filter((quote, index) => {
+    const monthlyPaymentUsed =
+      paymentSummaries[index]?.monthlyPaymentUsed ?? quote.monthlyPayment;
+
+    return !isCloseMetric(monthlyPaymentUsed, quote.trueMonthlyCost);
+  });
+
+  if (quotesWithPaymentGap.length > 0) {
+    const quoteLabels = quotesWithPaymentGap
+      .map((quote) => getName(quote))
+      .join(" and ");
+
+    takeaways.push(
+      `The payment used and true monthly cost differ for ${quoteLabels}, so upfront cash and fees affect the monthly picture.`,
+    );
+  } else {
+    takeaways.push(
+      "The payment used and true monthly cost are close for both quotes.",
+    );
+  }
+
+  const upfrontWinner = getStrictLowerMetricWinner(
+    firstQuote,
+    secondQuote,
+    "upfrontRatio",
+  );
+
+  takeaways.push(
+    upfrontWinner
+      ? `${getName(upfrontWinner)} puts less of the total lease cost upfront at ${formatPercentage(upfrontWinner.upfrontRatio)}.`
+      : "Both quotes place the same share of total lease cost upfront.",
+  );
+
+  const mileageWinner = getStrictLowerMetricWinner(
+    firstQuote,
+    secondQuote,
+    "costPerKm",
+  );
+
+  takeaways.push(
+    mileageWinner
+      ? `${getName(mileageWinner)} offers the stronger mileage value at ${formatCostPerKilometre(mileageWinner.costPerKm)}.`
+      : "Both quotes provide the same cost per kilometre based on the entered allowances.",
+  );
+
+  const hasResidualContext = comparison.results.some(
+    (quote) =>
+      quote.residualValue !== undefined ||
+      quote.residualPercentage !== undefined ||
+      quote.depreciationAmount !== undefined,
+  );
+
+  if (hasResidualContext) {
+    takeaways.push(
+      "Residual and depreciation figures add buyout context: a higher residual can lower lease payments but increase the future purchase price.",
+    );
+  }
+
+  return takeaways;
+}
+
 export function buildComparisonReport(
   comparison: LeaseComparisonResult,
   paymentSummaries: ComparisonPaymentSummary[],
   decisionMode: DecisionMode,
 ) {
   const quoteNames = comparison.results.map((quote, index) => {
+    const quoteLabel = `Quote ${String.fromCharCode(65 + index)}`;
+
     return (
       paymentSummaries[index]?.quoteName ||
-      getQuoteDisplayName(quote, `Quote ${index + 1}`)
+      getQuoteDisplayName(quote, quoteLabel)
     );
   });
   const quoteSections = comparison.results.map((quote, index) => {
     const paymentSummary = paymentSummaries[index];
     const quoteLabel = `Quote ${String.fromCharCode(65 + index)}`;
-    const lines = [
-      `${quoteLabel}: ${quoteNames[index]}`,
-      `- True monthly cost: ${formatCurrency(quote.trueMonthlyCost)}`,
-      `- Total lease cost: ${formatCurrency(quote.totalCost)}`,
-      `- Cost per kilometre: ${formatCostPerKilometre(quote.costPerKm)}`,
-      `- Monthly payment used: ${formatCurrency(
+    return [
+      `${quoteLabel.toUpperCase()} — ${quoteNames[index]}`,
+      "",
+      `* True monthly cost: ${formatCurrency(quote.trueMonthlyCost)}`,
+      `* Total lease cost: ${formatCurrency(quote.totalCost)}`,
+      `* Monthly payment used: ${formatCurrency(
         paymentSummary?.monthlyPaymentUsed ?? quote.monthlyPayment,
       )}`,
-      `- Upfront cost ratio: ${formatPercentage(quote.upfrontRatio)}`,
-      `- Total allowed kilometres: ${formatKilometres(quote.totalAllowedKm)}`,
-    ];
-
-    if (quote.discountPercentage !== undefined) {
-      lines.push(
-        `- Discount percentage: ${formatPercentage(
-          quote.discountPercentage,
-        )}`,
-      );
-    }
-
-    if (quote.residualPercentage !== undefined) {
-      lines.push(
-        `- Residual percentage: ${formatPercentage(
-          quote.residualPercentage,
-        )}`,
-      );
-    }
-
-    if (quote.depreciationAmount !== undefined) {
-      lines.push(
-        `- Depreciation amount: ${formatCurrency(
-          quote.depreciationAmount,
-        )}`,
-      );
-    }
-
-    return lines.join("\n");
+      `* Cost per kilometre: ${formatCostPerKilometre(quote.costPerKm)}`,
+      `* Upfront cost ratio: ${formatPercentage(quote.upfrontRatio)}`,
+      `* Total allowed kilometres: ${formatKilometres(quote.totalAllowedKm)}`,
+    ].join("\n");
   });
-  const goalRecommendation = getDecisionModeRecommendation(
-    comparison,
-    decisionMode,
-  );
   const finalVerdict = buildFinalVerdict(comparison, decisionMode);
-  const conclusionLines = [
-    `- Best total cost quote: ${getReportMetricWinner(
-      comparison,
-      paymentSummaries,
-      "totalCost",
-    )}`,
-    `- Best true monthly cost quote: ${getReportMetricWinner(
-      comparison,
-      paymentSummaries,
-      "trueMonthlyCost",
-    )}`,
-    `- Best cost per kilometre quote: ${getReportMetricWinner(
-      comparison,
-      paymentSummaries,
-      "costPerKm",
-    )}`,
-  ];
-
-  if (goalRecommendation) {
-    conclusionLines.push(
-      `- Selected goal recommendation: ${goalRecommendation.body}`,
-    );
-  }
-
   const dealerNegotiationItems = buildDealerNegotiationItems(
     comparison,
     decisionMode,
   );
-  const finalVerdictLines = finalVerdict
-    ? [
-        `- Selected goal: ${decisionModeLabels[decisionMode]}`,
-        `- Verdict: ${finalVerdict.headline}`,
-        ...finalVerdict.reasons.map((reason) => `- Reason: ${reason}`),
-      ]
-    : [
-        `- Selected goal: ${decisionModeLabels[decisionMode]}`,
-        "- Verdict: Not available",
-      ];
+  const verdictFit = finalVerdict?.winningQuote
+    ? `${getQuoteLetter(comparison, finalVerdict.winningQuote)} — ${getReportQuoteName(
+        comparison,
+        paymentSummaries,
+        finalVerdict.winningQuote,
+      )}`
+    : finalVerdict?.kind === "needs-data"
+      ? "More data needed"
+      : finalVerdict
+        ? "Mixed result"
+        : "Not available";
+  const vehicleContextSections = comparison.results.flatMap((quote, index) => {
+    const metrics: string[] = [];
+
+    if (quote.discountPercentage !== undefined) {
+      metrics.push(
+        `* Discount percentage: ${formatPercentage(quote.discountPercentage)}`,
+      );
+    }
+
+    if (quote.residualPercentage !== undefined) {
+      metrics.push(
+        `* Residual percentage: ${formatPercentage(quote.residualPercentage)}`,
+      );
+    }
+
+    if (quote.residualValue !== undefined) {
+      metrics.push(
+        `* Residual value: ${formatCurrency(quote.residualValue)}`,
+      );
+    }
+
+    if (quote.depreciationAmount !== undefined) {
+      metrics.push(
+        `* Depreciation amount: ${formatCurrency(quote.depreciationAmount)}`,
+      );
+    }
+
+    if (metrics.length === 0) {
+      return [];
+    }
+
+    const quoteLabel = `Quote ${String.fromCharCode(65 + index)}`;
+
+    return [
+      [
+        `${quoteLabel.toUpperCase()} — ${quoteNames[index]}`,
+        "",
+        ...metrics,
+      ].join("\n"),
+    ];
+  });
+  const hasBuyoutContext = comparison.results.some(
+    (quote) =>
+      quote.residualValue !== undefined ||
+      quote.residualPercentage !== undefined,
+  );
+  const vehicleContextLines =
+    vehicleContextSections.length > 0
+      ? [
+          "VEHICLE / BUYOUT CONTEXT",
+          "",
+          vehicleContextSections.join("\n\n"),
+          ...(hasBuyoutContext
+            ? [
+                "",
+                "* Buyout warning: A higher residual may lower lease payments but can increase the future purchase price. Confirm the exact purchase-option amount and lease-end fees with the dealer.",
+              ]
+            : []),
+          "",
+        ]
+      : [];
+  const keyTakeaways = buildReportKeyTakeaways(
+    comparison,
+    paymentSummaries,
+    decisionMode,
+    finalVerdict,
+  );
 
   return [
     "AutoLease IQ Comparison Report",
+    "Generated from the numbers entered by the user.",
     "",
-    `Selected decision mode: ${decisionModeLabels[decisionMode]}`,
-    `Quote A name: ${quoteNames[0] ?? "Quote A"}`,
-    `Quote B name: ${quoteNames[1] ?? "Quote B"}`,
+    "FINAL VERDICT",
     "",
-    "Final Verdict",
-    ...finalVerdictLines,
+    `Best fit for selected goal: ${verdictFit}`,
+    finalVerdict?.headline ?? "A final verdict is not available.",
+    ...(finalVerdict?.reasons.slice(0, 1).map((reason) => `* ${reason}`) ?? []),
+    "",
+    "SUMMARY",
+    "",
+    `* Selected goal: ${decisionModeLabels[decisionMode]}`,
     "",
     quoteSections.join("\n\n"),
     "",
-    "Comparison conclusion",
-    ...conclusionLines,
+    ...vehicleContextLines,
+    "KEY TAKEAWAYS",
     "",
-    "Dealer Negotiation Assistant",
+    ...keyTakeaways.map((takeaway) => `* ${takeaway}`),
+    "",
+    "DEALER NEGOTIATION ASSISTANT",
+    "",
     ...dealerNegotiationItems.flatMap((item, index) => [
       `${index + 1}. ${item.title}`,
       `   Why it matters: ${item.whyItMatters}`,
-      `   Suggested question: ${item.suggestedQuestion}`,
+      `   Ask the dealer: "${item.suggestedQuestion}"`,
+      "",
     ]),
+    "DISCLAIMER",
     "",
     "This report is based only on the numbers entered and is not financial advice.",
   ].join("\n");
