@@ -716,8 +716,8 @@ export default function LeaseQuoteCalculator() {
 
   return (
     <section
-      id="lease-calculator"
-      className="border-t border-slate-200/80 bg-gradient-to-b from-white via-slate-50/40 to-white px-6 py-16 sm:px-8 sm:py-20"
+      id="calculator"
+      className="scroll-mt-32 bg-white px-6 py-16 sm:scroll-mt-24 sm:px-8 sm:py-24"
     >
       <div className="mx-auto grid w-full max-w-6xl gap-10 lg:grid-cols-[minmax(0,0.95fr)_minmax(320px,1.05fr)] lg:items-start">
         <div>
@@ -982,7 +982,10 @@ export default function LeaseQuoteCalculator() {
         </div>
       </div>
 
-      <div className="mx-auto mt-16 w-full max-w-6xl border-t border-slate-200 pt-12">
+      <div
+        id="compare"
+        className="mx-auto mt-20 w-full max-w-6xl scroll-mt-32 rounded-[2rem] border border-slate-200 bg-slate-50/80 p-5 shadow-[0_28px_80px_-60px_rgba(15,23,42,0.65)] sm:scroll-mt-24 sm:p-8 lg:p-10"
+      >
         <div>
           <p className="mb-4 text-sm font-semibold uppercase tracking-widest text-teal-700">
             Multiple Offers
@@ -998,7 +1001,10 @@ export default function LeaseQuoteCalculator() {
         </div>
 
         <div className="mt-8 space-y-6">
-          <div className="rounded-2xl border border-teal-100 bg-gradient-to-br from-teal-50/80 to-white p-4 shadow-[0_12px_35px_-28px_rgba(13,148,136,0.8)] sm:p-5">
+          <div
+            id="examples"
+            className="scroll-mt-32 rounded-2xl border border-teal-100 bg-gradient-to-br from-teal-50/80 to-white p-4 shadow-[0_12px_35px_-28px_rgba(13,148,136,0.8)] sm:scroll-mt-24 sm:p-5"
+          >
             <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
               <div>
                 <h3 className="text-sm font-semibold text-slate-950">
@@ -1101,43 +1107,104 @@ export default function LeaseQuoteCalculator() {
             </p>
           ) : null}
 
-          {isComparing ? (
-            <div
-              className="comparison-loading rounded-2xl border border-slate-200/80 bg-white p-5 shadow-[0_18px_50px_-35px_rgba(15,23,42,0.5)] sm:p-6"
-              role="status"
-              aria-live="polite"
-            >
-              <div className="flex items-center gap-3">
-                <span className="h-9 w-9 animate-spin rounded-full border-[3px] border-teal-100 border-t-teal-700" />
-                <div>
-                  <p className="font-semibold text-slate-950">
-                    Comparing the full lease cost
-                  </p>
-                  <p className="mt-0.5 text-sm text-slate-500">
-                    Normalizing payments, upfront cash, mileage, and fees.
-                  </p>
+          <section
+            id="report"
+            className="scroll-mt-32 border-t border-slate-200 pt-10 sm:scroll-mt-24"
+            aria-labelledby="report-section-title"
+          >
+            <div className="mb-6 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between sm:gap-6">
+              <div>
+                <p className="text-sm font-semibold uppercase tracking-widest text-teal-700">
+                  Report
+                </p>
+                <h2
+                  id="report-section-title"
+                  className="mt-2 text-2xl font-semibold tracking-tight text-slate-950 sm:text-3xl"
+                >
+                  Your decision summary
+                </h2>
+              </div>
+              <p className="max-w-xl text-sm leading-6 text-slate-500">
+                Compare offers to unlock the final verdict, negotiation
+                questions, and premium report preview.
+              </p>
+            </div>
+
+            {isComparing ? (
+              <div
+                className="comparison-loading rounded-2xl border border-slate-200/80 bg-white p-5 shadow-[0_18px_50px_-35px_rgba(15,23,42,0.5)] sm:p-6"
+                role="status"
+                aria-live="polite"
+              >
+                <div className="flex items-center gap-3">
+                  <span className="h-9 w-9 animate-spin rounded-full border-[3px] border-teal-100 border-t-teal-700" />
+                  <div>
+                    <p className="font-semibold text-slate-950">
+                      Comparing the full lease cost
+                    </p>
+                    <p className="mt-0.5 text-sm text-slate-500">
+                      Normalizing payments, upfront cash, mileage, and fees.
+                    </p>
+                  </div>
+                </div>
+                <div className="mt-6 grid gap-3 sm:grid-cols-2">
+                  {[0, 1, 2, 3].map((item) => (
+                    <div
+                      key={item}
+                      className="h-24 animate-pulse rounded-xl border border-slate-100 bg-slate-100/80"
+                    />
+                  ))}
                 </div>
               </div>
-              <div className="mt-6 grid gap-3 sm:grid-cols-2">
-                {[0, 1, 2, 3].map((item) => (
-                  <div
-                    key={item}
-                    className="h-24 animate-pulse rounded-xl border border-slate-100 bg-slate-100/80"
-                  />
-                ))}
-              </div>
-            </div>
-          ) : null}
+            ) : null}
 
-          {comparisonResult && !isComparing ? (
-            <div className="comparison-results-reveal">
-              <ComparisonResults
-                comparisonResult={comparisonResult}
-                comparisonPaymentSummaries={comparisonPaymentSummaries}
-                selectedDecisionMode={selectedDecisionMode}
-              />
-            </div>
-          ) : null}
+            {comparisonResult && !isComparing ? (
+              <div className="comparison-results-reveal">
+                <ComparisonResults
+                  comparisonResult={comparisonResult}
+                  comparisonPaymentSummaries={comparisonPaymentSummaries}
+                  selectedDecisionMode={selectedDecisionMode}
+                />
+              </div>
+            ) : null}
+
+            {!comparisonResult && !isComparing ? (
+              <div className="rounded-2xl border border-dashed border-slate-300 bg-white/70 p-6 text-center sm:p-8">
+                <span className="mx-auto flex h-11 w-11 items-center justify-center rounded-xl bg-teal-50 text-teal-700 ring-1 ring-teal-100">
+                  <svg
+                    aria-hidden="true"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    className="h-5 w-5"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                  >
+                    <path
+                      d="M7 3.75h7l3 3V20.25H7V3.75Z"
+                      strokeLinejoin="round"
+                    />
+                    <path
+                      d="M14 3.75v3h3M9.5 11h5M9.5 14.5h5"
+                      strokeLinecap="round"
+                    />
+                  </svg>
+                </span>
+                <h3 className="mt-4 text-base font-semibold text-slate-950">
+                  Your report will appear here
+                </h3>
+                <p className="mx-auto mt-2 max-w-lg text-sm leading-6 text-slate-500">
+                  Enter both offers, select what matters most, and choose
+                  Compare offers to generate the full decision report.
+                </p>
+                <a
+                  href="#examples"
+                  className="mt-5 inline-flex h-10 items-center justify-center rounded-xl border border-teal-700 bg-white px-4 text-sm font-semibold text-teal-800 shadow-sm transition-colors hover:bg-teal-50 focus:outline-none focus:ring-2 focus:ring-teal-700/30 focus:ring-offset-2"
+                >
+                  View sample offers
+                </a>
+              </div>
+            ) : null}
+          </section>
         </div>
       </div>
     </section>

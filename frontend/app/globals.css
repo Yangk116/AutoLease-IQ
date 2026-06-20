@@ -27,6 +27,7 @@ body {
 
 html {
   scroll-behavior: smooth;
+  scroll-padding-top: 7.5rem;
 }
 
 button,
@@ -108,12 +109,21 @@ summary:hover {
 
 @media print {
   @page {
-    margin: 12mm;
+    size: auto;
+    margin: 16mm;
   }
 
   html,
   body {
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    overflow: visible !important;
     background: #ffffff !important;
+  }
+
+  body {
+    margin: 0 !important;
   }
 
   body * {
@@ -127,16 +137,36 @@ summary:hover {
     display: none !important;
   }
 
+  body *:has(.print-report-area) {
+    display: block !important;
+    position: static !important;
+    width: auto !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    transform: none !important;
+    opacity: 1 !important;
+    border: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+
   .print-report-area,
   .print-report-area * {
     visibility: visible !important;
+    max-height: none !important;
+    overflow: visible !important;
+    transform: none !important;
   }
 
   .print-report-area {
-    position: absolute !important;
-    top: 0 !important;
-    left: 0 !important;
+    position: static !important;
     width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
     margin: 0 !important;
     color: #0f172a !important;
     print-color-adjust: exact;
@@ -147,11 +177,18 @@ summary:hover {
   #lease-report-preview > div {
     display: block !important;
     height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
     overflow: visible !important;
     opacity: 1 !important;
+    transform: none !important;
   }
 
   .print-report-area > article {
+    position: static !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
     overflow: visible !important;
     border-color: #cbd5e1 !important;
     border-radius: 0 !important;
@@ -163,6 +200,7 @@ summary:hover {
   .print-report-area footer,
   .print-report-area section > div {
     break-inside: avoid;
+    page-break-inside: avoid;
   }
 
   .print-report-area section {
