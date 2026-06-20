@@ -1132,6 +1132,10 @@ export function ComparisonResults({
     }, 300);
   }
 
+  function printReport(): void {
+    window.print();
+  }
+
   function resetCopyStatusAfterDelay() {
     if (copyStatusTimeout.current) {
       clearTimeout(copyStatusTimeout.current);
@@ -1462,14 +1466,46 @@ export function ComparisonResults({
           }`}
         >
           <div className="overflow-hidden">
-            <ReportPreview
-              comparisonResult={comparisonResult}
-              comparisonPaymentSummaries={comparisonPaymentSummaries}
-              selectedDecisionMode={selectedDecisionMode}
-              finalVerdict={finalVerdict}
-              keyTakeaways={reportKeyTakeaways}
-              negotiationItems={dealerNegotiationItems}
-            />
+            <div className="mb-3 flex flex-col gap-3 rounded-xl border border-slate-200 bg-slate-50 p-3 sm:flex-row sm:items-center sm:justify-between">
+              <p className="text-xs leading-5 text-slate-500">
+                Use your browser&apos;s Save as PDF option.
+              </p>
+              <button
+                type="button"
+                onClick={printReport}
+                className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-teal-700 bg-white px-4 text-sm font-semibold text-teal-800 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-teal-50 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-teal-700 focus:ring-offset-2 active:translate-y-0 active:scale-[0.98] sm:w-auto"
+              >
+                <svg
+                  aria-hidden="true"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  className="h-4 w-4"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                >
+                  <path
+                    d="M7 9V4h10v5M7 17H5.5A2.5 2.5 0 0 1 3 14.5v-3A2.5 2.5 0 0 1 5.5 9h13a2.5 2.5 0 0 1 2.5 2.5v3a2.5 2.5 0 0 1-2.5 2.5H17"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                  <path
+                    d="M7 14h10v6H7z"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+                Print report
+              </button>
+            </div>
+            <div className="print-report-area">
+              <ReportPreview
+                comparisonResult={comparisonResult}
+                comparisonPaymentSummaries={comparisonPaymentSummaries}
+                selectedDecisionMode={selectedDecisionMode}
+                finalVerdict={finalVerdict}
+                keyTakeaways={reportKeyTakeaways}
+                negotiationItems={dealerNegotiationItems}
+              />
+            </div>
           </div>
         </div>
       </div>

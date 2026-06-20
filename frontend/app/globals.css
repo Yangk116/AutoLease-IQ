@@ -106,6 +106,75 @@ summary:hover {
   animation: teaser-reveal 340ms 220ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
+@media print {
+  @page {
+    margin: 12mm;
+  }
+
+  html,
+  body {
+    background: #ffffff !important;
+  }
+
+  body * {
+    visibility: hidden !important;
+  }
+
+  body
+    *:not(.print-report-area):not(.print-report-area *):not(
+      :has(.print-report-area)
+    ) {
+    display: none !important;
+  }
+
+  .print-report-area,
+  .print-report-area * {
+    visibility: visible !important;
+  }
+
+  .print-report-area {
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    margin: 0 !important;
+    color: #0f172a !important;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  #lease-report-preview,
+  #lease-report-preview > div {
+    display: block !important;
+    height: auto !important;
+    overflow: visible !important;
+    opacity: 1 !important;
+  }
+
+  .print-report-area > article {
+    overflow: visible !important;
+    border-color: #cbd5e1 !important;
+    border-radius: 0 !important;
+    background: #ffffff !important;
+    box-shadow: none !important;
+  }
+
+  .print-report-area section,
+  .print-report-area footer,
+  .print-report-area section > div {
+    break-inside: avoid;
+  }
+
+  .print-report-area section {
+    box-shadow: none !important;
+  }
+
+  .print-report-area * {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;
