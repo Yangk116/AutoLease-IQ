@@ -723,6 +723,45 @@ export default function LeaseQuoteCalculator() {
     }, 650);
   }
 
+  function scrollToComparisonElement(elementId: string): void {
+    document.getElementById(elementId)?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
+  }
+
+  function reviewVerdict(): void {
+    scrollToComparisonElement("comparison-results");
+  }
+
+  function openNegotiationAssistant(): void {
+    const assistantTrigger = document.getElementById(
+      "negotiation-assistant-trigger",
+    );
+
+    if (assistantTrigger instanceof HTMLButtonElement) {
+      assistantTrigger.click();
+    }
+  }
+
+  function previewReport(): void {
+    const reportToggle = document.getElementById(
+      "lease-report-preview-toggle",
+    );
+
+    if (!(reportToggle instanceof HTMLButtonElement)) {
+      return;
+    }
+
+    if (reportToggle.getAttribute("aria-expanded") !== "true") {
+      reportToggle.click();
+    }
+
+    requestAnimationFrame(() => {
+      scrollToComparisonElement("lease-report-preview");
+    });
+  }
+
   const hasComparisonResult = comparisonResult !== null && !isComparing;
   const guidedProgressSteps: GuidedProgressStep[] = [
     {
@@ -1255,6 +1294,82 @@ export default function LeaseQuoteCalculator() {
               {comparisonErrorMessage}
             </p>
           ) : null}
+
+          <aside
+            className="sticky bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-30 rounded-2xl border border-teal-200/90 bg-white/95 p-3.5 shadow-[0_20px_55px_-25px_rgba(15,118,110,0.45)] backdrop-blur-md sm:bottom-4 sm:p-4"
+            aria-label="Next step"
+            aria-live="polite"
+          >
+            <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between lg:gap-6">
+              <div className="flex min-w-0 items-start gap-3">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-teal-50 text-teal-700 ring-1 ring-teal-100">
+                  <svg
+                    aria-hidden="true"
+                    viewBox="0 0 20 20"
+                    fill="none"
+                    className="h-4 w-4"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  >
+                    <path
+                      d="M4 10h12M11 5l5 5-5 5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </span>
+                <div className="min-w-0">
+                  <p className="text-xs font-semibold uppercase tracking-widest text-teal-700">
+                    Next step
+                  </p>
+                  <p className="mt-1 text-sm leading-5 text-slate-600">
+                    {isComparing
+                      ? "Comparing your offers and preparing the final verdict."
+                      : hasComparisonResult
+                        ? "Review the final verdict and key trade-offs, then prepare your dealer conversation."
+                        : "Compare your offers to see the true cost and final verdict."}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap gap-2 lg:shrink-0 lg:justify-end">
+                {!hasComparisonResult ? (
+                  <button
+                    type="button"
+                    onClick={compareOffers}
+                    disabled={isComparing}
+                    className="inline-flex h-10 flex-1 items-center justify-center rounded-xl bg-teal-700 px-4 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-teal-800 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-teal-600 focus:ring-offset-2 active:translate-y-0 active:scale-[0.98] disabled:cursor-wait disabled:opacity-75 disabled:hover:translate-y-0 sm:flex-none"
+                  >
+                    {isComparing ? "Comparing offers..." : "Compare offers"}
+                  </button>
+                ) : (
+                  <>
+                    <button
+                      type="button"
+                      onClick={reviewVerdict}
+                      className="inline-flex h-10 flex-1 items-center justify-center rounded-xl bg-teal-700 px-3.5 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-teal-800 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-teal-600 focus:ring-offset-2 active:translate-y-0 active:scale-[0.98] sm:flex-none"
+                    >
+                      Review verdict
+                    </button>
+                    <button
+                      type="button"
+                      onClick={openNegotiationAssistant}
+                      className="inline-flex h-10 flex-1 items-center justify-center rounded-xl border border-teal-200 bg-teal-50 px-3.5 text-sm font-semibold text-teal-900 transition-all duration-200 hover:-translate-y-0.5 hover:border-teal-300 hover:bg-teal-100 focus:outline-none focus:ring-2 focus:ring-teal-600/40 focus:ring-offset-2 active:translate-y-0 active:scale-[0.98] sm:flex-none"
+                    >
+                      Open assistant
+                    </button>
+                    <button
+                      type="button"
+                      onClick={previewReport}
+                      className="inline-flex h-10 flex-1 items-center justify-center rounded-xl border border-slate-200 bg-white px-3.5 text-sm font-semibold text-slate-700 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-teal-300 hover:bg-teal-50 hover:text-teal-900 focus:outline-none focus:ring-2 focus:ring-teal-600/40 focus:ring-offset-2 active:translate-y-0 active:scale-[0.98] sm:flex-none"
+                    >
+                      Preview report
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
+          </aside>
 
           <section
             id="report"
