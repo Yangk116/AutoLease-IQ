@@ -1400,6 +1400,7 @@ export function ComparisonResults({
 
       <div className="mb-5">
         <button
+          id="lease-report-preview-toggle"
           type="button"
           onClick={() => setIsReportPreviewOpen((isOpen) => !isOpen)}
           aria-expanded={isReportPreviewOpen}
@@ -1511,6 +1512,7 @@ export function ComparisonResults({
       </div>
 
       <button
+        id="negotiation-assistant-trigger"
         ref={assistantTriggerRef}
         type="button"
         onClick={openAssistant}

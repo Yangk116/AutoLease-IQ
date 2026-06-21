@@ -148,6 +148,15 @@ type DecisionMode =
   | "best-mileage-value"
   | "possible-future-buyout";
 
+type GuidedProgressStatus = "complete" | "active" | "available" | "locked";
+
+type GuidedProgressStep = {
+  number: number;
+  label: string;
+  href: string;
+  status: GuidedProgressStatus;
+};
+
 type ComparisonPreset = {
   id: "low-monthly-vs-low-total" | "low-upfront-vs-high-upfront" | "buyout";
   name: string;
@@ -714,6 +723,40 @@ export default function LeaseQuoteCalculator() {
     }, 650);
   }
 
+  const hasComparisonResult = comparisonResult !== null && !isComparing;
+  const guidedProgressSteps: GuidedProgressStep[] = [
+    {
+      number: 1,
+      label: "Enter numbers",
+      href: "#calculator",
+      status: "complete",
+    },
+    {
+      number: 2,
+      label: "Compare offers",
+      href: "#comparison-offers-inputs",
+      status: hasComparisonResult ? "complete" : "active",
+    },
+    {
+      number: 3,
+      label: "Review verdict",
+      href: "#comparison-results",
+      status: hasComparisonResult ? "active" : "locked",
+    },
+    {
+      number: 4,
+      label: "Negotiate",
+      href: "#negotiation-assistant-trigger",
+      status: hasComparisonResult ? "available" : "locked",
+    },
+    {
+      number: 5,
+      label: "Generate report",
+      href: "#lease-report-preview-toggle",
+      status: hasComparisonResult ? "available" : "locked",
+    },
+  ];
+
   return (
     <section
       id="calculator"
@@ -1000,6 +1043,109 @@ export default function LeaseQuoteCalculator() {
           </p>
         </div>
 
+        <nav
+          className="mt-8 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_18px_50px_-38px_rgba(15,23,42,0.55)]"
+          aria-label="Lease comparison progress"
+        >
+          <div className="overflow-x-auto px-4 pb-4 pt-5 sm:px-6 sm:pb-5">
+            <ol className="flex min-w-[720px] items-start lg:min-w-0">
+              {guidedProgressSteps.map((step, index) => {
+                const isLocked = step.status === "locked";
+                const isComplete = step.status === "complete";
+                const isActive = step.status === "active";
+                const stepClasses = `group relative z-10 flex min-w-0 flex-col items-center rounded-xl px-2 py-1 text-center focus:outline-none focus:ring-2 focus:ring-teal-700/30 focus:ring-offset-2 ${
+                  isLocked
+                    ? "cursor-not-allowed text-slate-400"
+                    : "text-slate-600 transition-all duration-200 hover:-translate-y-0.5 hover:text-teal-800"
+                }`;
+                const stepContent = (
+                  <>
+                    <span
+                      className={`flex h-9 w-9 items-center justify-center rounded-full border text-sm font-bold shadow-sm transition-colors ${
+                        isComplete
+                          ? "border-teal-700 bg-teal-700 text-white"
+                          : isActive
+                            ? "border-teal-700 bg-teal-50 text-teal-800 ring-4 ring-teal-100"
+                            : isLocked
+                              ? "border-slate-200 bg-slate-100 text-slate-400"
+                              : "border-teal-200 bg-white text-teal-800 group-hover:border-teal-400 group-hover:bg-teal-50"
+                      }`}
+                    >
+                      {isComplete ? (
+                        <svg
+                          aria-hidden="true"
+                          viewBox="0 0 20 20"
+                          fill="none"
+                          className="h-4 w-4"
+                          stroke="currentColor"
+                          strokeWidth="2.25"
+                        >
+                          <path
+                            d="m4.5 10.5 3.25 3.25 7.75-8"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                        </svg>
+                      ) : (
+                        step.number
+                      )}
+                    </span>
+                    <span
+                      className={`mt-3 text-xs font-semibold sm:text-sm ${
+                        isActive ? "text-teal-900" : ""
+                      }`}
+                    >
+                      {step.label}
+                    </span>
+                    <span className="sr-only">
+                      {isComplete
+                        ? " completed"
+                        : isActive
+                          ? " current step"
+                          : isLocked
+                            ? " locked until offers are compared"
+                            : " available"}
+                    </span>
+                  </>
+                );
+
+                return (
+                  <li
+                    key={step.label}
+                    className="relative flex min-w-0 flex-1 justify-center"
+                  >
+                    {index < guidedProgressSteps.length - 1 ? (
+                      <span
+                        aria-hidden="true"
+                        className={`absolute left-[calc(50%+1.5rem)] right-[calc(-50%+1.5rem)] top-[1.4rem] h-px ${
+                          isComplete ? "bg-teal-300" : "bg-slate-200"
+                        }`}
+                      />
+                    ) : null}
+                    {isLocked ? (
+                      <div className={stepClasses} aria-disabled="true">
+                        {stepContent}
+                      </div>
+                    ) : (
+                      <a
+                        href={step.href}
+                        className={stepClasses}
+                        aria-current={isActive ? "step" : undefined}
+                      >
+                        {stepContent}
+                      </a>
+                    )}
+                  </li>
+                );
+              })}
+            </ol>
+          </div>
+          <p className="border-t border-slate-100 bg-slate-50/70 px-5 py-3 text-sm leading-6 text-slate-600 sm:px-6">
+            Follow the flow from raw lease numbers to a final verdict,
+            negotiation strategy, and shareable report.
+          </p>
+        </nav>
+
         <div className="mt-8 space-y-6">
           <div
             id="examples"
@@ -1042,7 +1188,10 @@ export default function LeaseQuoteCalculator() {
             </div>
           </div>
 
-          <div className="grid gap-5 lg:grid-cols-2">
+          <div
+            id="comparison-offers-inputs"
+            className="grid scroll-mt-32 gap-5 sm:scroll-mt-24 lg:grid-cols-2"
+          >
             {comparisonQuotes.map((comparisonQuote) => (
               <ComparisonQuoteCard
                 key={comparisonQuote.id}
@@ -1159,7 +1308,10 @@ export default function LeaseQuoteCalculator() {
             ) : null}
 
             {comparisonResult && !isComparing ? (
-              <div className="comparison-results-reveal">
+              <div
+                id="comparison-results"
+                className="comparison-results-reveal scroll-mt-32 sm:scroll-mt-24"
+              >
                 <ComparisonResults
                   comparisonResult={comparisonResult}
                   comparisonPaymentSummaries={comparisonPaymentSummaries}
