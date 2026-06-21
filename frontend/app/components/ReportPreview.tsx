@@ -199,8 +199,8 @@ export function ReportPreview({
   ];
 
   return (
-    <article className="overflow-hidden rounded-[1.75rem] border border-slate-200 bg-slate-50 shadow-[0_28px_80px_-48px_rgba(15,23,42,0.75)]">
-      <header className="relative overflow-hidden border-b border-slate-200 bg-slate-950 px-5 py-7 text-white sm:px-8 sm:py-9">
+    <article className="overflow-hidden rounded-[1.25rem] border border-slate-200 bg-slate-50 shadow-[0_28px_80px_-48px_rgba(15,23,42,0.75)] sm:rounded-[1.75rem]">
+      <header className="relative overflow-hidden border-b border-slate-200 bg-slate-950 px-4 py-6 text-white sm:px-8 sm:py-9">
         <div
           aria-hidden="true"
           className="absolute -right-20 -top-24 h-64 w-64 rounded-full bg-teal-400/20 blur-3xl"
@@ -219,7 +219,7 @@ export function ReportPreview({
                 AutoLease IQ
               </span>
             </div>
-            <h2 className="mt-6 max-w-xl text-3xl font-bold tracking-tight sm:text-4xl">
+            <h2 className="mt-5 max-w-xl text-2xl font-bold tracking-tight sm:mt-6 sm:text-4xl">
               Lease Comparison Report
             </h2>
             <p className="mt-2 text-sm leading-6 text-slate-300">
@@ -232,7 +232,7 @@ export function ReportPreview({
         </div>
       </header>
 
-      <div className="space-y-5 p-4 sm:space-y-6 sm:p-6 lg:p-8">
+      <div className="space-y-4 p-3 sm:space-y-6 sm:p-6 lg:p-8">
         <section className="overflow-hidden rounded-2xl border border-teal-200 bg-white shadow-[0_18px_45px_-34px_rgba(13,148,136,0.8)]">
           <div className="grid lg:grid-cols-[0.72fr_1.28fr]">
             <div className="bg-gradient-to-br from-teal-700 to-teal-900 p-5 text-white sm:p-6">
@@ -289,11 +289,15 @@ export function ReportPreview({
                 <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                   {metric.label}
                 </p>
-                <div className="mt-3 grid grid-cols-2 divide-x divide-slate-200">
+                <div className="mt-3 grid gap-3 sm:grid-cols-2 sm:gap-0 sm:divide-x sm:divide-slate-200">
                   {comparisonResult.results.slice(0, 2).map((quote, index) => (
                     <div
                       key={`${metric.label}-${getQuoteLabel(index)}`}
-                      className={index === 0 ? "pr-3" : "pl-3"}
+                      className={
+                        index === 0
+                          ? "border-b border-slate-200 pb-3 sm:border-b-0 sm:pb-0 sm:pr-3"
+                          : "sm:pl-3"
+                      }
                     >
                       <p className="text-[0.68rem] font-bold uppercase tracking-wider text-teal-700">
                         {getQuoteLabel(index)}
@@ -315,8 +319,8 @@ export function ReportPreview({
             title="Offer Comparison"
           />
           <div className="mt-5 overflow-hidden rounded-2xl border border-slate-200">
-            <div className="grid grid-cols-[0.9fr_1fr_1fr] bg-slate-950 text-white">
-              <div className="p-3 text-xs font-semibold uppercase tracking-wide text-slate-300 sm:p-4">
+            <div className="grid grid-cols-2 bg-slate-950 text-white sm:grid-cols-[0.9fr_1fr_1fr]">
+              <div className="hidden p-3 text-xs font-semibold uppercase tracking-wide text-slate-300 sm:block sm:p-4">
                 Detail
               </div>
               {comparisonResult.results.slice(0, 2).map((quote, index) => (
@@ -340,18 +344,23 @@ export function ReportPreview({
             {offerComparisonRows.map((row, rowIndex) => (
               <div
                 key={row.label}
-                className={`grid grid-cols-[0.9fr_1fr_1fr] ${
+                className={`grid grid-cols-2 sm:grid-cols-[0.9fr_1fr_1fr] ${
                   rowIndex % 2 === 0 ? "bg-white" : "bg-slate-50/80"
                 }`}
               >
-                <div className="border-t border-slate-200 p-3 text-xs font-medium leading-5 text-slate-500 sm:p-4 sm:text-sm">
+                <div className="col-span-2 border-t border-slate-200 px-3 pb-1 pt-3 text-xs font-medium leading-5 text-slate-500 sm:col-span-1 sm:p-4 sm:text-sm">
                   {row.label}
                 </div>
                 {comparisonResult.results.slice(0, 2).map((quote, index) => (
                   <div
                     key={`${row.label}-${getQuoteLabel(index)}`}
-                    className="break-words border-l border-t border-slate-200 p-3 text-xs font-semibold leading-5 text-slate-900 sm:p-4 sm:text-sm"
+                    className={`min-w-0 break-words border-t border-slate-200 p-3 pt-1 text-xs font-semibold leading-5 text-slate-900 sm:border-l sm:p-4 sm:text-sm ${
+                      index === 0 ? "border-r sm:border-r-0" : ""
+                    }`}
                   >
+                    <span className="mb-0.5 block text-[0.625rem] font-bold uppercase tracking-wider text-teal-700 sm:hidden">
+                      {getQuoteLabel(index)}
+                    </span>
                     {row.getValue(quote, index)}
                   </div>
                 ))}

@@ -1092,6 +1092,35 @@ export function ComparisonResults({
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key === "Escape") {
         closeAssistant();
+        return;
+      }
+
+      if (event.key !== "Tab") {
+        return;
+      }
+
+      const dialog = document.getElementById("negotiation-assistant-dialog");
+      const focusableElements = dialog?.querySelectorAll<HTMLElement>(
+        'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+      );
+
+      if (!focusableElements?.length) {
+        return;
+      }
+
+      const firstFocusableElement = focusableElements[0];
+      const lastFocusableElement =
+        focusableElements[focusableElements.length - 1];
+
+      if (event.shiftKey && document.activeElement === firstFocusableElement) {
+        event.preventDefault();
+        lastFocusableElement.focus();
+      } else if (
+        !event.shiftKey &&
+        document.activeElement === lastFocusableElement
+      ) {
+        event.preventDefault();
+        firstFocusableElement.focus();
       }
     }
 
@@ -1301,7 +1330,7 @@ export function ComparisonResults({
 
   return (
     <>
-      <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-[0_24px_70px_-45px_rgba(15,23,42,0.55)] sm:p-6">
+      <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-[0_24px_70px_-45px_rgba(15,23,42,0.55)] sm:p-6">
         <div className="mb-6 flex items-start gap-3">
           <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-teal-50 text-teal-700 ring-1 ring-teal-100">
             <svg
@@ -1405,7 +1434,7 @@ export function ComparisonResults({
           onClick={() => setIsReportPreviewOpen((isOpen) => !isOpen)}
           aria-expanded={isReportPreviewOpen}
           aria-controls="lease-report-preview"
-          className="group flex w-full items-center justify-between gap-4 overflow-hidden rounded-2xl border border-slate-800 bg-[radial-gradient(circle_at_top_right,rgba(45,212,191,0.2),transparent_40%),linear-gradient(to_bottom_right,#0f172a,#172554)] p-4 text-left text-white shadow-[0_22px_55px_-32px_rgba(15,23,42,0.9)] transition-all duration-300 hover:-translate-y-0.5 hover:border-teal-500/70 hover:shadow-[0_26px_60px_-30px_rgba(15,118,110,0.65)] focus:outline-none focus:ring-2 focus:ring-teal-600/50 focus:ring-offset-2 active:translate-y-0 active:scale-[0.995] sm:p-5"
+          className="group flex w-full items-center justify-between gap-3 overflow-hidden rounded-2xl border border-slate-800 bg-[radial-gradient(circle_at_top_right,rgba(45,212,191,0.2),transparent_40%),linear-gradient(to_bottom_right,#0f172a,#172554)] p-3.5 text-left text-white shadow-[0_22px_55px_-32px_rgba(15,23,42,0.9)] transition-all duration-300 hover:-translate-y-0.5 hover:border-teal-500/70 hover:shadow-[0_26px_60px_-30px_rgba(15,118,110,0.65)] focus:outline-none focus:ring-2 focus:ring-teal-600/50 focus:ring-offset-2 active:translate-y-0 active:scale-[0.995] sm:gap-4 sm:p-5"
         >
           <span className="flex min-w-0 items-start gap-3.5">
             <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-teal-400 text-slate-950 shadow-lg shadow-slate-950/30 transition-transform duration-300 group-hover:scale-105">
@@ -1433,7 +1462,7 @@ export function ComparisonResults({
                   ? "Hide report preview"
                   : "View report preview"}
               </span>
-              <span className="mt-1 block text-sm leading-6 text-slate-300">
+              <span className="mt-1 hidden text-sm leading-6 text-slate-300 sm:block">
                 Review a polished, share-ready view of the verdict, costs, and
                 negotiation plan.
               </span>
@@ -1516,7 +1545,7 @@ export function ComparisonResults({
         ref={assistantTriggerRef}
         type="button"
         onClick={openAssistant}
-        className="negotiation-teaser-reveal group mb-5 flex w-full items-center justify-between gap-4 overflow-hidden rounded-2xl border border-teal-200 bg-[radial-gradient(circle_at_top_right,rgba(20,184,166,0.16),transparent_40%),linear-gradient(to_bottom_right,#f0fdfa,#ffffff)] p-4 text-left shadow-[0_18px_45px_-32px_rgba(13,148,136,0.7)] transition-all duration-300 hover:-translate-y-0.5 hover:border-teal-300 hover:shadow-[0_22px_50px_-30px_rgba(13,148,136,0.65)] focus:outline-none focus:ring-2 focus:ring-teal-600/40 focus:ring-offset-2 active:translate-y-0 active:scale-[0.995] sm:p-5"
+            className="negotiation-teaser-reveal group mb-5 flex w-full items-center justify-between gap-3 overflow-hidden rounded-2xl border border-teal-200 bg-[radial-gradient(circle_at_top_right,rgba(20,184,166,0.16),transparent_40%),linear-gradient(to_bottom_right,#f0fdfa,#ffffff)] p-3.5 text-left shadow-[0_18px_45px_-32px_rgba(13,148,136,0.7)] transition-all duration-300 hover:-translate-y-0.5 hover:border-teal-300 hover:shadow-[0_22px_50px_-30px_rgba(13,148,136,0.65)] focus:outline-none focus:ring-2 focus:ring-teal-600/40 focus:ring-offset-2 active:translate-y-0 active:scale-[0.995] sm:gap-4 sm:p-5"
         aria-haspopup="dialog"
       >
         <span className="flex min-w-0 items-start gap-3.5">
@@ -1540,7 +1569,7 @@ export function ComparisonResults({
             <span className="mt-1 block text-base font-semibold text-slate-950">
               Open your Negotiation Assistant
             </span>
-            <span className="mt-1 block text-sm leading-6 text-slate-600">
+            <span className="mt-1 hidden text-sm leading-6 text-slate-600 sm:block">
               Get {dealerNegotiationItems.length} tailored questions to clarify
               fees and negotiate a cleaner deal.
             </span>
@@ -1596,10 +1625,11 @@ export function ComparisonResults({
                 aria-hidden="true"
               />
           <aside
+            id="negotiation-assistant-dialog"
             role="dialog"
             aria-modal="true"
             aria-labelledby="negotiation-assistant-title"
-            className={`fixed inset-x-0 bottom-0 z-50 flex h-[90dvh] max-h-[90dvh] min-h-0 w-full flex-col overflow-hidden rounded-t-[1.75rem] border border-slate-200/80 bg-slate-50 shadow-[0_-24px_70px_-25px_rgba(15,23,42,0.35)] transition-transform duration-300 ease-out md:inset-y-0 md:left-auto md:right-0 md:h-[100dvh] md:max-h-[100dvh] md:w-full md:max-w-xl md:rounded-none md:rounded-l-[1.75rem] md:shadow-[-24px_0_70px_-30px_rgba(15,23,42,0.35)] ${
+            className={`fixed inset-x-0 bottom-0 z-50 flex h-[calc(100dvh-0.75rem)] max-h-[calc(100dvh-0.75rem)] min-h-0 w-full flex-col overflow-hidden rounded-t-[1.5rem] border border-slate-200/80 bg-slate-50 shadow-[0_-24px_70px_-25px_rgba(15,23,42,0.35)] transition-transform duration-300 ease-out sm:h-[90dvh] sm:max-h-[90dvh] sm:rounded-t-[1.75rem] md:inset-y-0 md:left-auto md:right-0 md:h-[100dvh] md:max-h-[100dvh] md:w-full md:max-w-xl md:rounded-none md:rounded-l-[1.75rem] md:shadow-[-24px_0_70px_-30px_rgba(15,23,42,0.35)] ${
               isAssistantOpen
                 ? "translate-y-0 md:translate-x-0"
                 : "translate-y-full md:translate-x-full md:translate-y-0"
@@ -1607,18 +1637,18 @@ export function ComparisonResults({
             onMouseDown={(event) => event.stopPropagation()}
           >
             <div className="mx-auto mt-2 h-1.5 w-12 shrink-0 rounded-full bg-slate-300 md:hidden" />
-            <header className="flex shrink-0 items-start justify-between gap-4 border-b border-slate-200/80 bg-white px-5 py-4 sm:px-6 sm:py-5">
+            <header className="flex shrink-0 items-start justify-between gap-3 border-b border-slate-200/80 bg-white px-4 py-3.5 sm:gap-4 sm:px-6 sm:py-5">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-widest text-teal-700">
                   Personalized to this comparison
                 </p>
                 <h2
                   id="negotiation-assistant-title"
-                  className="mt-1 text-xl font-semibold tracking-tight text-slate-950"
+                  className="mt-1 text-lg font-semibold tracking-tight text-slate-950 sm:text-xl"
                 >
                   Negotiation Assistant
                 </h2>
-                <p className="mt-1 text-sm leading-6 text-slate-500">
+                <p className="mt-1 hidden text-sm leading-6 text-slate-500 sm:block">
                   Clear questions you can use with the dealer.
                 </p>
               </div>
@@ -1642,7 +1672,7 @@ export function ComparisonResults({
               </button>
             </header>
 
-            <div className="min-h-0 flex-1 touch-pan-y overflow-y-auto overscroll-contain px-4 pb-8 pt-4 sm:px-6 sm:pb-12 sm:pt-5">
+            <div className="min-h-0 flex-1 touch-pan-y overflow-y-auto overscroll-contain px-4 pb-5 pt-4 sm:px-6 sm:pb-10 sm:pt-5">
               <div className="rounded-2xl border border-teal-200 bg-gradient-to-br from-teal-50 to-white p-4 shadow-sm">
                 <p className="text-sm font-semibold text-slate-950">
                   Your conversation plan
@@ -1685,7 +1715,7 @@ export function ComparisonResults({
               </div>
             </div>
 
-            <footer className="shrink-0 border-t border-slate-200/80 bg-white p-4 sm:px-6">
+            <footer className="shrink-0 border-t border-slate-200/80 bg-white px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3 sm:px-6 sm:pb-4 sm:pt-4">
               <button
                 type="button"
                 onClick={copyReport}

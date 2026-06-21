@@ -23,6 +23,7 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+  overflow-wrap: break-word;
 }
 
 html {
@@ -196,15 +197,26 @@ summary:hover {
     box-shadow: none !important;
   }
 
-  .print-report-area section,
+  .print-report-area section {
+    break-inside: auto;
+    page-break-inside: auto;
+  }
+
   .print-report-area footer,
-  .print-report-area section > div {
+  .print-report-area li,
+  .print-report-area section > div > article {
     break-inside: avoid;
     page-break-inside: avoid;
   }
 
   .print-report-area section {
     box-shadow: none !important;
+  }
+
+  .print-report-area p,
+  .print-report-area li {
+    orphans: 3;
+    widows: 3;
   }
 
   .print-report-area * {

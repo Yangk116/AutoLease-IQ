@@ -799,7 +799,7 @@ export default function LeaseQuoteCalculator() {
   return (
     <section
       id="calculator"
-      className="scroll-mt-32 bg-white px-6 py-16 sm:scroll-mt-24 sm:px-8 sm:py-24"
+      className="scroll-mt-32 bg-white px-4 py-14 sm:scroll-mt-24 sm:px-8 sm:py-24"
     >
       <div className="mx-auto grid w-full max-w-6xl gap-10 lg:grid-cols-[minmax(0,0.95fr)_minmax(320px,1.05fr)] lg:items-start">
         <div>
@@ -1066,7 +1066,7 @@ export default function LeaseQuoteCalculator() {
 
       <div
         id="compare"
-        className="mx-auto mt-20 w-full max-w-6xl scroll-mt-32 rounded-[2rem] border border-slate-200 bg-slate-50/80 p-5 shadow-[0_28px_80px_-60px_rgba(15,23,42,0.65)] sm:scroll-mt-24 sm:p-8 lg:p-10"
+        className="mx-auto mt-16 w-full max-w-6xl scroll-mt-32 rounded-[1.5rem] border border-slate-200 bg-slate-50/80 p-4 shadow-[0_28px_80px_-60px_rgba(15,23,42,0.65)] sm:mt-20 sm:scroll-mt-24 sm:rounded-[2rem] sm:p-8 lg:p-10"
       >
         <div>
           <p className="mb-4 text-sm font-semibold uppercase tracking-widest text-teal-700">
@@ -1086,8 +1086,8 @@ export default function LeaseQuoteCalculator() {
           className="mt-8 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_18px_50px_-38px_rgba(15,23,42,0.55)]"
           aria-label="Lease comparison progress"
         >
-          <div className="overflow-x-auto px-4 pb-4 pt-5 sm:px-6 sm:pb-5">
-            <ol className="flex min-w-[720px] items-start lg:min-w-0">
+          <div className="overscroll-x-contain overflow-x-auto px-3 pb-4 pt-5 [scrollbar-width:thin] sm:px-6 sm:pb-5">
+            <ol className="flex w-max min-w-full snap-x snap-proximity items-start sm:min-w-[680px] lg:w-full lg:min-w-0">
               {guidedProgressSteps.map((step, index) => {
                 const isLocked = step.status === "locked";
                 const isComplete = step.status === "complete";
@@ -1151,7 +1151,7 @@ export default function LeaseQuoteCalculator() {
                 return (
                   <li
                     key={step.label}
-                    className="relative flex min-w-0 flex-1 justify-center"
+                    className="relative flex w-28 flex-none snap-start justify-center sm:w-auto sm:min-w-0 sm:flex-1"
                   >
                     {index < guidedProgressSteps.length - 1 ? (
                       <span
@@ -1179,7 +1179,7 @@ export default function LeaseQuoteCalculator() {
               })}
             </ol>
           </div>
-          <p className="border-t border-slate-100 bg-slate-50/70 px-5 py-3 text-sm leading-6 text-slate-600 sm:px-6">
+          <p className="border-t border-slate-100 bg-slate-50/70 px-4 py-3 text-xs leading-5 text-slate-600 sm:px-6 sm:text-sm sm:leading-6">
             Follow the flow from raw lease numbers to a final verdict,
             negotiation strategy, and shareable report.
           </p>
@@ -1296,13 +1296,13 @@ export default function LeaseQuoteCalculator() {
           ) : null}
 
           <aside
-            className="sticky bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-30 rounded-2xl border border-teal-200/90 bg-white/95 p-3.5 shadow-[0_20px_55px_-25px_rgba(15,118,110,0.45)] backdrop-blur-md sm:bottom-4 sm:p-4"
+            className="sticky bottom-[max(0.5rem,env(safe-area-inset-bottom))] z-20 rounded-2xl border border-teal-200/90 bg-white/95 p-2.5 shadow-[0_20px_55px_-25px_rgba(15,118,110,0.45)] backdrop-blur-md sm:bottom-4 sm:p-4"
             aria-label="Next step"
             aria-live="polite"
           >
-            <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between lg:gap-6">
-              <div className="flex min-w-0 items-start gap-3">
-                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-teal-50 text-teal-700 ring-1 ring-teal-100">
+            <div className="flex flex-col gap-2.5 lg:flex-row lg:items-center lg:justify-between lg:gap-6">
+              <div className="flex min-w-0 items-center gap-3">
+                <span className="hidden h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-teal-50 text-teal-700 ring-1 ring-teal-100 sm:flex">
                   <svg
                     aria-hidden="true"
                     viewBox="0 0 20 20"
@@ -1319,10 +1319,10 @@ export default function LeaseQuoteCalculator() {
                   </svg>
                 </span>
                 <div className="min-w-0">
-                  <p className="text-xs font-semibold uppercase tracking-widest text-teal-700">
+                  <p className="text-[0.6875rem] font-semibold uppercase tracking-widest text-teal-700 sm:text-xs">
                     Next step
                   </p>
-                  <p className="mt-1 text-sm leading-5 text-slate-600">
+                  <p className="mt-1 hidden text-sm leading-5 text-slate-600 sm:block">
                     {isComparing
                       ? "Comparing your offers and preparing the final verdict."
                       : hasComparisonResult
@@ -1332,13 +1332,17 @@ export default function LeaseQuoteCalculator() {
                 </div>
               </div>
 
-              <div className="flex flex-wrap gap-2 lg:shrink-0 lg:justify-end">
+              <div
+                className={`grid gap-2 sm:flex sm:flex-wrap lg:shrink-0 lg:justify-end ${
+                  hasComparisonResult ? "grid-cols-3" : "grid-cols-1"
+                }`}
+              >
                 {!hasComparisonResult ? (
                   <button
                     type="button"
                     onClick={compareOffers}
                     disabled={isComparing}
-                    className="inline-flex h-10 flex-1 items-center justify-center rounded-xl bg-teal-700 px-4 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-teal-800 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-teal-600 focus:ring-offset-2 active:translate-y-0 active:scale-[0.98] disabled:cursor-wait disabled:opacity-75 disabled:hover:translate-y-0 sm:flex-none"
+                    className="inline-flex h-11 flex-1 items-center justify-center rounded-xl bg-teal-700 px-4 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-teal-800 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-teal-600 focus:ring-offset-2 active:translate-y-0 active:scale-[0.98] disabled:cursor-wait disabled:opacity-75 disabled:hover:translate-y-0 sm:h-10 sm:flex-none"
                   >
                     {isComparing ? "Comparing offers..." : "Compare offers"}
                   </button>
@@ -1347,23 +1351,26 @@ export default function LeaseQuoteCalculator() {
                     <button
                       type="button"
                       onClick={reviewVerdict}
-                      className="inline-flex h-10 flex-1 items-center justify-center rounded-xl bg-teal-700 px-3.5 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-teal-800 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-teal-600 focus:ring-offset-2 active:translate-y-0 active:scale-[0.98] sm:flex-none"
+                      className="inline-flex h-11 min-w-0 flex-1 items-center justify-center rounded-xl bg-teal-700 px-2 text-xs font-semibold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-teal-800 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-teal-600 focus:ring-offset-2 active:translate-y-0 active:scale-[0.98] sm:h-10 sm:flex-none sm:px-3.5 sm:text-sm"
                     >
-                      Review verdict
+                      <span className="sm:hidden">Verdict</span>
+                      <span className="hidden sm:inline">Review verdict</span>
                     </button>
                     <button
                       type="button"
                       onClick={openNegotiationAssistant}
-                      className="inline-flex h-10 flex-1 items-center justify-center rounded-xl border border-teal-200 bg-teal-50 px-3.5 text-sm font-semibold text-teal-900 transition-all duration-200 hover:-translate-y-0.5 hover:border-teal-300 hover:bg-teal-100 focus:outline-none focus:ring-2 focus:ring-teal-600/40 focus:ring-offset-2 active:translate-y-0 active:scale-[0.98] sm:flex-none"
+                      className="inline-flex h-11 min-w-0 flex-1 items-center justify-center rounded-xl border border-teal-200 bg-teal-50 px-2 text-xs font-semibold text-teal-900 transition-all duration-200 hover:-translate-y-0.5 hover:border-teal-300 hover:bg-teal-100 focus:outline-none focus:ring-2 focus:ring-teal-600/40 focus:ring-offset-2 active:translate-y-0 active:scale-[0.98] sm:h-10 sm:flex-none sm:px-3.5 sm:text-sm"
                     >
-                      Open assistant
+                      <span className="sm:hidden">Assistant</span>
+                      <span className="hidden sm:inline">Open assistant</span>
                     </button>
                     <button
                       type="button"
                       onClick={previewReport}
-                      className="inline-flex h-10 flex-1 items-center justify-center rounded-xl border border-slate-200 bg-white px-3.5 text-sm font-semibold text-slate-700 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-teal-300 hover:bg-teal-50 hover:text-teal-900 focus:outline-none focus:ring-2 focus:ring-teal-600/40 focus:ring-offset-2 active:translate-y-0 active:scale-[0.98] sm:flex-none"
+                      className="inline-flex h-11 min-w-0 flex-1 items-center justify-center rounded-xl border border-slate-200 bg-white px-2 text-xs font-semibold text-slate-700 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-teal-300 hover:bg-teal-50 hover:text-teal-900 focus:outline-none focus:ring-2 focus:ring-teal-600/40 focus:ring-offset-2 active:translate-y-0 active:scale-[0.98] sm:h-10 sm:flex-none sm:px-3.5 sm:text-sm"
                     >
-                      Preview report
+                      <span className="sm:hidden">Report</span>
+                      <span className="hidden sm:inline">Preview report</span>
                     </button>
                   </>
                 )}
