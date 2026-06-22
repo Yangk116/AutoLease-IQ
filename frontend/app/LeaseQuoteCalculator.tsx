@@ -11,10 +11,21 @@ import {
 } from "@/lib/leaseCalculations";
 
 import { InsightSummary, type DealInsight } from "./components/InsightSummary";
-import { ComparisonResults } from "./components/ComparisonResults";
+import {
+  buildFinalVerdict,
+  ComparisonResults,
+  type ComparisonPaymentSummary,
+  type DecisionMode,
+} from "./components/ComparisonResults";
 import { ComparisonQuoteCard } from "./components/ComparisonQuoteCard";
 import type { ComparisonQuoteForm } from "./components/ComparisonQuoteCard";
 import { MetricCard } from "./components/MetricCard";
+import {
+  readSavedComparisons,
+  SavedComparisonsPanel,
+  type SavedComparison,
+  writeSavedComparisons,
+} from "./components/SavedComparisonsPanel";
 
 const defaultQuote: LeaseQuoteInput = {
   downPayment: 8_000,
@@ -134,19 +145,6 @@ type PaymentSummary = {
   enteredMonthlyPayment: number;
   monthlyPaymentUsed: number;
 };
-
-type ComparisonPaymentSummary = {
-  quoteName: string;
-  enteredMonthlyPayment: number;
-  monthlyPaymentUsed: number;
-};
-
-type DecisionMode =
-  | "lowest-total-cost"
-  | "lowest-monthly-budget"
-  | "lowest-upfront-cash"
-  | "best-mileage-value"
-  | "possible-future-buyout";
 
 type GuidedProgressStatus = "complete" | "active" | "available" | "locked";
 
@@ -477,10 +475,20 @@ export default function LeaseQuoteCalculator() {
   const [selectedDecisionMode, setSelectedDecisionMode] =
     useState<DecisionMode>("lowest-total-cost");
   const [isComparing, setIsComparing] = useState(false);
+  const [savedComparisons, setSavedComparisons] = useState<SavedComparison[]>(
+    [],
+  );
+  const [savedComparisonMessage, setSavedComparisonMessage] = useState("");
   const comparisonTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
+    const savedComparisonsFrame = requestAnimationFrame(() => {
+      setSavedComparisons(readSavedComparisons());
+    });
+
     return () => {
+      cancelAnimationFrame(savedComparisonsFrame);
+
       if (comparisonTimeout.current) {
         clearTimeout(comparisonTimeout.current);
       }
@@ -760,6 +768,120 @@ export default function LeaseQuoteCalculator() {
     requestAnimationFrame(() => {
       scrollToComparisonElement("lease-report-preview");
     });
+  }
+
+  function getComparisonQuoteName(index: number): string {
+    const comparisonQuote = comparisonQuotes[index];
+
+    return (
+      comparisonQuote?.quoteName.trim() || comparisonQuote?.label || "Quote"
+    );
+  }
+
+  function saveComparison(): void {
+    if (!comparisonResult) {
+      return;
+    }
+
+    const quoteA = comparisonQuotes[0];
+    const quoteB = comparisonQuotes[1];
+    const resultA = comparisonResult.results[0];
+    const resultB = comparisonResult.results[1];
+
+    if (!quoteA || !quoteB || !resultA || !resultB) {
+      setSavedComparisonMessage("This comparison could not be saved.");
+      return;
+    }
+
+    const quoteAName = getComparisonQuoteName(0);
+    const quoteBName = getComparisonQuoteName(1);
+    const finalVerdict = buildFinalVerdict(
+      comparisonResult,
+      selectedDecisionMode,
+    );
+    const winnerIndex = finalVerdict?.winningQuote
+      ? comparisonResult.results.indexOf(finalVerdict.winningQuote)
+      : -1;
+    const savedAt = new Date().toISOString();
+    const savedComparison: SavedComparison = {
+      id:
+        typeof crypto !== "undefined" && "randomUUID" in crypto
+          ? crypto.randomUUID()
+          : `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+      savedAt,
+      title: `${quoteAName} vs ${quoteBName}`,
+      decisionMode: selectedDecisionMode,
+      quotes: [{ ...quoteA }, { ...quoteB }],
+      summary: {
+        finalWinner:
+          winnerIndex === 0
+            ? quoteAName
+            : winnerIndex === 1
+              ? quoteBName
+              : null,
+        verdictKind: finalVerdict?.kind ?? null,
+        trueMonthlyCosts: [
+          {
+            quoteName: quoteAName,
+            value: resultA.trueMonthlyCost,
+          },
+          {
+            quoteName: quoteBName,
+            value: resultB.trueMonthlyCost,
+          },
+        ],
+      },
+    };
+    const nextComparisons = [savedComparison, ...savedComparisons];
+
+    if (!writeSavedComparisons(nextComparisons)) {
+      setSavedComparisonMessage(
+        "The comparison could not be saved in this browser.",
+      );
+      return;
+    }
+
+    setSavedComparisons(nextComparisons);
+    setSavedComparisonMessage("Comparison saved on this device.");
+  }
+
+  function loadSavedComparison(savedComparison: SavedComparison): void {
+    if (comparisonTimeout.current) {
+      clearTimeout(comparisonTimeout.current);
+      comparisonTimeout.current = null;
+    }
+
+    setIsComparing(false);
+    setComparisonQuotes(
+      savedComparison.quotes.map((savedQuote) => ({ ...savedQuote })),
+    );
+    setSelectedDecisionMode(savedComparison.decisionMode);
+    setComparisonResult(null);
+    setComparisonPaymentSummaries([]);
+    setComparisonErrorMessage("");
+    setSavedComparisonMessage(
+      "Saved inputs loaded. Select Compare offers to refresh the verdict.",
+    );
+
+    requestAnimationFrame(() => {
+      scrollToComparisonElement("comparison-offers-inputs");
+    });
+  }
+
+  function deleteSavedComparison(comparisonId: string): void {
+    const nextComparisons = savedComparisons.filter(
+      (comparison) => comparison.id !== comparisonId,
+    );
+
+    if (!writeSavedComparisons(nextComparisons)) {
+      setSavedComparisonMessage(
+        "The saved comparison could not be deleted in this browser.",
+      );
+      return;
+    }
+
+    setSavedComparisons(nextComparisons);
+    setSavedComparisonMessage("Saved comparison deleted.");
   }
 
   const hasComparisonResult = comparisonResult !== null && !isComparing;
@@ -1439,6 +1561,24 @@ export default function LeaseQuoteCalculator() {
                   comparisonPaymentSummaries={comparisonPaymentSummaries}
                   selectedDecisionMode={selectedDecisionMode}
                 />
+                <div className="mt-5 rounded-2xl border border-teal-200 bg-gradient-to-br from-teal-50/80 to-white p-4 shadow-[0_18px_45px_-35px_rgba(13,148,136,0.65)] sm:flex sm:items-center sm:justify-between sm:gap-5 sm:p-5">
+                  <div>
+                    <p className="text-sm font-semibold text-slate-950">
+                      Keep this comparison on this device
+                    </p>
+                    <p className="mt-1 text-xs leading-5 text-slate-500">
+                      Save both offers, your selected goal, and the verdict
+                      summary in this browser.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={saveComparison}
+                    className="mt-3 inline-flex h-11 w-full items-center justify-center rounded-xl bg-teal-700 px-4 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-teal-800 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-teal-600 focus:ring-offset-2 active:translate-y-0 active:scale-[0.98] sm:mt-0 sm:w-auto"
+                  >
+                    Save comparison
+                  </button>
+                </div>
               </div>
             ) : null}
 
@@ -1479,6 +1619,22 @@ export default function LeaseQuoteCalculator() {
               </div>
             ) : null}
           </section>
+
+          {savedComparisonMessage ? (
+            <p
+              className="rounded-xl border border-teal-100 bg-teal-50/70 px-4 py-3 text-sm font-medium text-teal-900"
+              role="status"
+              aria-live="polite"
+            >
+              {savedComparisonMessage}
+            </p>
+          ) : null}
+
+          <SavedComparisonsPanel
+            comparisons={savedComparisons}
+            onLoad={loadSavedComparison}
+            onDelete={deleteSavedComparison}
+          />
         </div>
       </div>
     </section>
