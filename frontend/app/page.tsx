@@ -1,9 +1,19 @@
 import Link from "next/link";
 
-import LeaseQuoteCalculator from "./LeaseQuoteCalculator";
 import { SiteHeader } from "./components/SiteHeader";
 
-const productFlow = [
+type ProductFlowItem = {
+  step: string;
+  title: string;
+  description: string;
+};
+
+type LandingBenefit = {
+  title: string;
+  description: string;
+};
+
+const productFlow: ProductFlowItem[] = [
   {
     step: "01",
     title: "Enter quote numbers",
@@ -26,11 +36,34 @@ const productFlow = [
   },
 ];
 
-const decisionSignals = [
+const decisionSignals: string[] = [
   "True monthly cost",
   "Upfront cash pressure",
   "Mileage value",
   "Buyout and residual context",
+];
+
+const landingBenefits: LandingBenefit[] = [
+  {
+    title: "Compare true cost",
+    description:
+      "Normalize payments, upfront cash, fees, term, and mileage into a fair comparison.",
+  },
+  {
+    title: "Understand trade-offs",
+    description:
+      "See where an offer wins and what you give up across cost, flexibility, and value.",
+  },
+  {
+    title: "Negotiate smarter",
+    description:
+      "Turn the quote details into focused questions for the dealer before you commit.",
+  },
+  {
+    title: "Save or print a report",
+    description:
+      "Keep a decision-ready summary you can review, copy, or bring into the showroom.",
+  },
 ];
 
 export default function Home() {
@@ -108,34 +141,87 @@ export default function Home() {
             </aside>
           </div>
 
-          <div className="mt-14 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_18px_55px_-42px_rgba(15,23,42,0.55)]">
-            <div className="grid sm:grid-cols-2 lg:grid-cols-4">
-              {productFlow.map((item, index) => (
-                <article
-                  key={item.step}
-                  className={`p-5 sm:p-6 ${
-                    index > 0 ? "border-t border-slate-200" : ""
-                  } ${index % 2 === 1 ? "sm:border-l" : ""} ${
-                    index >= 2 ? "sm:border-t" : "sm:border-t-0"
-                  } ${index > 0 ? "lg:border-l lg:border-t-0" : ""}`}
-                >
-                  <p className="text-xs font-bold tracking-[0.18em] text-teal-700">
-                    STEP {item.step}
-                  </p>
-                  <h2 className="mt-3 text-base font-semibold text-slate-950">
-                    {item.title}
-                  </h2>
-                  <p className="mt-2 text-sm leading-6 text-slate-500">
-                    {item.description}
-                  </p>
-                </article>
-              ))}
+          <div className="mt-16">
+            <div className="max-w-2xl">
+              <p className="text-sm font-semibold uppercase tracking-[0.18em] text-teal-700">
+                How it works
+              </p>
+              <h2 className="mt-3 text-2xl font-semibold tracking-tight text-slate-950 sm:text-3xl">
+                A clear path from quote details to a confident decision.
+              </h2>
+            </div>
+
+            <div className="mt-7 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_18px_55px_-42px_rgba(15,23,42,0.55)]">
+              <div className="grid sm:grid-cols-2 lg:grid-cols-4">
+                {productFlow.map((item, index) => (
+                  <article
+                    key={item.step}
+                    className={`p-5 sm:p-6 ${
+                      index > 0 ? "border-t border-slate-200" : ""
+                    } ${index % 2 === 1 ? "sm:border-l" : ""} ${
+                      index >= 2 ? "sm:border-t" : "sm:border-t-0"
+                    } ${index > 0 ? "lg:border-l lg:border-t-0" : ""}`}
+                  >
+                    <p className="text-xs font-bold tracking-[0.18em] text-teal-700">
+                      STEP {item.step}
+                    </p>
+                    <h3 className="mt-3 text-base font-semibold text-slate-950">
+                      {item.title}
+                    </h3>
+                    <p className="mt-2 text-sm leading-6 text-slate-500">
+                      {item.description}
+                    </p>
+                  </article>
+                ))}
+              </div>
             </div>
           </div>
         </div>
       </section>
 
-      <LeaseQuoteCalculator />
+      <section className="px-6 py-16 sm:px-8 sm:py-20">
+        <div className="mx-auto w-full max-w-6xl">
+          <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+            <div className="max-w-2xl">
+              <p className="text-sm font-semibold uppercase tracking-[0.18em] text-teal-700">
+                Decision-ready output
+              </p>
+              <h2 className="mt-3 text-3xl font-semibold tracking-tight text-slate-950 sm:text-4xl">
+                From dealer quote to decision-ready report.
+              </h2>
+              <p className="mt-4 text-base leading-7 text-slate-600">
+                Focus on the numbers and trade-offs that matter before the
+                paperwork is in front of you.
+              </p>
+            </div>
+            <Link
+              href="/compare"
+              className="inline-flex h-11 shrink-0 items-center justify-center self-start rounded-xl bg-slate-950 px-5 text-sm font-semibold text-white transition-all hover:-translate-y-0.5 hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-950 focus:ring-offset-2 active:translate-y-0 sm:self-auto"
+            >
+              Compare your offers
+            </Link>
+          </div>
+
+          <div className="mt-9 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {landingBenefits.map((benefit, index) => (
+              <article
+                key={benefit.title}
+                className="rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_16px_45px_-38px_rgba(15,23,42,0.55)]"
+              >
+                <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-teal-50 text-sm font-bold text-teal-800">
+                  {index + 1}
+                </span>
+                <h3 className="mt-5 text-lg font-semibold text-slate-950">
+                  {benefit.title}
+                </h3>
+                <p className="mt-2 text-sm leading-6 text-slate-600">
+                  {benefit.description}
+                </p>
+              </article>
+            ))}
+          </div>
+        </div>
+      </section>
     </main>
   );
 }
