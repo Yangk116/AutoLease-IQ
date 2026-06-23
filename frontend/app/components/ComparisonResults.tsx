@@ -46,6 +46,12 @@ type ComparisonResultsProps = {
 
 type CopyStatus = "idle" | "copied" | "failed";
 
+export type ComparisonReportMetadata = {
+  generatedAt: Date;
+  generatedAtLabel: string;
+  reportId: string;
+};
+
 export type DealerNegotiationItem = {
   title: string;
   whyItMatters: string;
@@ -104,6 +110,11 @@ const percentageFormatter = new Intl.NumberFormat("en-CA", {
   minimumFractionDigits: 1,
 });
 
+const reportDateTimeFormatter = new Intl.DateTimeFormat("en-CA", {
+  dateStyle: "medium",
+  timeStyle: "short",
+});
+
 function formatCurrency(value: number) {
   return currencyFormatter.format(value);
 }
@@ -118,6 +129,30 @@ function formatPercentage(value: number) {
 
 function formatCostPerKilometre(value: number) {
   return `${formatCurrency(value)} / km`;
+}
+
+function padDatePart(value: number): string {
+  return value.toString().padStart(2, "0");
+}
+
+function buildReportId(generatedAt: Date): string {
+  const year = generatedAt.getFullYear();
+  const month = padDatePart(generatedAt.getMonth() + 1);
+  const day = padDatePart(generatedAt.getDate());
+  const hour = padDatePart(generatedAt.getHours());
+  const minute = padDatePart(generatedAt.getMinutes());
+
+  return `ALIQ-${year}${month}${day}-${hour}${minute}`;
+}
+
+function buildComparisonReportMetadata(
+  generatedAt: Date,
+): ComparisonReportMetadata {
+  return {
+    generatedAt,
+    generatedAtLabel: reportDateTimeFormatter.format(generatedAt),
+    reportId: buildReportId(generatedAt),
+  };
 }
 
 const decisionModeLabels: Record<DecisionMode, string> = {
@@ -890,6 +925,9 @@ export function buildComparisonReport(
   comparison: LeaseComparisonResult,
   paymentSummaries: ComparisonPaymentSummary[],
   decisionMode: DecisionMode,
+  metadata: ComparisonReportMetadata = buildComparisonReportMetadata(
+    new Date(),
+  ),
 ) {
   const quoteNames = comparison.results.map((quote, index) => {
     const quoteLabel = `Quote ${String.fromCharCode(65 + index)}`;
@@ -903,7 +941,7 @@ export function buildComparisonReport(
     const paymentSummary = paymentSummaries[index];
     const quoteLabel = `Quote ${String.fromCharCode(65 + index)}`;
     return [
-      `${quoteLabel.toUpperCase()} — ${quoteNames[index]}`,
+      `${quoteLabel.toUpperCase()} - ${quoteNames[index]}`,
       "",
       `* True monthly cost: ${formatCurrency(quote.trueMonthlyCost)}`,
       `* Total lease cost: ${formatCurrency(quote.totalCost)}`,
@@ -921,7 +959,7 @@ export function buildComparisonReport(
     decisionMode,
   );
   const verdictFit = finalVerdict?.winningQuote
-    ? `${getQuoteLetter(comparison, finalVerdict.winningQuote)} — ${getReportQuoteName(
+    ? `${getQuoteLetter(comparison, finalVerdict.winningQuote)} - ${getReportQuoteName(
         comparison,
         paymentSummaries,
         finalVerdict.winningQuote,
@@ -966,7 +1004,7 @@ export function buildComparisonReport(
 
     return [
       [
-        `${quoteLabel.toUpperCase()} — ${quoteNames[index]}`,
+        `${quoteLabel.toUpperCase()} - ${quoteNames[index]}`,
         "",
         ...metrics,
       ].join("\n"),
@@ -1001,17 +1039,18 @@ export function buildComparisonReport(
 
   return [
     "AutoLease IQ Comparison Report",
+    `Generated: ${metadata.generatedAtLabel}`,
+    `Report ID: ${metadata.reportId}`,
+    `Selected goal: ${decisionModeLabels[decisionMode]}`,
     "Generated from the numbers entered by the user.",
     "",
-    "FINAL VERDICT",
+    "EXECUTIVE SUMMARY / FINAL VERDICT",
     "",
     `Best fit for selected goal: ${verdictFit}`,
     finalVerdict?.headline ?? "A final verdict is not available.",
     ...(finalVerdict?.reasons.slice(0, 1).map((reason) => `* ${reason}`) ?? []),
     "",
-    "SUMMARY",
-    "",
-    `* Selected goal: ${decisionModeLabels[decisionMode]}`,
+    "COST SNAPSHOT",
     "",
     quoteSections.join("\n\n"),
     "",
@@ -1030,7 +1069,7 @@ export function buildComparisonReport(
     ]),
     "DISCLAIMER",
     "",
-    "This report is based only on the numbers entered and is not financial advice.",
+    "This report is based only on the numbers entered in this browser. It is not financial advice, a lender quote, or a guarantee of dealer pricing. Confirm taxes, fees, incentives, buyout terms, and contract language before signing.",
   ].join("\n");
 }
 
@@ -1049,6 +1088,9 @@ export function ComparisonResults({
   );
   const assistantTriggerRef = useRef<HTMLButtonElement | null>(null);
   const assistantCloseButtonRef = useRef<HTMLButtonElement | null>(null);
+  const [reportMetadata] = useState<ComparisonReportMetadata>(() =>
+    buildComparisonReportMetadata(new Date()),
+  );
   const selectedGoalRecommendation = getDecisionModeRecommendation(
     comparisonResult,
     selectedDecisionMode,
@@ -1181,6 +1223,7 @@ export function ComparisonResults({
         comparisonResult,
         comparisonPaymentSummaries,
         selectedDecisionMode,
+        reportMetadata,
       );
 
       await navigator.clipboard.writeText(reportText);
@@ -1455,12 +1498,12 @@ export function ComparisonResults({
             </span>
             <span>
               <span className="block text-xs font-semibold uppercase tracking-widest text-teal-300">
-                Premium visual summary
+                Report preview
               </span>
               <span className="mt-1 block text-base font-semibold">
                 {isReportPreviewOpen
                   ? "Hide report preview"
-                  : "View report preview"}
+                  : "Preview report"}
               </span>
               <span className="mt-1 hidden text-sm leading-6 text-slate-300 sm:block">
                 Review a polished, share-ready view of the verdict, costs, and
@@ -1496,41 +1539,53 @@ export function ComparisonResults({
           }`}
         >
           <div className="overflow-hidden">
-            <div className="mb-3 flex flex-col gap-3 rounded-xl border border-slate-200 bg-slate-50 p-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="print-report-controls mb-3 flex flex-col gap-3 rounded-xl border border-slate-200 bg-slate-50 p-3 sm:flex-row sm:items-center sm:justify-between">
               <p className="text-xs leading-5 text-slate-500">
-                Use your browser&apos;s Save as PDF option.
+                Preview, copy, or use your browser&apos;s Save as PDF option.
               </p>
-              <button
-                type="button"
-                onClick={printReport}
-                className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-teal-700 bg-white px-4 text-sm font-semibold text-teal-800 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-teal-50 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-teal-700 focus:ring-offset-2 active:translate-y-0 active:scale-[0.98] sm:w-auto"
-              >
-                <svg
-                  aria-hidden="true"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  className="h-4 w-4"
-                  stroke="currentColor"
-                  strokeWidth="1.8"
+              <div className="grid gap-2 sm:flex sm:justify-end">
+                <button
+                  type="button"
+                  onClick={copyReport}
+                  aria-live="polite"
+                  className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-teal-300 hover:bg-teal-50 hover:text-teal-900 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-teal-700 focus:ring-offset-2 active:translate-y-0 active:scale-[0.98] sm:w-auto"
                 >
-                  <path
-                    d="M7 9V4h10v5M7 17H5.5A2.5 2.5 0 0 1 3 14.5v-3A2.5 2.5 0 0 1 5.5 9h13a2.5 2.5 0 0 1 2.5 2.5v3a2.5 2.5 0 0 1-2.5 2.5H17"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                  <path
-                    d="M7 14h10v6H7z"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-                Print report
-              </button>
+                  {copyStatus === "copied"
+                    ? "Copied"
+                    : copyStatus === "failed"
+                      ? "Copy failed"
+                      : "Copy report"}
+                </button>
+                <button
+                  type="button"
+                  onClick={printReport}
+                  className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-teal-700 bg-white px-4 text-sm font-semibold text-teal-800 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-teal-50 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-teal-700 focus:ring-offset-2 active:translate-y-0 active:scale-[0.98] sm:w-auto"
+                >
+                  <svg
+                    aria-hidden="true"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    className="h-4 w-4"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                  >
+                    <path
+                      d="M7 9V4h10v5M7 17H5.5A2.5 2.5 0 0 1 3 14.5v-3A2.5 2.5 0 0 1 5.5 9h13a2.5 2.5 0 0 1 2.5 2.5v3a2.5 2.5 0 0 1-2.5 2.5H17"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                    <path d="M7 14h10v6H7z" strokeLinejoin="round" />
+                  </svg>
+                  Print / Save as PDF
+                </button>
+              </div>
             </div>
             <div className="print-report-area">
               <ReportPreview
                 comparisonResult={comparisonResult}
                 comparisonPaymentSummaries={comparisonPaymentSummaries}
                 selectedDecisionMode={selectedDecisionMode}
+                metadata={reportMetadata}
                 finalVerdict={finalVerdict}
                 keyTakeaways={reportKeyTakeaways}
                 negotiationItems={dealerNegotiationItems}
@@ -1734,7 +1789,7 @@ export function ComparisonResults({
                     Copied
                   </>
                 ) : copyStatus === "failed" ? (
-                  "Copy failed — try again"
+                  "Copy failed - try again"
                 ) : (
                   "Copy full report and questions"
                 )}

@@ -5,6 +5,7 @@ import type {
 
 import type {
   ComparisonPaymentSummary,
+  ComparisonReportMetadata,
   DealerNegotiationItem,
   DecisionMode,
   FinalVerdict,
@@ -14,6 +15,7 @@ type ReportPreviewProps = {
   comparisonResult: LeaseComparisonResult;
   comparisonPaymentSummaries: ComparisonPaymentSummary[];
   selectedDecisionMode: DecisionMode;
+  metadata: ComparisonReportMetadata;
   finalVerdict: FinalVerdict | null;
   keyTakeaways: string[];
   negotiationItems: DealerNegotiationItem[];
@@ -140,6 +142,7 @@ export function ReportPreview({
   comparisonResult,
   comparisonPaymentSummaries,
   selectedDecisionMode,
+  metadata,
   finalVerdict,
   keyTakeaways,
   negotiationItems,
@@ -200,20 +203,12 @@ export function ReportPreview({
 
   return (
     <article className="overflow-hidden rounded-[1.25rem] border border-slate-200 bg-slate-50 shadow-[0_28px_80px_-48px_rgba(15,23,42,0.75)] sm:rounded-[1.75rem]">
-      <header className="relative overflow-hidden border-b border-slate-200 bg-slate-950 px-4 py-6 text-white sm:px-8 sm:py-9">
-        <div
-          aria-hidden="true"
-          className="absolute -right-20 -top-24 h-64 w-64 rounded-full bg-teal-400/20 blur-3xl"
-        />
-        <div
-          aria-hidden="true"
-          className="absolute -bottom-24 left-1/3 h-52 w-52 rounded-full bg-cyan-400/10 blur-3xl"
-        />
-        <div className="relative flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
+      <header className="report-print-header border-b border-slate-200 bg-slate-950 px-4 py-6 text-white sm:px-8 sm:py-9">
+        <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
           <div>
             <div className="flex items-center gap-2.5">
-              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-teal-400 font-black text-slate-950 shadow-lg shadow-teal-950/20">
-                AI
+              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-teal-400 font-black text-slate-950 shadow-lg shadow-teal-950/20 print:bg-white print:ring-1 print:ring-slate-300">
+                IQ
               </span>
               <span className="text-sm font-semibold tracking-wide text-teal-100">
                 AutoLease IQ
@@ -226,18 +221,41 @@ export function ReportPreview({
               Generated from the numbers entered by the user.
             </p>
           </div>
-          <span className="w-fit rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-xs font-semibold text-teal-50 backdrop-blur">
-            Comparison summary
-          </span>
+          <dl className="grid gap-2 text-sm sm:grid-cols-3 lg:min-w-[30rem]">
+            <div className="rounded-xl border border-white/15 bg-white/10 p-3">
+              <dt className="text-[0.65rem] font-bold uppercase tracking-wider text-teal-200">
+                Generated
+              </dt>
+              <dd className="mt-1 font-semibold text-white">
+                {metadata.generatedAtLabel}
+              </dd>
+            </div>
+            <div className="rounded-xl border border-white/15 bg-white/10 p-3">
+              <dt className="text-[0.65rem] font-bold uppercase tracking-wider text-teal-200">
+                Report ID
+              </dt>
+              <dd className="mt-1 font-semibold text-white">
+                {metadata.reportId}
+              </dd>
+            </div>
+            <div className="rounded-xl border border-white/15 bg-white/10 p-3">
+              <dt className="text-[0.65rem] font-bold uppercase tracking-wider text-teal-200">
+                Decision mode
+              </dt>
+              <dd className="mt-1 font-semibold text-white">
+                {decisionModeLabels[selectedDecisionMode]}
+              </dd>
+            </div>
+          </dl>
         </div>
       </header>
 
       <div className="space-y-4 p-3 sm:space-y-6 sm:p-6 lg:p-8">
-        <section className="overflow-hidden rounded-2xl border border-teal-200 bg-white shadow-[0_18px_45px_-34px_rgba(13,148,136,0.8)]">
+        <section className="report-print-card overflow-hidden rounded-2xl border border-teal-200 bg-white shadow-[0_18px_45px_-34px_rgba(13,148,136,0.8)]">
           <div className="grid lg:grid-cols-[0.72fr_1.28fr]">
             <div className="bg-gradient-to-br from-teal-700 to-teal-900 p-5 text-white sm:p-6">
               <p className="text-xs font-bold uppercase tracking-[0.18em] text-teal-100">
-                Final verdict
+                Executive summary
               </p>
               <p className="mt-5 text-sm text-teal-100">
                 Best fit for your selected goal
@@ -274,7 +292,7 @@ export function ReportPreview({
           </div>
         </section>
 
-        <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_16px_40px_-34px_rgba(15,23,42,0.65)] sm:p-6">
+        <section className="report-print-card rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_16px_40px_-34px_rgba(15,23,42,0.65)] sm:p-6">
           <ReportSectionHeading
             eyebrow="Financial overview"
             title="Cost Snapshot"
@@ -313,7 +331,7 @@ export function ReportPreview({
           </div>
         </section>
 
-        <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_16px_40px_-34px_rgba(15,23,42,0.65)] sm:p-6">
+        <section className="report-print-card rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_16px_40px_-34px_rgba(15,23,42,0.65)] sm:p-6">
           <ReportSectionHeading
             eyebrow="Offer details"
             title="Offer Comparison"
@@ -370,7 +388,7 @@ export function ReportPreview({
         </section>
 
         {hasVehicleContext ? (
-          <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_16px_40px_-34px_rgba(15,23,42,0.65)] sm:p-6">
+          <section className="report-print-card rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_16px_40px_-34px_rgba(15,23,42,0.65)] sm:p-6">
             <ReportSectionHeading
               eyebrow="Vehicle economics"
               title="Vehicle / Buyout Context"
@@ -448,7 +466,7 @@ export function ReportPreview({
         ) : null}
 
         <div className="grid gap-5 lg:grid-cols-2">
-          <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_16px_40px_-34px_rgba(15,23,42,0.65)] sm:p-6">
+          <section className="report-print-card rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_16px_40px_-34px_rgba(15,23,42,0.65)] sm:p-6">
             <ReportSectionHeading
               eyebrow="Decision summary"
               title="Key Takeaways"
@@ -467,7 +485,7 @@ export function ReportPreview({
             </ul>
           </section>
 
-          <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_16px_40px_-34px_rgba(15,23,42,0.65)] sm:p-6">
+          <section className="report-print-card rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_16px_40px_-34px_rgba(15,23,42,0.65)] sm:p-6">
             <ReportSectionHeading
               eyebrow="Dealer conversation"
               title="Negotiation Assistant"
@@ -494,9 +512,11 @@ export function ReportPreview({
           </section>
         </div>
 
-        <footer className="border-t border-slate-200 px-1 pt-5 text-center text-xs leading-5 text-slate-400">
-          This report is based only on the numbers entered and is not financial
-          advice.
+        <footer className="report-print-card border-t border-slate-200 px-1 pt-5 text-center text-xs leading-5 text-slate-400">
+          Disclaimer: this report is based only on the numbers entered in this
+          browser. It is not financial advice, a lender quote, or a guarantee of
+          dealer pricing. Confirm taxes, fees, incentives, buyout terms, and
+          contract language before signing.
         </footer>
       </div>
     </article>

@@ -127,6 +127,14 @@ summary:hover {
     margin: 0 !important;
   }
 
+  *,
+  *::before,
+  *::after {
+    position: static !important;
+    text-shadow: none !important;
+    filter: none !important;
+  }
+
   body * {
     visibility: hidden !important;
   }
@@ -174,6 +182,11 @@ summary:hover {
     -webkit-print-color-adjust: exact;
   }
 
+  .print-report-controls {
+    display: none !important;
+    visibility: hidden !important;
+  }
+
   #lease-report-preview,
   #lease-report-preview > div {
     display: block !important;
@@ -195,6 +208,25 @@ summary:hover {
     border-radius: 0 !important;
     background: #ffffff !important;
     box-shadow: none !important;
+  }
+
+  .print-report-area .report-print-header {
+    background: #ffffff !important;
+    color: #0f172a !important;
+  }
+
+  .print-report-area .report-print-header * {
+    color: #0f172a !important;
+  }
+
+  .print-report-area .report-print-header dl > div {
+    border-color: #cbd5e1 !important;
+    background: #ffffff !important;
+  }
+
+  .print-report-area .report-print-card {
+    break-inside: avoid-page;
+    page-break-inside: avoid;
   }
 
   .print-report-area section {
