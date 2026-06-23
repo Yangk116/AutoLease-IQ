@@ -3,6 +3,12 @@ import type { DecisionMode } from "./ComparisonResults";
 
 export const SAVED_COMPARISONS_STORAGE_KEY =
   "autolease-iq:saved-comparisons";
+export const MAX_SAVED_COMPARISONS = 10;
+
+export type SavedComparisonStatus = {
+  tone: "success" | "info" | "error";
+  message: string;
+};
 
 export type SavedComparisonSummary = {
   finalWinner: string | null;
@@ -30,6 +36,7 @@ export type SavedComparison = {
 
 type SavedComparisonsPanelProps = {
   comparisons: SavedComparison[];
+  status: SavedComparisonStatus | null;
   onLoad: (comparison: SavedComparison) => void;
   onDelete: (comparisonId: string) => void;
 };
@@ -51,6 +58,14 @@ const decisionModes: readonly DecisionMode[] = [
   "best-mileage-value",
   "possible-future-buyout",
 ];
+
+const decisionModeLabels: Record<DecisionMode, string> = {
+  "lowest-total-cost": "Lowest total cost",
+  "lowest-monthly-budget": "Lowest monthly budget",
+  "lowest-upfront-cash": "Lowest upfront cash",
+  "best-mileage-value": "Best mileage value",
+  "possible-future-buyout": "Possible future buyout",
+};
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
@@ -229,11 +244,13 @@ export function readSavedComparisons(): SavedComparison[] {
       return [];
     }
 
-    return parsedValue.flatMap((item) => {
-      const comparison = parseSavedComparison(item);
+    return parsedValue
+      .flatMap((item) => {
+        const comparison = parseSavedComparison(item);
 
-      return comparison ? [comparison] : [];
-    });
+        return comparison ? [comparison] : [];
+      })
+      .slice(0, MAX_SAVED_COMPARISONS);
   } catch {
     return [];
   }
@@ -261,8 +278,33 @@ function formatSavedAt(savedAt: string): string {
   return dateTimeFormatter.format(new Date(savedAt));
 }
 
+function getVerdictLabel(comparison: SavedComparison): string {
+  if (comparison.summary.finalWinner) {
+    return `Winner: ${comparison.summary.finalWinner}`;
+  }
+
+  if (comparison.summary.verdictKind === "needs-data") {
+    return "More data needed";
+  }
+
+  return "Mixed result";
+}
+
+function getStatusClasses(tone: SavedComparisonStatus["tone"]): string {
+  if (tone === "error") {
+    return "border-red-200 bg-red-50 text-red-800";
+  }
+
+  if (tone === "info") {
+    return "border-sky-200 bg-sky-50 text-sky-900";
+  }
+
+  return "border-teal-200 bg-teal-50 text-teal-900";
+}
+
 export function SavedComparisonsPanel({
   comparisons,
+  status,
   onLoad,
   onDelete,
 }: SavedComparisonsPanelProps) {
@@ -285,15 +327,28 @@ export function SavedComparisonsPanel({
           </h2>
         </div>
         <p className="max-w-xl text-sm leading-6 text-slate-500">
-          Reopen saved offers on this device. Nothing is uploaded or synced.
+          Reopen up to {MAX_SAVED_COMPARISONS} saved offers on this device.
+          Nothing is uploaded or synced.
         </p>
       </div>
+
+      {status ? (
+        <p
+          className={`mt-5 rounded-xl border px-4 py-3 text-sm font-medium shadow-sm ${getStatusClasses(
+            status.tone,
+          )}`}
+          role="status"
+          aria-live="polite"
+        >
+          {status.message}
+        </p>
+      ) : null}
 
       {comparisons.length === 0 ? (
         <div className="mt-6 rounded-2xl border border-dashed border-slate-300 bg-white/70 p-6 text-center">
           <p className="text-sm leading-6 text-slate-500">
             Saved comparisons will appear here after you compare and save an
-            offer.
+            offer. Saved items stay only in this browser.
           </p>
         </div>
       ) : (
@@ -301,9 +356,9 @@ export function SavedComparisonsPanel({
           {comparisons.map((comparison) => (
             <article
               key={comparison.id}
-              className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-[0_18px_50px_-38px_rgba(15,23,42,0.55)]"
+              className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-[0_18px_50px_-38px_rgba(15,23,42,0.55)] sm:p-5"
             >
-              <div className="flex items-start justify-between gap-4">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div className="min-w-0">
                   <h3 className="truncate text-base font-semibold text-slate-950">
                     {comparison.title}
@@ -311,16 +366,17 @@ export function SavedComparisonsPanel({
                   <p className="mt-1 text-xs text-slate-500">
                     Saved {formatSavedAt(comparison.savedAt)}
                   </p>
+                  <p className="mt-2 text-xs font-semibold uppercase tracking-widest text-teal-700">
+                    {decisionModeLabels[comparison.decisionMode]}
+                  </p>
                 </div>
                 {comparison.summary.finalWinner ? (
-                  <span className="shrink-0 rounded-full border border-teal-100 bg-teal-50 px-2.5 py-1 text-xs font-semibold text-teal-800">
-                    Winner: {comparison.summary.finalWinner}
+                  <span className="inline-flex w-fit max-w-full shrink-0 rounded-full border border-teal-100 bg-teal-50 px-2.5 py-1 text-xs font-semibold text-teal-800">
+                    {getVerdictLabel(comparison)}
                   </span>
                 ) : (
-                  <span className="shrink-0 rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-800">
-                    {comparison.summary.verdictKind === "needs-data"
-                      ? "More data needed"
-                      : "Mixed result"}
+                  <span className="inline-flex w-fit max-w-full shrink-0 rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-800">
+                    {getVerdictLabel(comparison)}
                   </span>
                 )}
               </div>
@@ -332,7 +388,7 @@ export function SavedComparisonsPanel({
                     className="rounded-xl border border-slate-100 bg-slate-50/80 p-3"
                   >
                     <dt className="truncate text-xs font-medium text-slate-500">
-                      {index === 0 ? "Quote A" : "Quote B"} · {cost.quoteName}
+                      {index === 0 ? "Quote A" : "Quote B"} - {cost.quoteName}
                     </dt>
                     <dd className="mt-1 font-semibold text-slate-950">
                       {currencyFormatter.format(cost.value)} true monthly
@@ -352,7 +408,7 @@ export function SavedComparisonsPanel({
                 <button
                   type="button"
                   onClick={() => onDelete(comparison.id)}
-                  className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-red-200 hover:bg-red-50 hover:text-red-700 focus:outline-none focus:ring-2 focus:ring-red-500/30 focus:ring-offset-2 active:translate-y-0 active:scale-[0.98]"
+                  className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-slate-300 hover:bg-slate-50 hover:text-red-700 focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-2 active:translate-y-0 active:scale-[0.98]"
                 >
                   Delete
                 </button>

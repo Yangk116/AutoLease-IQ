@@ -21,9 +21,11 @@ import { ComparisonQuoteCard } from "./components/ComparisonQuoteCard";
 import type { ComparisonQuoteForm } from "./components/ComparisonQuoteCard";
 import { MetricCard } from "./components/MetricCard";
 import {
+  MAX_SAVED_COMPARISONS,
   readSavedComparisons,
   SavedComparisonsPanel,
   type SavedComparison,
+  type SavedComparisonStatus,
   writeSavedComparisons,
 } from "./components/SavedComparisonsPanel";
 
@@ -161,6 +163,30 @@ type ComparisonPreset = {
   purpose: string;
   decisionMode: DecisionMode;
   quotes: [ComparisonQuoteForm, ComparisonQuoteForm];
+};
+
+type ComparisonQuoteFingerprint = {
+  id: ComparisonQuoteForm["id"];
+  label: string;
+  quoteName: string;
+  vehicleName: string | null;
+  addTaxToMonthlyPayment: boolean;
+  taxRate: number;
+  downPayment: number;
+  monthlyPayment: number;
+  termMonths: number;
+  annualMileage: number;
+  dealerFees: number;
+  leaseEndFee: number;
+  vehicleMsrp: number | null;
+  sellingPrice: number | null;
+  residualMsrp: number | null;
+  residualValue: number | null;
+};
+
+type SavedComparisonFingerprint = {
+  decisionMode: DecisionMode;
+  quotes: [ComparisonQuoteFingerprint, ComparisonQuoteFingerprint];
 };
 
 const decisionModeOptions: { value: DecisionMode; label: string }[] = [
@@ -349,6 +375,58 @@ function formatCostPerKilometre(value: number) {
   return `${formatCurrency(value)} / km`;
 }
 
+function buildComparisonQuoteFingerprint(
+  quote: ComparisonQuoteForm,
+): ComparisonQuoteFingerprint {
+  return {
+    id: quote.id,
+    label: quote.label,
+    quoteName: quote.quoteName,
+    vehicleName: quote.vehicleName ?? null,
+    addTaxToMonthlyPayment: quote.addTaxToMonthlyPayment,
+    taxRate: quote.taxRate,
+    downPayment: quote.downPayment,
+    monthlyPayment: quote.monthlyPayment,
+    termMonths: quote.termMonths,
+    annualMileage: quote.annualMileage,
+    dealerFees: quote.dealerFees,
+    leaseEndFee: quote.leaseEndFee,
+    vehicleMsrp: quote.vehicleMsrp ?? null,
+    sellingPrice: quote.sellingPrice ?? null,
+    residualMsrp: quote.residualMsrp ?? null,
+    residualValue: quote.residualValue ?? null,
+  };
+}
+
+function buildSavedComparisonFingerprint(
+  quotes: [ComparisonQuoteForm, ComparisonQuoteForm],
+  decisionMode: DecisionMode,
+): string {
+  const fingerprint: SavedComparisonFingerprint = {
+    decisionMode,
+    quotes: [
+      buildComparisonQuoteFingerprint(quotes[0]),
+      buildComparisonQuoteFingerprint(quotes[1]),
+    ],
+  };
+
+  return JSON.stringify(fingerprint);
+}
+
+function getSavedComparisonStatusClasses(
+  tone: SavedComparisonStatus["tone"],
+): string {
+  if (tone === "error") {
+    return "border-red-200 bg-red-50 text-red-800";
+  }
+
+  if (tone === "info") {
+    return "border-sky-200 bg-sky-50 text-sky-900";
+  }
+
+  return "border-teal-200 bg-teal-50 text-teal-900";
+}
+
 function describeUpfrontPressure(upfrontRatio: number) {
   if (upfrontRatio < 10) {
     return {
@@ -478,7 +556,8 @@ export default function LeaseQuoteCalculator() {
   const [savedComparisons, setSavedComparisons] = useState<SavedComparison[]>(
     [],
   );
-  const [savedComparisonMessage, setSavedComparisonMessage] = useState("");
+  const [savedComparisonStatus, setSavedComparisonStatus] =
+    useState<SavedComparisonStatus | null>(null);
   const comparisonTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -789,7 +868,30 @@ export default function LeaseQuoteCalculator() {
     const resultB = comparisonResult.results[1];
 
     if (!quoteA || !quoteB || !resultA || !resultB) {
-      setSavedComparisonMessage("This comparison could not be saved.");
+      setSavedComparisonStatus({
+        tone: "error",
+        message: "This comparison could not be saved.",
+      });
+      return;
+    }
+
+    const currentFingerprint = buildSavedComparisonFingerprint(
+      [quoteA, quoteB],
+      selectedDecisionMode,
+    );
+    const duplicateComparison = savedComparisons.find(
+      (comparison) =>
+        buildSavedComparisonFingerprint(
+          comparison.quotes,
+          comparison.decisionMode,
+        ) === currentFingerprint,
+    );
+
+    if (duplicateComparison) {
+      setSavedComparisonStatus({
+        tone: "info",
+        message: "This comparison is already saved.",
+      });
       return;
     }
 
@@ -832,17 +934,30 @@ export default function LeaseQuoteCalculator() {
         ],
       },
     };
-    const nextComparisons = [savedComparison, ...savedComparisons];
+    const uncappedComparisons = [savedComparison, ...savedComparisons];
+    const nextComparisons = uncappedComparisons.slice(
+      0,
+      MAX_SAVED_COMPARISONS,
+    );
+    const removedOldest =
+      uncappedComparisons.length > MAX_SAVED_COMPARISONS;
 
     if (!writeSavedComparisons(nextComparisons)) {
-      setSavedComparisonMessage(
-        "The comparison could not be saved in this browser.",
-      );
+      setSavedComparisonStatus({
+        tone: "error",
+        message:
+          "The comparison could not be saved. This browser may have blocked local storage or run out of space.",
+      });
       return;
     }
 
     setSavedComparisons(nextComparisons);
-    setSavedComparisonMessage("Comparison saved on this device.");
+    setSavedComparisonStatus({
+      tone: "success",
+      message: removedOldest
+        ? "Comparison saved. Oldest saved item was removed to keep your list manageable."
+        : "Comparison saved.",
+    });
   }
 
   function loadSavedComparison(savedComparison: SavedComparison): void {
@@ -859,12 +974,13 @@ export default function LeaseQuoteCalculator() {
     setComparisonResult(null);
     setComparisonPaymentSummaries([]);
     setComparisonErrorMessage("");
-    setSavedComparisonMessage(
-      "Saved inputs loaded. Select Compare offers to refresh the verdict.",
-    );
+    setSavedComparisonStatus({
+      tone: "success",
+      message: "Saved comparison loaded. Review the inputs and compare again.",
+    });
 
     requestAnimationFrame(() => {
-      scrollToComparisonElement("comparison-offers-inputs");
+      scrollToComparisonElement("saved-comparison-status");
     });
   }
 
@@ -874,14 +990,19 @@ export default function LeaseQuoteCalculator() {
     );
 
     if (!writeSavedComparisons(nextComparisons)) {
-      setSavedComparisonMessage(
-        "The saved comparison could not be deleted in this browser.",
-      );
+      setSavedComparisonStatus({
+        tone: "error",
+        message:
+          "The saved comparison could not be deleted. This browser may have blocked local storage.",
+      });
       return;
     }
 
     setSavedComparisons(nextComparisons);
-    setSavedComparisonMessage("Saved comparison deleted.");
+    setSavedComparisonStatus({
+      tone: "success",
+      message: "Saved comparison deleted.",
+    });
   }
 
   const hasComparisonResult = comparisonResult !== null && !isComparing;
@@ -1349,6 +1470,19 @@ export default function LeaseQuoteCalculator() {
             </div>
           </div>
 
+          {savedComparisonStatus ? (
+            <p
+              id="saved-comparison-status"
+              className={`scroll-mt-32 rounded-xl border px-4 py-3 text-sm font-medium shadow-sm sm:scroll-mt-24 ${getSavedComparisonStatusClasses(
+                savedComparisonStatus.tone,
+              )}`}
+              role="status"
+              aria-live="polite"
+            >
+              {savedComparisonStatus.message}
+            </p>
+          ) : null}
+
           <div
             id="comparison-offers-inputs"
             className="grid scroll-mt-32 gap-5 sm:scroll-mt-24 lg:grid-cols-2"
@@ -1620,18 +1754,9 @@ export default function LeaseQuoteCalculator() {
             ) : null}
           </section>
 
-          {savedComparisonMessage ? (
-            <p
-              className="rounded-xl border border-teal-100 bg-teal-50/70 px-4 py-3 text-sm font-medium text-teal-900"
-              role="status"
-              aria-live="polite"
-            >
-              {savedComparisonMessage}
-            </p>
-          ) : null}
-
           <SavedComparisonsPanel
             comparisons={savedComparisons}
+            status={savedComparisonStatus}
             onLoad={loadSavedComparison}
             onDelete={deleteSavedComparison}
           />
