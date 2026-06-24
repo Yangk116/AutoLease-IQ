@@ -126,7 +126,7 @@ export function DataBackedDealReview() {
   return (
     <section
       aria-labelledby="data-backed-deal-review-title"
-      className="mb-5 rounded-2xl border border-slate-200 bg-white p-4 shadow-[0_16px_44px_-36px_rgba(15,23,42,0.55)] sm:p-5"
+      className="rounded-xl border border-slate-200 bg-slate-50/70 p-4"
     >
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
@@ -135,7 +135,7 @@ export function DataBackedDealReview() {
           </p>
           <h4
             id="data-backed-deal-review-title"
-            className="mt-1 text-lg font-bold text-slate-950"
+            className="mt-1 text-base font-bold text-slate-950"
           >
             Data-backed Deal Review
           </h4>
@@ -149,11 +149,11 @@ export function DataBackedDealReview() {
         </span>
       </div>
 
-      <div className="mt-4 grid gap-2 lg:grid-cols-4">
+      <div className="mt-4 grid gap-2 md:grid-cols-2">
         {reviewLayers.map((layer) => (
           <div
             key={layer.label}
-            className="rounded-xl border border-slate-200 bg-slate-50/70 p-3"
+            className="rounded-lg border border-slate-200 bg-white p-3"
           >
             <div className="flex items-start justify-between gap-2">
               <p className="text-sm font-semibold text-slate-950">
@@ -174,7 +174,7 @@ export function DataBackedDealReview() {
         ))}
       </div>
 
-      <div className="mt-4 rounded-xl border border-teal-100 bg-teal-50/50 p-3">
+      <div className="mt-3 rounded-lg border border-teal-100 bg-white p-3">
         <p className="text-xs font-semibold uppercase tracking-wide text-teal-700">
           Commercial roadmap
         </p>

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { type ReactNode, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
 import {
@@ -61,6 +61,30 @@ export type DealerNegotiationItem = {
   title: string;
   whyItMatters: string;
   suggestedQuestion: string;
+};
+
+type DecisionHighlight = {
+  label: string;
+  value: string;
+  detail: string;
+};
+
+type RecommendationReason = {
+  title: string;
+  body: string;
+};
+
+type NegotiationTarget = {
+  title: string;
+  body: string;
+  question: string;
+};
+
+type CollapsibleSectionProps = {
+  title: string;
+  eyebrow: string;
+  description: string;
+  children: ReactNode;
 };
 
 const baselineDealerNegotiationItems: readonly DealerNegotiationItem[] = [
@@ -719,6 +743,414 @@ function buildComparisonInsights(
   return insights;
 }
 
+function getMetricDifference(
+  firstQuote: LeaseAnalysisResult,
+  secondQuote: LeaseAnalysisResult,
+  metric: keyof Pick<
+    LeaseAnalysisResult,
+    | "costPerKm"
+    | "dealerFees"
+    | "residualValue"
+    | "totalCost"
+    | "trueMonthlyCost"
+    | "upfrontRatio"
+  >,
+): number {
+  return Math.abs((firstQuote[metric] ?? 0) - (secondQuote[metric] ?? 0));
+}
+
+function getDecisionOutcomeLabel(
+  comparison: LeaseComparisonResult,
+  paymentSummaries: ComparisonPaymentSummary[],
+  finalVerdict: FinalVerdict | null,
+): string {
+  if (!finalVerdict) {
+    return "Not available";
+  }
+
+  if (!finalVerdict.winningQuote) {
+    return finalVerdict.kind === "needs-data"
+      ? "More data needed"
+      : "Trade-off";
+  }
+
+  return `${getQuoteLetter(
+    comparison,
+    finalVerdict.winningQuote,
+  )} - ${getReportQuoteName(
+    comparison,
+    paymentSummaries,
+    finalVerdict.winningQuote,
+  )}`;
+}
+
+function buildKeyDifferenceHighlight(
+  comparison: LeaseComparisonResult,
+  decisionMode: DecisionMode,
+): DecisionHighlight | null {
+  const [firstQuote, secondQuote] = comparison.results;
+
+  if (!firstQuote || !secondQuote) {
+    return null;
+  }
+
+  if (decisionMode === "lowest-monthly-budget") {
+    const winner = getStrictLowerMetricWinner(
+      firstQuote,
+      secondQuote,
+      "trueMonthlyCost",
+    );
+
+    return {
+      label: "Key cost difference",
+      value: `${formatCurrency(
+        getMetricDifference(firstQuote, secondQuote, "trueMonthlyCost"),
+      )} / month`,
+      detail: winner
+        ? `${getQuoteLetter(comparison, winner)} is lower on true monthly cost.`
+        : "True monthly cost is tied based on the entered numbers.",
+    };
+  }
+
+  if (decisionMode === "lowest-upfront-cash") {
+    const winner = getStrictLowerMetricWinner(
+      firstQuote,
+      secondQuote,
+      "upfrontRatio",
+    );
+
+    return {
+      label: "Key cost difference",
+      value: `${formatPercentage(
+        getMetricDifference(firstQuote, secondQuote, "upfrontRatio"),
+      )} points`,
+      detail: winner
+        ? `${getQuoteLetter(comparison, winner)} puts less cost upfront.`
+        : "Upfront pressure is tied based on the entered numbers.",
+    };
+  }
+
+  if (decisionMode === "best-mileage-value") {
+    const winner = getStrictLowerMetricWinner(
+      firstQuote,
+      secondQuote,
+      "costPerKm",
+    );
+
+    return {
+      label: "Key cost difference",
+      value: formatCostPerKilometre(
+        getMetricDifference(firstQuote, secondQuote, "costPerKm"),
+      ),
+      detail: winner
+        ? `${getQuoteLetter(comparison, winner)} has the lower cost per kilometre.`
+        : "Mileage value is tied based on the entered allowances.",
+    };
+  }
+
+  if (
+    decisionMode === "possible-future-buyout" &&
+    firstQuote.residualValue !== undefined &&
+    secondQuote.residualValue !== undefined
+  ) {
+    const lowerResidualQuote =
+      firstQuote.residualValue < secondQuote.residualValue
+        ? firstQuote
+        : secondQuote;
+
+    return {
+      label: "Key buyout difference",
+      value: formatCurrency(
+        getMetricDifference(firstQuote, secondQuote, "residualValue"),
+      ),
+      detail:
+        firstQuote.residualValue === secondQuote.residualValue
+          ? "Entered residual values are tied."
+          : `${getQuoteLetter(comparison, lowerResidualQuote)} has the lower entered residual.`,
+    };
+  }
+
+  const winner = getStrictLowerMetricWinner(
+    firstQuote,
+    secondQuote,
+    "totalCost",
+  );
+
+  return {
+    label: "Key cost difference",
+    value: formatCurrency(getMetricDifference(firstQuote, secondQuote, "totalCost")),
+    detail: winner
+      ? `${getQuoteLetter(comparison, winner)} is lower on total lease cost.`
+      : "Total lease cost is tied based on the entered numbers.",
+  };
+}
+
+function buildDecisionHighlights(
+  comparison: LeaseComparisonResult,
+  paymentSummaries: ComparisonPaymentSummary[],
+  decisionMode: DecisionMode,
+  finalVerdict: FinalVerdict | null,
+): DecisionHighlight[] {
+  const highlights: DecisionHighlight[] = [
+    {
+      label: finalVerdict?.winningQuote ? "Best quote" : "Selected quote",
+      value: getDecisionOutcomeLabel(comparison, paymentSummaries, finalVerdict),
+      detail:
+        finalVerdict?.kind === "winner"
+          ? "Best fit for the decision goal you selected."
+          : "Review the trade-offs before deciding.",
+    },
+  ];
+  const keyDifferenceHighlight = buildKeyDifferenceHighlight(
+    comparison,
+    decisionMode,
+  );
+
+  if (keyDifferenceHighlight) {
+    highlights.push(keyDifferenceHighlight);
+  }
+
+  highlights.push({
+    label: "Goal-based recommendation",
+    value: decisionModeLabels[decisionMode],
+    detail:
+      "The verdict weights this goal first, then uses supporting metrics for context.",
+  });
+
+  return highlights;
+}
+
+function buildRecommendationReasons(
+  comparison: LeaseComparisonResult,
+  paymentSummaries: ComparisonPaymentSummary[],
+  decisionMode: DecisionMode,
+): RecommendationReason[] {
+  const [firstQuote, secondQuote] = comparison.results;
+
+  if (!firstQuote || !secondQuote) {
+    return [];
+  }
+
+  const reasons: RecommendationReason[] = [];
+  const addReason = (reason: RecommendationReason): void => {
+    if (!reasons.some((existingReason) => existingReason.title === reason.title)) {
+      reasons.push(reason);
+    }
+  };
+  const getName = (quote: LeaseAnalysisResult): string =>
+    getReportQuoteName(comparison, paymentSummaries, quote);
+  const trueMonthlyWinner = getStrictLowerMetricWinner(
+    firstQuote,
+    secondQuote,
+    "trueMonthlyCost",
+  );
+  const totalCostWinner = getStrictLowerMetricWinner(
+    firstQuote,
+    secondQuote,
+    "totalCost",
+  );
+  const upfrontWinner = getStrictLowerMetricWinner(
+    firstQuote,
+    secondQuote,
+    "upfrontRatio",
+  );
+  const mileageWinner = getStrictLowerMetricWinner(
+    firstQuote,
+    secondQuote,
+    "costPerKm",
+  );
+  const hasDealerFeeDifference = firstQuote.dealerFees !== secondQuote.dealerFees;
+  const lowerDealerFeeQuote =
+    hasDealerFeeDifference && firstQuote.dealerFees < secondQuote.dealerFees
+      ? firstQuote
+      : hasDealerFeeDifference
+        ? secondQuote
+        : null;
+  let lowerResidualQuote: LeaseAnalysisResult | null = null;
+
+  if (
+    firstQuote.residualValue !== undefined &&
+    secondQuote.residualValue !== undefined &&
+    firstQuote.residualValue !== secondQuote.residualValue
+  ) {
+    lowerResidualQuote =
+      firstQuote.residualValue < secondQuote.residualValue
+        ? firstQuote
+        : secondQuote;
+  }
+
+  if (decisionMode === "lowest-upfront-cash" && upfrontWinner) {
+    addReason({
+      title: "Less upfront pressure",
+      body: `${getName(upfrontWinner)} has a ${formatPercentage(
+        getMetricDifference(firstQuote, secondQuote, "upfrontRatio"),
+      )}-point lower upfront cost ratio.`,
+    });
+  }
+
+  if (decisionMode === "best-mileage-value" && mileageWinner) {
+    addReason({
+      title: "Better cost per kilometre",
+      body: `${getName(mileageWinner)} is lower by ${formatCostPerKilometre(
+        getMetricDifference(firstQuote, secondQuote, "costPerKm"),
+      )}.`,
+    });
+  }
+
+  if (decisionMode === "possible-future-buyout" && lowerResidualQuote) {
+    addReason({
+      title: "Residual / buyout context",
+      body: `${getName(lowerResidualQuote)} has a ${formatCurrency(
+        getMetricDifference(firstQuote, secondQuote, "residualValue"),
+      )} lower entered residual value.`,
+    });
+  }
+
+  addReason({
+    title: trueMonthlyWinner
+      ? "Lower true monthly cost"
+      : "True monthly cost is tied",
+    body: trueMonthlyWinner
+      ? `${getName(trueMonthlyWinner)} is lower by ${formatCurrency(
+          getMetricDifference(firstQuote, secondQuote, "trueMonthlyCost"),
+        )} per month after upfront costs are spread across the term.`
+      : "The true monthly cost is tied based on the numbers entered.",
+  });
+
+  addReason({
+    title: totalCostWinner ? "Lower total lease cost" : "Total cost is tied",
+    body: totalCostWinner
+      ? `${getName(totalCostWinner)} is lower by ${formatCurrency(
+          getMetricDifference(firstQuote, secondQuote, "totalCost"),
+        )} over the lease.`
+      : "The total lease cost is tied based on the numbers entered.",
+  });
+
+  if (upfrontWinner) {
+    addReason({
+      title: "Upfront cash position",
+      body: `${getName(upfrontWinner)} carries the lower upfront cost ratio at ${formatPercentage(
+        upfrontWinner.upfrontRatio,
+      )}.`,
+    });
+  }
+
+  if (mileageWinner) {
+    addReason({
+      title: "Mileage value",
+      body: `${getName(mileageWinner)} has the lower entered cost per kilometre.`,
+    });
+  }
+
+  if (lowerResidualQuote) {
+    addReason({
+      title: "Residual / buyout context",
+      body: `${getName(lowerResidualQuote)} has the lower entered residual, which may reduce a future buyout price.`,
+    });
+  }
+
+  if (lowerDealerFeeQuote) {
+    addReason({
+      title: "Dealer fee burden",
+      body: `${getName(lowerDealerFeeQuote)} has ${formatCurrency(
+        getMetricDifference(firstQuote, secondQuote, "dealerFees"),
+      )} less in entered dealer fees.`,
+    });
+  }
+
+  return reasons.slice(0, 3);
+}
+
+function buildNegotiationTargets(
+  comparison: LeaseComparisonResult,
+  decisionMode: DecisionMode,
+): NegotiationTarget[] {
+  const hasResidualContext =
+    decisionMode === "possible-future-buyout" ||
+    comparison.results.some(
+      (quote) =>
+        quote.residualValue !== undefined ||
+        quote.residualPercentage !== undefined,
+    );
+  const hasSellingPriceContext = comparison.results.some(
+    (quote) =>
+      quote.vehicleMsrp !== undefined || quote.sellingPrice !== undefined,
+  );
+  const hasEnteredFees = comparison.results.some(
+    (quote) => quote.dealerFees > 0 || quote.leaseEndFee > 0,
+  );
+
+  return [
+    {
+      title: "Reduce upfront cash",
+      body: "Ask for a version with less due at signing so the monthly payment is not hiding cash pressure.",
+      question:
+        "Can you show this offer with less cash due upfront and the resulting true monthly cost?",
+    },
+    {
+      title: hasEnteredFees ? "Clarify dealer fees" : "Confirm fees and add-ons",
+      body: hasEnteredFees
+        ? "Entered fees affect the full cost and may include dealer-added items."
+        : "Even if no fees were entered, confirm whether add-ons or admin charges are included elsewhere.",
+      question:
+        "Which fees and add-ons are mandatory, which are dealer-added, and can any be removed?",
+    },
+    hasResidualContext
+      ? {
+          title: "Confirm residual / buyout",
+          body: "Residual and lease-end charges can change the real cost if you may buy the vehicle later.",
+          question:
+            "What exact buyout amount would I owe at lease end, including taxes and fees?",
+        }
+      : {
+          title: hasSellingPriceContext
+            ? "Confirm selling price discounts"
+            : "Confirm all discounts",
+          body: "Make sure the selling price includes every discount and that add-ons are not offsetting it.",
+          question:
+            "Does the selling price include all available discounts before fees, rebates, and add-ons?",
+        },
+  ];
+}
+
+function CollapsibleSection({
+  title,
+  eyebrow,
+  description,
+  children,
+}: CollapsibleSectionProps) {
+  return (
+    <details className="group mb-5 rounded-2xl border border-slate-200 bg-white shadow-[0_14px_42px_-34px_rgba(15,23,42,0.6)]">
+      <summary className="flex cursor-pointer list-none items-center justify-between gap-4 p-4 text-left marker:hidden focus:outline-none focus:ring-2 focus:ring-teal-700/30 focus:ring-offset-2 sm:p-5 [&::-webkit-details-marker]:hidden">
+        <span className="min-w-0">
+          <span className="block text-xs font-semibold uppercase tracking-widest text-teal-700">
+            {eyebrow}
+          </span>
+          <span className="mt-1 block text-base font-semibold text-slate-950">
+            {title}
+          </span>
+          <span className="mt-1 block text-sm leading-6 text-slate-500">
+            {description}
+          </span>
+        </span>
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-slate-50 text-slate-600 transition-transform duration-200 group-open:rotate-180">
+          <svg
+            aria-hidden="true"
+            viewBox="0 0 20 20"
+            fill="none"
+            className="h-4 w-4"
+            stroke="currentColor"
+            strokeWidth="2"
+          >
+            <path d="m4 7 6 6 6-6" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </span>
+      </summary>
+      <div className="border-t border-slate-200 p-4 sm:p-5">{children}</div>
+    </details>
+  );
+}
+
 function getReportQuoteName(
   comparison: LeaseComparisonResult,
   paymentSummaries: ComparisonPaymentSummary[],
@@ -1155,6 +1587,21 @@ export function ComparisonResults({
     selectedDecisionMode,
     finalVerdict,
   );
+  const decisionHighlights = buildDecisionHighlights(
+    comparisonResult,
+    comparisonPaymentSummaries,
+    selectedDecisionMode,
+    finalVerdict,
+  );
+  const recommendationReasons = buildRecommendationReasons(
+    comparisonResult,
+    comparisonPaymentSummaries,
+    selectedDecisionMode,
+  );
+  const negotiationTargets = buildNegotiationTargets(
+    comparisonResult,
+    selectedDecisionMode,
+  );
 
   useEffect(() => {
     return () => {
@@ -1319,7 +1766,7 @@ export function ComparisonResults({
               <div className="flex flex-wrap gap-2">
                 {isBestFitForSelectedGoal ? (
                   <span className="inline-flex items-center gap-1.5 rounded-full border border-teal-700 bg-teal-700 px-3 py-1 text-xs font-semibold text-white shadow-sm">
-                    <span aria-hidden="true">★</span>
+                    <span aria-hidden="true">*</span>
                     Best option
                   </span>
                 ) : null}
@@ -1447,78 +1894,176 @@ export function ComparisonResults({
           </div>
         </div>
 
-      {finalVerdict ? (
         <section
-          className={`mb-5 overflow-hidden rounded-2xl border p-5 shadow-[0_18px_45px_-32px_rgba(15,23,42,0.5)] sm:p-6 ${
-            finalVerdict.kind === "winner"
-              ? "border-teal-200 bg-[radial-gradient(circle_at_top_right,rgba(20,184,166,0.12),transparent_42%),linear-gradient(to_bottom_right,#f0fdfa,#ffffff)]"
-              : "border-amber-200 bg-gradient-to-br from-amber-50/80 to-white"
+          className={`mb-5 overflow-hidden rounded-2xl border shadow-[0_22px_60px_-38px_rgba(15,23,42,0.6)] ${
+            finalVerdict?.kind === "winner"
+              ? "border-teal-200 bg-[radial-gradient(circle_at_top_right,rgba(20,184,166,0.14),transparent_42%),linear-gradient(to_bottom_right,#f0fdfa,#ffffff)]"
+              : "border-amber-200 bg-gradient-to-br from-amber-50/90 to-white"
           }`}
         >
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-widest text-teal-700">
-                Best fit for your selected goal
-              </p>
-              <h4 className="mt-1 text-xl font-bold text-slate-950 sm:text-2xl">
-                Final Verdict
-              </h4>
-            </div>
-            {finalVerdict.kind !== "winner" ? (
-              <span className="rounded-full border border-amber-300 bg-white px-3 py-1 text-xs font-semibold text-amber-800">
-                {finalVerdict.kind === "mixed"
-                  ? "Trade-off"
-                  : "More data needed"}
-              </span>
-            ) : null}
-          </div>
-
-          <p className="mt-4 text-lg font-semibold leading-7 text-slate-950">
-            {finalVerdict.headline}
-          </p>
-          <div className="mt-4">
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-              Why this matters
-            </p>
-            <ul className="mt-2 space-y-2 text-sm leading-6 text-slate-700">
-              {finalVerdict.reasons.map((reason) => (
-                <li key={reason} className="flex gap-2">
-                  <span aria-hidden="true" className="font-bold text-teal-700">
-                    &bull;
+          <div className="grid gap-0 lg:grid-cols-[1.05fr_0.95fr]">
+            <div className="p-5 sm:p-6">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-widest text-teal-700">
+                    Best fit for your selected goal
+                  </p>
+                  <h4 className="mt-1 text-2xl font-black tracking-tight text-slate-950 sm:text-3xl">
+                    Final Verdict
+                  </h4>
+                </div>
+                {finalVerdict?.kind !== "winner" ? (
+                  <span className="rounded-full border border-amber-300 bg-white px-3 py-1 text-xs font-semibold text-amber-800">
+                    {finalVerdict?.kind === "mixed"
+                      ? "Trade-off"
+                      : "More data needed"}
                   </span>
-                  <span>{reason}</span>
-                </li>
-              ))}
-            </ul>
+                ) : null}
+              </div>
+
+              <p className="mt-5 text-xl font-semibold leading-8 text-slate-950 sm:text-2xl sm:leading-9">
+                {finalVerdict?.headline ??
+                  "A final verdict is not available for this comparison."}
+              </p>
+
+              {selectedGoalRecommendation ? (
+                <div className="mt-5 rounded-xl border border-white/70 bg-white/75 p-4 shadow-[0_12px_34px_-30px_rgba(15,23,42,0.65)]">
+                  <p className="text-xs font-semibold uppercase tracking-widest text-teal-700">
+                    Goal-based recommendation
+                  </p>
+                  <p className="mt-2 text-sm leading-6 text-slate-700">
+                    {selectedGoalRecommendation.body} This is based on the
+                    numbers entered, not a guaranteed best offer.
+                  </p>
+                </div>
+              ) : null}
+            </div>
+
+            <div className="border-t border-slate-200/70 bg-white/70 p-4 sm:p-5 lg:border-l lg:border-t-0">
+              <dl className="grid gap-3">
+                {decisionHighlights.map((highlight) => (
+                  <div
+                    key={highlight.label}
+                    className="rounded-xl border border-slate-200/80 bg-white p-4 shadow-[0_12px_28px_-26px_rgba(15,23,42,0.55)]"
+                  >
+                    <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                      {highlight.label}
+                    </dt>
+                    <dd className="mt-1 break-words text-xl font-black tracking-tight text-slate-950">
+                      {highlight.value}
+                    </dd>
+                    <p className="mt-1 text-xs leading-5 text-slate-500">
+                      {highlight.detail}
+                    </p>
+                  </div>
+                ))}
+              </dl>
+            </div>
           </div>
         </section>
-      ) : null}
 
-      {quoteResultCards}
+        {recommendationReasons.length > 0 ? (
+          <section className="mb-5">
+            <div className="mb-3 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-widest text-teal-700">
+                  Decision support
+                </p>
+                <h4 className="text-lg font-bold text-slate-950">
+                  Why this recommendation
+                </h4>
+              </div>
+              <p className="text-xs leading-5 text-slate-500">
+                Three high-signal checks from the numbers entered.
+              </p>
+            </div>
+            <div className="grid gap-3 md:grid-cols-3">
+              {recommendationReasons.map((reason) => (
+                <article
+                  key={reason.title}
+                  className="rounded-xl border border-slate-200 bg-slate-50/80 p-4"
+                >
+                  <h5 className="text-sm font-semibold text-slate-950">
+                    {reason.title}
+                  </h5>
+                  <p className="mt-2 text-sm leading-6 text-slate-600">
+                    {reason.body}
+                  </p>
+                </article>
+              ))}
+            </div>
+          </section>
+        ) : null}
 
-      <QuoteStructureIntelligencePanel intelligence={quoteIntelligence} />
+        <section className="mb-5 rounded-2xl border border-teal-200 bg-[linear-gradient(to_bottom_right,#f0fdfa,#ffffff)] p-4 shadow-[0_16px_42px_-34px_rgba(13,148,136,0.7)] sm:p-5">
+          <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-widest text-teal-700">
+                Before you sign
+              </p>
+              <h4 className="text-lg font-bold text-slate-950">
+                Negotiation targets
+              </h4>
+            </div>
+            <button
+              id="negotiation-assistant-trigger"
+              ref={assistantTriggerRef}
+              type="button"
+              onClick={openAssistant}
+              className="mt-3 w-full rounded-xl border border-teal-700 bg-teal-700 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-teal-800 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-teal-700 focus:ring-offset-2 active:translate-y-0 active:scale-[0.98] sm:mt-0 sm:w-auto"
+              aria-haspopup="dialog"
+            >
+              Open assistant
+            </button>
+          </div>
+          <div className="mt-4 grid gap-3 lg:grid-cols-3">
+            {negotiationTargets.map((target) => (
+              <article
+                key={target.title}
+                className="rounded-xl border border-teal-100 bg-white p-4 shadow-[0_10px_26px_-24px_rgba(13,148,136,0.65)]"
+              >
+                <h5 className="text-sm font-semibold text-slate-950">
+                  {target.title}
+                </h5>
+                <p className="mt-1 text-sm leading-6 text-slate-600">
+                  {target.body}
+                </p>
+                <p className="mt-3 border-l-2 border-teal-600 pl-3 text-sm font-medium leading-6 text-slate-800">
+                  {target.question}
+                </p>
+              </article>
+            ))}
+          </div>
+        </section>
 
-      <DataBackedDealReview />
+        {quoteResultCards}
 
-      {selectedGoalRecommendation ? (
-        <div className="mb-5 rounded-lg border border-teal-100 bg-teal-50/50 p-4">
-          <p className="text-xs font-semibold uppercase tracking-widest text-teal-700">
-            Goal-based recommendation
-          </p>
-          <h4 className="mt-1 text-base font-semibold text-slate-950">
-            {selectedGoalRecommendation.title}
-          </h4>
-          <p className="mt-2 text-sm leading-6 text-slate-600">
-            {selectedGoalRecommendation.body} This is based on the numbers
-            entered, not a guaranteed best offer.
-          </p>
-        </div>
-      ) : null}
+        <CollapsibleSection
+          eyebrow="Advanced analysis"
+          title="Advanced quote intelligence"
+          description="Rule-based structure review, dealer questions, and trust notes."
+        >
+          <QuoteStructureIntelligencePanel intelligence={quoteIntelligence} />
+        </CollapsibleSection>
 
-      <InsightSummary
-        title="Comparison summary"
-        insights={buildComparisonInsights(comparisonResult)}
-      />
+        <CollapsibleSection
+          eyebrow="Roadmap"
+          title="Future data-backed review"
+          description="Premium data architecture placeholder for future market and program benchmarks."
+        >
+          <DataBackedDealReview />
+        </CollapsibleSection>
+
+        <CollapsibleSection
+          eyebrow="Detailed analysis"
+          title="Supporting comparison summary"
+          description="Additional trade-off notes for users who want deeper context."
+        >
+          <InsightSummary
+            title="Comparison summary"
+            insights={buildComparisonInsights(comparisonResult)}
+          />
+        </CollapsibleSection>
 
       <div className="mb-5">
         <button
@@ -1646,55 +2191,6 @@ export function ComparisonResults({
         </div>
       </div>
 
-      <button
-        id="negotiation-assistant-trigger"
-        ref={assistantTriggerRef}
-        type="button"
-        onClick={openAssistant}
-            className="negotiation-teaser-reveal group mb-5 flex w-full items-center justify-between gap-3 overflow-hidden rounded-2xl border border-teal-200 bg-[radial-gradient(circle_at_top_right,rgba(20,184,166,0.16),transparent_40%),linear-gradient(to_bottom_right,#f0fdfa,#ffffff)] p-3.5 text-left shadow-[0_18px_45px_-32px_rgba(13,148,136,0.7)] transition-all duration-300 hover:-translate-y-0.5 hover:border-teal-300 hover:shadow-[0_22px_50px_-30px_rgba(13,148,136,0.65)] focus:outline-none focus:ring-2 focus:ring-teal-600/40 focus:ring-offset-2 active:translate-y-0 active:scale-[0.995] sm:gap-4 sm:p-5"
-        aria-haspopup="dialog"
-      >
-        <span className="flex min-w-0 items-start gap-3.5">
-          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-teal-700 text-white shadow-sm transition-transform duration-300 group-hover:scale-105">
-            <svg
-              aria-hidden="true"
-              viewBox="0 0 24 24"
-              fill="none"
-              className="h-5 w-5"
-              stroke="currentColor"
-              strokeWidth="1.8"
-            >
-              <path d="M8 10h8M8 14h5" strokeLinecap="round" />
-              <path d="M5 19l1.2-3.1A7 7 0 1 1 19 12a7 7 0 0 1-10.6 6Z" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          </span>
-          <span>
-            <span className="block text-xs font-semibold uppercase tracking-widest text-teal-700">
-              Before you sign
-            </span>
-            <span className="mt-1 block text-base font-semibold text-slate-950">
-              Open your Negotiation Assistant
-            </span>
-            <span className="mt-1 hidden text-sm leading-6 text-slate-600 sm:block">
-              Get {dealerNegotiationItems.length} tailored questions to clarify
-              fees and negotiate a cleaner deal.
-            </span>
-          </span>
-        </span>
-        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-teal-200 bg-white text-teal-800 shadow-sm transition-all duration-200 group-hover:translate-x-0.5 group-hover:border-teal-300">
-          <svg
-            aria-hidden="true"
-            viewBox="0 0 20 20"
-            fill="none"
-            className="h-4 w-4"
-            stroke="currentColor"
-            strokeWidth="2"
-          >
-            <path d="m7 4 6 6-6 6" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-        </span>
-      </button>
-
       <div className="rounded-xl border border-slate-200/80 bg-slate-50/80 p-4 sm:flex sm:items-center sm:justify-between sm:gap-4">
         <div>
           <p className="text-sm font-semibold text-slate-950">
@@ -1813,7 +2309,7 @@ export function ComparisonResults({
                         Ask the dealer
                       </p>
                       <p className="mt-1 text-sm font-medium leading-6 text-slate-800">
-                        “{item.suggestedQuestion}”
+                        &quot;{item.suggestedQuestion}&quot;
                       </p>
                     </div>
                   </article>
@@ -1836,7 +2332,7 @@ export function ComparisonResults({
               >
                 {copyStatus === "copied" ? (
                   <>
-                    <span aria-hidden="true">✓</span>
+                    <span aria-hidden="true">*</span>
                     Copied
                   </>
                 ) : copyStatus === "failed" ? (
