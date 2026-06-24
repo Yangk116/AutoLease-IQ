@@ -8,6 +8,7 @@ import {
 
 import { InsightSummary, type DealInsight } from "./InsightSummary";
 import { MetricCard } from "./MetricCard";
+import { DataBackedDealReview } from "./DataBackedDealReview";
 import {
   buildQuoteStructureIntelligence,
   QuoteStructureIntelligencePanel,
@@ -1496,6 +1497,8 @@ export function ComparisonResults({
       {quoteResultCards}
 
       <QuoteStructureIntelligencePanel intelligence={quoteIntelligence} />
+
+      <DataBackedDealReview />
 
       {selectedGoalRecommendation ? (
         <div className="mb-5 rounded-lg border border-teal-100 bg-teal-50/50 p-4">
