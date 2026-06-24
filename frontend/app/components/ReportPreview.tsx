@@ -10,6 +10,7 @@ import type {
   DecisionMode,
   FinalVerdict,
 } from "./ComparisonResults";
+import type { QuoteStructureIntelligenceResult } from "./QuoteStructureIntelligence";
 
 type ReportPreviewProps = {
   comparisonResult: LeaseComparisonResult;
@@ -19,6 +20,7 @@ type ReportPreviewProps = {
   finalVerdict: FinalVerdict | null;
   keyTakeaways: string[];
   negotiationItems: DealerNegotiationItem[];
+  quoteIntelligence: QuoteStructureIntelligenceResult;
 };
 
 type ComparisonMetric = {
@@ -160,6 +162,7 @@ export function ReportPreview({
   finalVerdict,
   keyTakeaways,
   negotiationItems,
+  quoteIntelligence,
 }: ReportPreviewProps) {
   const hasVehicleContext = comparisonResult.results.some(
     (quote) =>
@@ -538,6 +541,51 @@ export function ReportPreview({
         <section className="report-print-card rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_16px_40px_-34px_rgba(15,23,42,0.65)] sm:p-6">
           <ReportSectionHeading
             number="5"
+            eyebrow="Structure review"
+            title="Quote Intelligence"
+            description="Rule-based structure review using the numbers entered. Market benchmark coming soon."
+          />
+          <div className="mt-5 grid gap-3 lg:grid-cols-2">
+            {quoteIntelligence.summary.slice(0, 3).map((observation) => (
+              <div
+                key={observation}
+                className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4"
+              >
+                <p className="text-sm leading-6 text-slate-700">
+                  {observation}
+                </p>
+              </div>
+            ))}
+          </div>
+          <div className="mt-4 rounded-2xl border border-teal-200 bg-teal-50/70 p-4">
+            <p className="text-xs font-bold uppercase tracking-wider text-teal-700">
+              Top dealer questions
+            </p>
+            <ul className="mt-3 space-y-2">
+              {quoteIntelligence.dealerQuestions
+                .slice(0, 3)
+                .map((question) => (
+                  <li
+                    key={question}
+                    className="flex gap-2.5 text-sm leading-6 text-slate-700"
+                  >
+                    <span
+                      aria-hidden="true"
+                      className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-teal-600"
+                    />
+                    <span>{question}</span>
+                  </li>
+                ))}
+            </ul>
+          </div>
+          <p className="mt-4 text-xs leading-5 text-slate-500">
+            {quoteIntelligence.trustNote}
+          </p>
+        </section>
+
+        <section className="report-print-card rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_16px_40px_-34px_rgba(15,23,42,0.65)] sm:p-6">
+          <ReportSectionHeading
+            number="6"
             eyebrow="Dealer conversation"
             title="Negotiation Notes"
             description="The highest-priority questions to clarify the offers before signing."
@@ -564,7 +612,7 @@ export function ReportPreview({
 
         <section className="report-print-card rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_16px_40px_-34px_rgba(15,23,42,0.65)] sm:p-6">
           <ReportSectionHeading
-            number="6"
+            number="7"
             eyebrow="Trust note"
             title="Disclaimer"
           />

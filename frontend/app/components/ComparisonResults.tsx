@@ -8,6 +8,10 @@ import {
 
 import { InsightSummary, type DealInsight } from "./InsightSummary";
 import { MetricCard } from "./MetricCard";
+import {
+  buildQuoteStructureIntelligence,
+  QuoteStructureIntelligencePanel,
+} from "./QuoteStructureIntelligence";
 import { ReportPreview } from "./ReportPreview";
 
 export type ComparisonPaymentSummary = {
@@ -970,6 +974,10 @@ export function buildComparisonReport(
     comparison,
     decisionMode,
   );
+  const quoteIntelligence = buildQuoteStructureIntelligence(
+    comparison,
+    paymentSummaries,
+  );
   const verdictFit = finalVerdict?.winningQuote
     ? `${getQuoteLetter(comparison, finalVerdict.winningQuote)} - ${getReportQuoteName(
         comparison,
@@ -1074,11 +1082,25 @@ export function buildComparisonReport(
     "",
     ...vehicleContextLines,
     "",
+    "5. QUOTE INTELLIGENCE",
+    "",
+    "Rule-based structure review using the numbers entered. Market benchmark coming soon.",
+    ...quoteIntelligence.summary
+      .slice(0, 3)
+      .map((observation) => `* ${observation}`),
+    "",
+    "Top dealer questions:",
+    ...quoteIntelligence.dealerQuestions
+      .slice(0, 3)
+      .map((question) => `* ${question}`),
+    "",
+    quoteIntelligence.trustNote,
+    "",
     "KEY TAKEAWAYS",
     "",
     ...keyTakeaways.map((takeaway) => `* ${takeaway}`),
     "",
-    "5. NEGOTIATION NOTES",
+    "6. NEGOTIATION NOTES",
     "",
     ...dealerNegotiationItems.flatMap((item, index) => [
       `${index + 1}. ${item.title}`,
@@ -1086,7 +1108,7 @@ export function buildComparisonReport(
       `   Ask the dealer: "${item.suggestedQuestion}"`,
       "",
     ]),
-    "6. DISCLAIMER",
+    "7. DISCLAIMER",
     "",
     "This report is based only on the numbers entered in this browser. It is not financial advice, a lender quote, or a guarantee of dealer pricing. Confirm taxes, fees, incentives, buyout terms, and contract language before signing.",
   ].join("\n");
@@ -1121,6 +1143,10 @@ export function ComparisonResults({
   const dealerNegotiationItems = buildDealerNegotiationItems(
     comparisonResult,
     selectedDecisionMode,
+  );
+  const quoteIntelligence = buildQuoteStructureIntelligence(
+    comparisonResult,
+    comparisonPaymentSummaries,
   );
   const reportKeyTakeaways = buildReportKeyTakeaways(
     comparisonResult,
@@ -1469,6 +1495,8 @@ export function ComparisonResults({
 
       {quoteResultCards}
 
+      <QuoteStructureIntelligencePanel intelligence={quoteIntelligence} />
+
       {selectedGoalRecommendation ? (
         <div className="mb-5 rounded-lg border border-teal-100 bg-teal-50/50 p-4">
           <p className="text-xs font-semibold uppercase tracking-widest text-teal-700">
@@ -1608,6 +1636,7 @@ export function ComparisonResults({
                 finalVerdict={finalVerdict}
                 keyTakeaways={reportKeyTakeaways}
                 negotiationItems={dealerNegotiationItems}
+                quoteIntelligence={quoteIntelligence}
               />
             </div>
           </div>
