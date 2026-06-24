@@ -26,6 +26,11 @@ type ComparisonMetric = {
   formatValue: (quote: LeaseAnalysisResult) => string;
 };
 
+type OfferComparisonRow = {
+  label: string;
+  getValue: (quote: LeaseAnalysisResult, index: number) => string;
+};
+
 const currencyFormatter = new Intl.NumberFormat("en-CA", {
   style: "currency",
   currency: "CAD",
@@ -115,25 +120,34 @@ function getBestFitLabel(
 }
 
 function ReportSectionHeading({
+  number,
   eyebrow,
   title,
   description,
 }: {
+  number: string;
   eyebrow: string;
   title: string;
   description?: string;
 }) {
   return (
-    <div>
-      <p className="text-[0.68rem] font-bold uppercase tracking-[0.2em] text-teal-700">
-        {eyebrow}
-      </p>
-      <h3 className="mt-1 text-xl font-bold tracking-tight text-slate-950">
-        {title}
-      </h3>
-      {description ? (
-        <p className="mt-1 text-sm leading-6 text-slate-500">{description}</p>
-      ) : null}
+    <div className="flex items-start gap-3">
+      <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-teal-200 bg-teal-50 text-xs font-black text-teal-800">
+        {number}
+      </span>
+      <div>
+        <p className="text-[0.68rem] font-bold uppercase tracking-[0.2em] text-teal-700">
+          {eyebrow}
+        </p>
+        <h3 className="mt-1 text-xl font-bold tracking-tight text-slate-950">
+          {title}
+        </h3>
+        {description ? (
+          <p className="mt-1 text-sm leading-6 text-slate-500">
+            {description}
+          </p>
+        ) : null}
+      </div>
     </div>
   );
 }
@@ -160,7 +174,7 @@ export function ReportPreview({
       quote.residualValue !== undefined,
   );
   const bestFitLabel = getBestFitLabel(comparisonResult, finalVerdict);
-  const offerComparisonRows = [
+  const offerComparisonRows: OfferComparisonRow[] = [
     {
       label: "Monthly payment used",
       getValue: (quote: LeaseAnalysisResult, index: number) =>
@@ -204,7 +218,7 @@ export function ReportPreview({
   return (
     <article className="overflow-hidden rounded-[1.25rem] border border-slate-200 bg-slate-50 shadow-[0_28px_80px_-48px_rgba(15,23,42,0.75)] sm:rounded-[1.75rem]">
       <header className="report-print-header border-b border-slate-200 bg-slate-950 px-4 py-6 text-white sm:px-8 sm:py-9">
-        <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+        <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
           <div>
             <div className="flex items-center gap-2.5">
               <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-teal-400 font-black text-slate-950 shadow-lg shadow-teal-950/20 print:bg-white print:ring-1 print:ring-slate-300">
@@ -221,54 +235,68 @@ export function ReportPreview({
               Generated from the numbers entered by the user.
             </p>
           </div>
-          <dl className="grid gap-2 text-sm sm:grid-cols-3 lg:min-w-[30rem]">
-            <div className="rounded-xl border border-white/15 bg-white/10 p-3">
-              <dt className="text-[0.65rem] font-bold uppercase tracking-wider text-teal-200">
-                Generated
-              </dt>
-              <dd className="mt-1 font-semibold text-white">
-                {metadata.generatedAtLabel}
-              </dd>
-            </div>
-            <div className="rounded-xl border border-white/15 bg-white/10 p-3">
-              <dt className="text-[0.65rem] font-bold uppercase tracking-wider text-teal-200">
-                Report ID
-              </dt>
-              <dd className="mt-1 font-semibold text-white">
-                {metadata.reportId}
-              </dd>
-            </div>
-            <div className="rounded-xl border border-white/15 bg-white/10 p-3">
-              <dt className="text-[0.65rem] font-bold uppercase tracking-wider text-teal-200">
-                Decision mode
-              </dt>
-              <dd className="mt-1 font-semibold text-white">
-                {decisionModeLabels[selectedDecisionMode]}
-              </dd>
-            </div>
-          </dl>
+          <div className="lg:min-w-[30rem] lg:max-w-[34rem]">
+            <dl className="grid gap-2 text-sm sm:grid-cols-3">
+              <div className="rounded-xl border border-white/15 bg-white/10 p-3">
+                <dt className="text-[0.65rem] font-bold uppercase tracking-wider text-teal-200">
+                  Generated
+                </dt>
+                <dd className="mt-1 font-semibold text-white">
+                  {metadata.generatedAtLabel}
+                </dd>
+              </div>
+              <div className="rounded-xl border border-white/15 bg-white/10 p-3">
+                <dt className="text-[0.65rem] font-bold uppercase tracking-wider text-teal-200">
+                  Report ID
+                </dt>
+                <dd className="mt-1 font-semibold text-white">
+                  {metadata.reportId}
+                </dd>
+              </div>
+              <div className="rounded-xl border border-white/15 bg-white/10 p-3">
+                <dt className="text-[0.65rem] font-bold uppercase tracking-wider text-teal-200">
+                  Decision mode
+                </dt>
+                <dd className="mt-1 font-semibold text-white">
+                  {decisionModeLabels[selectedDecisionMode]}
+                </dd>
+              </div>
+            </dl>
+            <p className="mt-3 rounded-xl border border-white/15 bg-white/10 p-3 text-xs leading-5 text-slate-200">
+              Prepared for decision review. This report summarizes the numbers
+              entered by the user and does not replace dealer, lender, tax,
+              insurance, or legal advice.
+            </p>
+          </div>
         </div>
       </header>
 
       <div className="space-y-4 p-3 sm:space-y-6 sm:p-6 lg:p-8">
         <section className="report-print-card overflow-hidden rounded-2xl border border-teal-200 bg-white shadow-[0_18px_45px_-34px_rgba(13,148,136,0.8)]">
-          <div className="grid lg:grid-cols-[0.72fr_1.28fr]">
-            <div className="bg-gradient-to-br from-teal-700 to-teal-900 p-5 text-white sm:p-6">
-              <p className="text-xs font-bold uppercase tracking-[0.18em] text-teal-100">
-                Executive summary
+          <div className="border-b border-teal-100 p-5 sm:p-6">
+            <ReportSectionHeading
+              number="1"
+              eyebrow="Decision review"
+              title="Executive Summary"
+            />
+          </div>
+          <div className="grid lg:grid-cols-[0.78fr_1.22fr]">
+            <div className="bg-slate-950 p-5 text-white sm:p-6">
+              <p className="text-xs font-bold uppercase tracking-[0.18em] text-teal-200">
+                Final verdict
               </p>
-              <p className="mt-5 text-sm text-teal-100">
+              <p className="mt-5 text-sm text-slate-300">
                 Best fit for your selected goal
               </p>
-              <p className="mt-1 text-3xl font-black tracking-tight">
+              <p className="mt-1 break-words text-3xl font-black tracking-tight sm:text-4xl">
                 {bestFitLabel}
               </p>
-              <span className="mt-5 inline-flex rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-xs font-semibold">
+              <span className="mt-5 inline-flex rounded-full border border-teal-300/30 bg-teal-400/10 px-3 py-1.5 text-xs font-semibold text-teal-100">
                 Goal: {decisionModeLabels[selectedDecisionMode]}
               </span>
             </div>
             <div className="p-5 sm:p-6">
-              <p className="text-lg font-bold leading-7 text-slate-950">
+              <p className="text-xl font-bold leading-8 text-slate-950">
                 {finalVerdict?.headline ??
                   "A final verdict is not available for this comparison."}
               </p>
@@ -288,12 +316,34 @@ export function ReportPreview({
                   ))}
                 </ul>
               ) : null}
+              {keyTakeaways.length ? (
+                <div className="mt-5 rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
+                  <p className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                    Key takeaways
+                  </p>
+                  <ul className="mt-3 space-y-2">
+                    {keyTakeaways.slice(0, 3).map((takeaway) => (
+                      <li
+                        key={takeaway}
+                        className="flex gap-2.5 text-sm leading-6 text-slate-600"
+                      >
+                        <span
+                          aria-hidden="true"
+                          className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-teal-600"
+                        />
+                        <span>{takeaway}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
             </div>
           </div>
         </section>
 
         <section className="report-print-card rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_16px_40px_-34px_rgba(15,23,42,0.65)] sm:p-6">
           <ReportSectionHeading
+            number="2"
             eyebrow="Financial overview"
             title="Cost Snapshot"
             description="The four metrics that best expose the full lease structure."
@@ -320,7 +370,7 @@ export function ReportPreview({
                       <p className="text-[0.68rem] font-bold uppercase tracking-wider text-teal-700">
                         {getQuoteLabel(index)}
                       </p>
-                      <p className="mt-1 break-words text-base font-bold tracking-tight text-slate-950 sm:text-lg">
+                      <p className="mt-1 break-words text-lg font-black tracking-tight text-slate-950 sm:text-xl">
                         {metric.formatValue(quote)}
                       </p>
                     </div>
@@ -333,8 +383,9 @@ export function ReportPreview({
 
         <section className="report-print-card rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_16px_40px_-34px_rgba(15,23,42,0.65)] sm:p-6">
           <ReportSectionHeading
+            number="3"
             eyebrow="Offer details"
-            title="Offer Comparison"
+            title="Quote Comparison"
           />
           <div className="mt-5 overflow-hidden rounded-2xl border border-slate-200">
             <div className="grid grid-cols-2 bg-slate-950 text-white sm:grid-cols-[0.9fr_1fr_1fr]">
@@ -344,7 +395,9 @@ export function ReportPreview({
               {comparisonResult.results.slice(0, 2).map((quote, index) => (
                 <div
                   key={`offer-heading-${getQuoteLabel(index)}`}
-                  className="border-l border-white/10 p-3 sm:p-4"
+                  className={`border-l border-white/10 p-3 sm:p-4 ${
+                    index === 0 ? "bg-teal-900/40" : "bg-slate-800/60"
+                  }`}
                 >
                   <p className="text-[0.65rem] font-bold uppercase tracking-wider text-teal-300">
                     {getQuoteLabel(index)}
@@ -387,137 +440,141 @@ export function ReportPreview({
           </div>
         </section>
 
-        {hasVehicleContext ? (
-          <section className="report-print-card rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_16px_40px_-34px_rgba(15,23,42,0.65)] sm:p-6">
-            <ReportSectionHeading
-              eyebrow="Vehicle economics"
-              title="Vehicle / Buyout Context"
-              description="Optional vehicle details that can explain payment and future purchase trade-offs."
-            />
-            <div className="mt-5 grid gap-3 md:grid-cols-2">
-              {comparisonResult.results.slice(0, 2).map((quote, index) => (
-                <div
-                  key={`vehicle-context-${getQuoteLabel(index)}`}
-                  className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4"
-                >
-                  <p className="text-xs font-bold uppercase tracking-wider text-teal-700">
-                    {getQuoteLabel(index)}
-                  </p>
-                  <p className="mt-1 font-semibold text-slate-950">
-                    {getQuoteName(
-                      quote,
-                      index,
-                      comparisonPaymentSummaries,
-                    )}
-                  </p>
-                  <dl className="mt-4 space-y-2.5 text-sm">
-                    {quote.discountPercentage !== undefined ? (
-                      <div className="flex items-center justify-between gap-4">
-                        <dt className="text-slate-500">Discount percentage</dt>
-                        <dd className="font-semibold text-slate-900">
-                          {formatPercentage(quote.discountPercentage)}
-                        </dd>
-                      </div>
-                    ) : null}
-                    {quote.residualPercentage !== undefined ? (
-                      <div className="flex items-center justify-between gap-4">
-                        <dt className="text-slate-500">Residual percentage</dt>
-                        <dd className="font-semibold text-slate-900">
-                          {formatPercentage(quote.residualPercentage)}
-                        </dd>
-                      </div>
-                    ) : null}
-                    {quote.residualValue !== undefined ? (
-                      <div className="flex items-center justify-between gap-4">
-                        <dt className="text-slate-500">Residual value</dt>
-                        <dd className="font-semibold text-slate-900">
-                          {formatCurrency(quote.residualValue)}
-                        </dd>
-                      </div>
-                    ) : null}
-                    {quote.depreciationAmount !== undefined ? (
-                      <div className="flex items-center justify-between gap-4">
-                        <dt className="text-slate-500">Depreciation amount</dt>
-                        <dd className="font-semibold text-slate-900">
-                          {formatCurrency(quote.depreciationAmount)}
-                        </dd>
-                      </div>
-                    ) : null}
-                  </dl>
-                </div>
-              ))}
-            </div>
-            {hasBuyoutContext ? (
-              <div className="mt-4 flex gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4">
-                <span
-                  aria-hidden="true"
-                  className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-amber-200 text-sm font-black text-amber-900"
-                >
-                  !
-                </span>
-                <p className="text-sm leading-6 text-amber-950">
-                  A higher residual may lower lease payments but can increase
-                  the future purchase price. Confirm the exact buyout amount,
-                  taxes, and lease-end fees with the dealer.
-                </p>
+        <section className="report-print-card rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_16px_40px_-34px_rgba(15,23,42,0.65)] sm:p-6">
+          <ReportSectionHeading
+            number="4"
+            eyebrow="Vehicle economics"
+            title="Buyout / Vehicle Context"
+            description="Optional vehicle details that can explain payment and future purchase trade-offs."
+          />
+          {hasVehicleContext ? (
+            <>
+              <div className="mt-5 grid gap-3 md:grid-cols-2">
+                {comparisonResult.results.slice(0, 2).map((quote, index) => (
+                  <div
+                    key={`vehicle-context-${getQuoteLabel(index)}`}
+                    className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4"
+                  >
+                    <p className="text-xs font-bold uppercase tracking-wider text-teal-700">
+                      {getQuoteLabel(index)}
+                    </p>
+                    <p className="mt-1 font-semibold text-slate-950">
+                      {getQuoteName(
+                        quote,
+                        index,
+                        comparisonPaymentSummaries,
+                      )}
+                    </p>
+                    <dl className="mt-4 space-y-2.5 text-sm">
+                      {quote.discountPercentage !== undefined ? (
+                        <div className="flex items-center justify-between gap-4">
+                          <dt className="text-slate-500">
+                            Discount percentage
+                          </dt>
+                          <dd className="font-semibold text-slate-900">
+                            {formatPercentage(quote.discountPercentage)}
+                          </dd>
+                        </div>
+                      ) : null}
+                      {quote.residualPercentage !== undefined ? (
+                        <div className="flex items-center justify-between gap-4">
+                          <dt className="text-slate-500">
+                            Residual percentage
+                          </dt>
+                          <dd className="font-semibold text-slate-900">
+                            {formatPercentage(quote.residualPercentage)}
+                          </dd>
+                        </div>
+                      ) : null}
+                      {quote.residualValue !== undefined ? (
+                        <div className="flex items-center justify-between gap-4">
+                          <dt className="text-slate-500">Residual value</dt>
+                          <dd className="font-semibold text-slate-900">
+                            {formatCurrency(quote.residualValue)}
+                          </dd>
+                        </div>
+                      ) : null}
+                      {quote.depreciationAmount !== undefined ? (
+                        <div className="flex items-center justify-between gap-4">
+                          <dt className="text-slate-500">
+                            Depreciation amount
+                          </dt>
+                          <dd className="font-semibold text-slate-900">
+                            {formatCurrency(quote.depreciationAmount)}
+                          </dd>
+                        </div>
+                      ) : null}
+                    </dl>
+                  </div>
+                ))}
               </div>
-            ) : null}
-          </section>
-        ) : null}
-
-        <div className="grid gap-5 lg:grid-cols-2">
-          <section className="report-print-card rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_16px_40px_-34px_rgba(15,23,42,0.65)] sm:p-6">
-            <ReportSectionHeading
-              eyebrow="Decision summary"
-              title="Key Takeaways"
-            />
-            <ul className="mt-5 space-y-3">
-              {keyTakeaways.slice(0, 5).map((takeaway, index) => (
-                <li key={takeaway} className="flex gap-3">
-                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-teal-50 text-xs font-bold text-teal-700 ring-1 ring-teal-100">
-                    {index + 1}
+              {hasBuyoutContext ? (
+                <div className="mt-4 flex gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4">
+                  <span
+                    aria-hidden="true"
+                    className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-amber-200 text-sm font-black text-amber-900"
+                  >
+                    !
                   </span>
-                  <span className="text-sm leading-6 text-slate-600">
-                    {takeaway}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </section>
-
-          <section className="report-print-card rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_16px_40px_-34px_rgba(15,23,42,0.65)] sm:p-6">
-            <ReportSectionHeading
-              eyebrow="Dealer conversation"
-              title="Negotiation Assistant"
-              description="The highest-priority questions for these offers."
-            />
-            <div className="mt-5 space-y-3">
-              {negotiationItems.slice(0, 4).map((item) => (
-                <article
-                  key={item.title}
-                  className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4"
-                >
-                  <h4 className="text-sm font-bold text-slate-950">
-                    {item.title}
-                  </h4>
-                  <p className="mt-1 text-xs leading-5 text-slate-500">
-                    {item.whyItMatters}
+                  <p className="text-sm leading-6 text-amber-950">
+                    A higher residual may lower lease payments but can increase
+                    the future purchase price. Confirm the exact buyout amount,
+                    taxes, and lease-end fees with the dealer.
                   </p>
-                  <p className="mt-3 border-l-2 border-teal-500 pl-3 text-sm font-medium leading-6 text-slate-800">
-                    {item.suggestedQuestion}
-                  </p>
-                </article>
-              ))}
+                </div>
+              ) : null}
+            </>
+          ) : (
+            <div className="mt-5 rounded-2xl border border-dashed border-slate-300 bg-slate-50/80 p-4">
+              <p className="text-sm leading-6 text-slate-600">
+                Optional MSRP, selling price, residual value, and depreciation
+                details were not entered for this report. The cost comparison
+                above remains based on the lease numbers provided.
+              </p>
             </div>
-          </section>
-        </div>
+          )}
+        </section>
 
-        <footer className="report-print-card border-t border-slate-200 px-1 pt-5 text-center text-xs leading-5 text-slate-400">
-          Disclaimer: this report is based only on the numbers entered in this
-          browser. It is not financial advice, a lender quote, or a guarantee of
-          dealer pricing. Confirm taxes, fees, incentives, buyout terms, and
-          contract language before signing.
-        </footer>
+        <section className="report-print-card rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_16px_40px_-34px_rgba(15,23,42,0.65)] sm:p-6">
+          <ReportSectionHeading
+            number="5"
+            eyebrow="Dealer conversation"
+            title="Negotiation Notes"
+            description="The highest-priority questions to clarify the offers before signing."
+          />
+          <div className="mt-5 grid gap-3 lg:grid-cols-2">
+            {negotiationItems.slice(0, 4).map((item) => (
+              <article
+                key={item.title}
+                className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4"
+              >
+                <h4 className="text-sm font-bold text-slate-950">
+                  {item.title}
+                </h4>
+                <p className="mt-1 text-xs leading-5 text-slate-500">
+                  {item.whyItMatters}
+                </p>
+                <p className="mt-3 border-l-2 border-teal-500 pl-3 text-sm font-medium leading-6 text-slate-800">
+                  {item.suggestedQuestion}
+                </p>
+              </article>
+            ))}
+          </div>
+        </section>
+
+        <section className="report-print-card rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_16px_40px_-34px_rgba(15,23,42,0.65)] sm:p-6">
+          <ReportSectionHeading
+            number="6"
+            eyebrow="Trust note"
+            title="Disclaimer"
+          />
+          <p className="mt-4 text-sm leading-6 text-slate-600">
+            This report is based only on the numbers entered in this browser. It
+            is not financial advice, a lender quote, or a guarantee of dealer
+            pricing. Confirm taxes, fees, incentives, buyout terms, insurance
+            costs, and contract language before signing.
+          </p>
+        </section>
       </div>
     </article>
   );

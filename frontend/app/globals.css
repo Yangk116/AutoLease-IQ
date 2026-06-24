@@ -234,6 +234,11 @@ summary:hover {
     page-break-inside: auto;
   }
 
+  .print-report-area section.report-print-card {
+    break-inside: avoid-page;
+    page-break-inside: avoid;
+  }
+
   .print-report-area footer,
   .print-report-area li,
   .print-report-area section > div > article {

@@ -953,6 +953,18 @@ export function buildComparisonReport(
       `* Total allowed kilometres: ${formatKilometres(quote.totalAllowedKm)}`,
     ].join("\n");
   });
+  const costSnapshotLines = comparison.results.slice(0, 2).flatMap(
+    (quote, index) => {
+      const quoteLabel = `Quote ${String.fromCharCode(65 + index)}`;
+
+      return [
+        `* ${quoteLabel} true monthly cost: ${formatCurrency(
+          quote.trueMonthlyCost,
+        )}`,
+        `* ${quoteLabel} total lease cost: ${formatCurrency(quote.totalCost)}`,
+      ];
+    },
+  );
   const finalVerdict = buildFinalVerdict(comparison, decisionMode);
   const dealerNegotiationItems = buildDealerNegotiationItems(
     comparison,
@@ -1018,8 +1030,6 @@ export function buildComparisonReport(
   const vehicleContextLines =
     vehicleContextSections.length > 0
       ? [
-          "VEHICLE / BUYOUT CONTEXT",
-          "",
           vehicleContextSections.join("\n\n"),
           ...(hasBuyoutContext
             ? [
@@ -1027,9 +1037,10 @@ export function buildComparisonReport(
                 "* Buyout warning: A higher residual may lower lease payments but can increase the future purchase price. Confirm the exact purchase-option amount and lease-end fees with the dealer.",
               ]
             : []),
-          "",
         ]
-      : [];
+      : [
+          "Optional MSRP, selling price, residual value, and depreciation details were not entered for this report.",
+        ];
   const keyTakeaways = buildReportKeyTakeaways(
     comparison,
     paymentSummaries,
@@ -1043,23 +1054,31 @@ export function buildComparisonReport(
     `Report ID: ${metadata.reportId}`,
     `Selected goal: ${decisionModeLabels[decisionMode]}`,
     "Generated from the numbers entered by the user.",
+    "Prepared for decision review. This report summarizes the numbers entered by the user and does not replace dealer, lender, tax, insurance, or legal advice.",
     "",
-    "EXECUTIVE SUMMARY / FINAL VERDICT",
+    "1. EXECUTIVE SUMMARY",
     "",
     `Best fit for selected goal: ${verdictFit}`,
     finalVerdict?.headline ?? "A final verdict is not available.",
     ...(finalVerdict?.reasons.slice(0, 1).map((reason) => `* ${reason}`) ?? []),
     "",
-    "COST SNAPSHOT",
+    "2. COST SNAPSHOT",
+    "",
+    ...costSnapshotLines,
+    "",
+    "3. QUOTE COMPARISON",
     "",
     quoteSections.join("\n\n"),
     "",
+    "4. BUYOUT / VEHICLE CONTEXT",
+    "",
     ...vehicleContextLines,
+    "",
     "KEY TAKEAWAYS",
     "",
     ...keyTakeaways.map((takeaway) => `* ${takeaway}`),
     "",
-    "DEALER NEGOTIATION ASSISTANT",
+    "5. NEGOTIATION NOTES",
     "",
     ...dealerNegotiationItems.flatMap((item, index) => [
       `${index + 1}. ${item.title}`,
@@ -1067,7 +1086,7 @@ export function buildComparisonReport(
       `   Ask the dealer: "${item.suggestedQuestion}"`,
       "",
     ]),
-    "DISCLAIMER",
+    "6. DISCLAIMER",
     "",
     "This report is based only on the numbers entered in this browser. It is not financial advice, a lender quote, or a guarantee of dealer pricing. Confirm taxes, fees, incentives, buyout terms, and contract language before signing.",
   ].join("\n");
