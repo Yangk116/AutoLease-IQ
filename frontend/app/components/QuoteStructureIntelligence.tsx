@@ -63,7 +63,7 @@ const compactNumberFormatter = new Intl.NumberFormat("en-CA", {
 });
 
 export const quoteIntelligenceTrustNote =
-  "This is a rule-based review from the numbers entered. It does not use live market data yet and does not replace dealer, lender, tax, insurance, or legal advice.";
+  "This is a rule-based review from the numbers entered. This version does not use live market listings and does not replace dealer, lender, tax, insurance, or legal advice.";
 
 function formatCurrency(value: number): string {
   return currencyFormatter.format(value);
@@ -705,7 +705,7 @@ export function QuoteStructureIntelligencePanel({
             </p>
           </div>
           <span className="inline-flex w-fit rounded-full border border-teal-300/30 bg-teal-400/10 px-3 py-1.5 text-xs font-semibold text-teal-100">
-            No live market data
+            No live market listings
           </span>
         </div>
       </div>

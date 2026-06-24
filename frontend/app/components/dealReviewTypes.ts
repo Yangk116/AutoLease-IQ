@@ -15,6 +15,61 @@ export type DealReviewConfidenceLevel =
   | "high"
   | "not-available";
 
+export type MarketDataSourceCategory =
+  | "listing-marketplace"
+  | "manufacturer-program"
+  | "valuation-guide"
+  | "dealer-fee-benchmark"
+  | "user-history";
+
+export type MarketDataSourceStatus =
+  | "not-connected"
+  | "planned"
+  | "connected"
+  | "unavailable";
+
+export type MarketDataSource = {
+  id: string;
+  label: string;
+  category: MarketDataSourceCategory;
+  status: MarketDataSourceStatus;
+  regionSupport: string;
+  dataExamples: string[];
+  limitations: string[];
+};
+
+export type VehicleMarketCondition =
+  | "new"
+  | "used"
+  | "certified-pre-owned"
+  | "unknown";
+
+export type VehicleMarketQuery = {
+  year: number | null;
+  make: string;
+  model: string;
+  trim: string;
+  region: string;
+  postalCode: string;
+  condition: VehicleMarketCondition | null;
+  mileage: number | null;
+  leaseTermMonths: number | null;
+  annualMileage: number | null;
+};
+
+export type MarketBenchmarkFindingStatus =
+  | "not-available"
+  | "needs-data"
+  | "available";
+
+export type MarketBenchmarkFinding = {
+  title: string;
+  status: MarketBenchmarkFindingStatus;
+  valueLabel: string | null;
+  explanation: string;
+  requiredData: string[];
+};
+
 export type DealReviewAmountRange = {
   low: number;
   high: number;

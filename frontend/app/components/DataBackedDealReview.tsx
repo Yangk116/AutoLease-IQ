@@ -1,4 +1,5 @@
 import type { DealReviewData, DealReviewConnectionStatus } from "./dealReviewTypes";
+import { MarketBenchmarkStrategy } from "./MarketBenchmarkStrategy";
 
 type ReviewLayer = {
   label: string;
@@ -83,7 +84,7 @@ const reviewLayers: ReviewLayer[] = [
     label: "Market benchmark",
     statusText: "Not connected yet",
     detail:
-      "This version does not use live market data. Future version can compare against listings.",
+      "This version does not use live market listings. Future version can compare this quote against verified sources.",
     status: placeholderDealReviewData.marketBenchmark.status,
   },
   {
@@ -176,13 +177,17 @@ export function DataBackedDealReview() {
 
       <div className="mt-3 rounded-lg border border-teal-100 bg-white p-3">
         <p className="text-xs font-semibold uppercase tracking-wide text-teal-700">
-          Commercial roadmap
+          Current scope
         </p>
         <p className="mt-1 text-sm leading-6 text-slate-700">
-          Paid review direction: connect quote parsing, market listings,
-          manufacturer lease programs, and AI reasoning to produce a deal score
-          and negotiation plan.
+          Market data not connected yet. This version does not use live market
+          listings, and current recommendations are based on entered numbers
+          only.
         </p>
+      </div>
+
+      <div className="mt-3">
+        <MarketBenchmarkStrategy />
       </div>
     </section>
   );
