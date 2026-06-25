@@ -144,7 +144,7 @@ const advancedFeeFields: AdvancedFeeFieldConfig[] = [
     name: "dealerFees",
     label: "Dealer fees",
     helperText:
-      "Enter separate dealer or admin fees only if they are not already included in cash down or the monthly payment.",
+      "Only enter fees not already included in cash down, due on delivery, or monthly payment.",
   },
   {
     name: "leaseEndFee",
@@ -161,7 +161,7 @@ const dealerQuoteContextFields: DealerQuoteContextFieldConfig[] = [
     min: 0,
     step: 100,
     helperText:
-      "Saved for quote review context. It is not double-counted unless you enter the same amount as cash down or fees.",
+      "For quote review context. Not added to total cost unless also entered as cash down or fees.",
   },
   {
     name: "apr",
@@ -302,8 +302,7 @@ export function ComparisonQuoteCard({
                   />
                   {field.name === "monthlyPayment" ? (
                     <span className="text-xs leading-5 text-slate-500">
-                      Use the tax-included monthly payment if your dealer quote
-                      shows payment with tax.
+                      Use the dealer&apos;s monthly payment exactly as shown.
                     </span>
                   ) : null}
                 </label>
@@ -324,9 +323,8 @@ export function ComparisonQuoteCard({
                   <span className="text-sm font-semibold text-slate-800">
                     Tax included in monthly payment
                     <span className="mt-1 block text-xs font-normal leading-5 text-slate-500">
-                      Turn this off only if your quote shows a before-tax
-                      payment and you want AutoLease IQ to add tax using the
-                      rate below.
+                      Most dealer quotes show monthly payment with tax. Turn
+                      this off only for before-tax payments.
                     </span>
                   </span>
                 </label>
@@ -396,7 +394,7 @@ export function ComparisonQuoteCard({
                   className={fieldInputClasses}
                 />
                 <span className="text-xs leading-5 text-slate-500">
-                  Cash down is included in the cost calculation.
+                  Included in total cost calculation.
                 </span>
               </label>
 

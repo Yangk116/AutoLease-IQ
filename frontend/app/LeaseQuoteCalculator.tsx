@@ -162,7 +162,11 @@ type GuidedProgressStep = {
 };
 
 type ComparisonPreset = {
-  id: "low-monthly-vs-low-total" | "low-upfront-vs-high-upfront" | "buyout";
+  id:
+    | "real-dealer-quote-example"
+    | "low-monthly-vs-low-total"
+    | "low-upfront-vs-high-upfront"
+    | "buyout";
   name: string;
   purpose: string;
   decisionMode: DecisionMode;
@@ -252,6 +256,61 @@ const defaultComparisonQuotes: ComparisonQuoteForm[] = [
 ];
 
 const comparisonPresets: ComparisonPreset[] = [
+  {
+    id: "real-dealer-quote-example",
+    name: "Real dealer quote example",
+    purpose:
+      "Practice mapping a detailed dealer quote into the fields without treating it as a market benchmark.",
+    decisionMode: "lowest-total-cost",
+    quotes: [
+      {
+        id: "quote-a",
+        label: "Quote A",
+        quoteName: "2026 Subaru WRX GT",
+        downPayment: 8_000,
+        monthlyPayment: 362.02,
+        termMonths: 24,
+        annualMileage: 20_000,
+        dealerFees: 395,
+        leaseEndFee: 0,
+        vehicleName: "2026 Subaru WRX GT",
+        vehicleMsrp: 46_995,
+        sellingPrice: 45_023.2,
+        residualMsrp: 48_240,
+        residualValue: 34_250.4,
+        addTaxToMonthlyPayment: false,
+        taxRate: defaultTaxRate,
+        dueOnDelivery: 7_961.02,
+        apr: 2.99,
+        moneyFactor: 0.00125,
+        dealerNotes:
+          "Example quote for testing field mapping. Due on delivery is stored as context.",
+      },
+      {
+        id: "quote-b",
+        label: "Quote B",
+        quoteName: "Alternative offer",
+        downPayment: 3_000,
+        monthlyPayment: 598.45,
+        termMonths: 24,
+        annualMileage: 20_000,
+        dealerFees: 395,
+        leaseEndFee: 0,
+        vehicleName: "2026 Subaru WRX GT alternative offer",
+        vehicleMsrp: 46_995,
+        sellingPrice: 45_023.2,
+        residualMsrp: 48_240,
+        residualValue: 34_250.4,
+        addTaxToMonthlyPayment: false,
+        taxRate: defaultTaxRate,
+        dueOnDelivery: 3_598.45,
+        apr: 2.99,
+        moneyFactor: 0.00125,
+        dealerNotes:
+          "Alternative example for UI testing with lower cash down and higher monthly payment.",
+      },
+    ],
+  },
   {
     id: "low-monthly-vs-low-total",
     name: "Low monthly vs low total",
@@ -1494,7 +1553,7 @@ export default function LeaseQuoteCalculator() {
             </div>
 
             <div
-              className="mt-4 grid gap-3 md:grid-cols-3"
+              className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4"
               aria-label="Example lease comparisons"
             >
               {comparisonPresets.map((preset) => (
@@ -1514,6 +1573,28 @@ export default function LeaseQuoteCalculator() {
               ))}
             </div>
           </div>
+
+          <aside className="rounded-2xl border border-slate-200 bg-white p-4 shadow-[0_12px_35px_-30px_rgba(15,23,42,0.35)] sm:p-5">
+            <h3 className="text-sm font-semibold text-slate-950">
+              I have a dealer quote
+            </h3>
+            <ul className="mt-3 grid gap-x-5 gap-y-2 text-xs leading-5 text-slate-600 sm:grid-cols-2 lg:grid-cols-3">
+              <li>Use the dealer&apos;s monthly payment exactly as shown.</li>
+              <li>
+                If payment includes tax, keep &quot;Tax included in monthly
+                payment&quot; on.
+              </li>
+              <li>Put only actual cash down in &quot;Cash down.&quot;</li>
+              <li>
+                Put the full amount due at signing or due on delivery in
+                &quot;Due on delivery&quot; for review context.
+              </li>
+              <li>Do not enter the same fee twice.</li>
+              <li>
+                APR and money factor are saved for context only in this version.
+              </li>
+            </ul>
+          </aside>
 
           {savedComparisonStatus ? (
             <p
