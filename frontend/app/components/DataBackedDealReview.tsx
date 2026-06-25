@@ -127,12 +127,12 @@ export function DataBackedDealReview() {
   return (
     <section
       aria-labelledby="data-backed-deal-review-title"
-      className="rounded-xl border border-slate-200 bg-slate-50/70 p-4"
+      className="rounded-xl border border-slate-200 bg-slate-50/70 p-3 sm:p-4"
     >
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <p className="text-xs font-semibold uppercase tracking-widest text-teal-700">
-            Future review architecture
+            Coming soon
           </p>
           <h4
             id="data-backed-deal-review-title"
@@ -141,16 +141,27 @@ export function DataBackedDealReview() {
             Data-backed Deal Review
           </h4>
           <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">
-            Future review layer for market listings, lease programs, quote
-            parsing, and AI negotiation guidance.
+            Planned data-backed review for market listings, lease programs,
+            quote parsing, and AI negotiation guidance.
           </p>
         </div>
         <span className="inline-flex w-fit rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-600">
-          Placeholder only
+          Future premium layer
         </span>
       </div>
 
-      <div className="mt-4 grid gap-2 md:grid-cols-2">
+      <div className="mt-3 rounded-lg border border-teal-100 bg-white p-3">
+        <p className="text-xs font-semibold uppercase tracking-wide text-teal-700">
+          Current scope
+        </p>
+        <p className="mt-1 text-sm leading-6 text-slate-700">
+          Market data not connected yet. This version does not use live market
+          listings, and current recommendations are based on entered numbers
+          only.
+        </p>
+      </div>
+
+      <div className="mt-3 grid gap-2 md:grid-cols-2">
         {reviewLayers.map((layer) => (
           <div
             key={layer.label}
@@ -173,17 +184,6 @@ export function DataBackedDealReview() {
             </p>
           </div>
         ))}
-      </div>
-
-      <div className="mt-3 rounded-lg border border-teal-100 bg-white p-3">
-        <p className="text-xs font-semibold uppercase tracking-wide text-teal-700">
-          Current scope
-        </p>
-        <p className="mt-1 text-sm leading-6 text-slate-700">
-          Market data not connected yet. This version does not use live market
-          listings, and current recommendations are based on entered numbers
-          only.
-        </p>
       </div>
 
       <div className="mt-3">

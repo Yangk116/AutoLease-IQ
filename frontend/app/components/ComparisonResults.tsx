@@ -2038,6 +2038,156 @@ export function ComparisonResults({
 
         {quoteResultCards}
 
+        <div className="mb-5">
+          <button
+            id="lease-report-preview-toggle"
+            type="button"
+            onClick={() => setIsReportPreviewOpen((isOpen) => !isOpen)}
+            aria-expanded={isReportPreviewOpen}
+            aria-controls="lease-report-preview"
+            className="group flex w-full items-center justify-between gap-3 overflow-hidden rounded-2xl border border-slate-800 bg-[radial-gradient(circle_at_top_right,rgba(45,212,191,0.2),transparent_40%),linear-gradient(to_bottom_right,#0f172a,#172554)] p-3.5 text-left text-white shadow-[0_22px_55px_-32px_rgba(15,23,42,0.9)] transition-all duration-300 hover:-translate-y-0.5 hover:border-teal-500/70 hover:shadow-[0_26px_60px_-30px_rgba(15,118,110,0.65)] focus:outline-none focus:ring-2 focus:ring-teal-600/50 focus:ring-offset-2 active:translate-y-0 active:scale-[0.995] sm:gap-4 sm:p-5"
+          >
+            <span className="flex min-w-0 items-start gap-3.5">
+              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-teal-400 text-slate-950 shadow-lg shadow-slate-950/30 transition-transform duration-300 group-hover:scale-105">
+                <svg
+                  aria-hidden="true"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  className="h-5 w-5"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                >
+                  <path
+                    d="M7 3.75h7l3 3V20.25H7V3.75Z"
+                    strokeLinejoin="round"
+                  />
+                  <path d="M14 3.75v3h3M9.5 11h5M9.5 14.5h5" strokeLinecap="round" />
+                </svg>
+              </span>
+              <span>
+                <span className="block text-xs font-semibold uppercase tracking-widest text-teal-300">
+                  Report preview
+                </span>
+                <span className="mt-1 block text-base font-semibold">
+                  {isReportPreviewOpen
+                    ? "Hide report preview"
+                    : "Preview report"}
+                </span>
+                <span className="mt-1 hidden text-sm leading-6 text-slate-300 sm:block">
+                  Review a polished, share-ready view of the verdict, costs, and
+                  negotiation plan.
+                </span>
+              </span>
+            </span>
+            <span
+              className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-white/15 bg-white/10 text-teal-100 transition-transform duration-300 ${
+                isReportPreviewOpen ? "rotate-180" : ""
+              }`}
+            >
+              <svg
+                aria-hidden="true"
+                viewBox="0 0 20 20"
+                fill="none"
+                className="h-4 w-4"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
+                <path d="m4 7 6 6 6-6" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </span>
+          </button>
+
+          <div
+            id="lease-report-preview"
+            aria-hidden={!isReportPreviewOpen}
+            className={`grid transition-all duration-500 ease-out ${
+              isReportPreviewOpen
+                ? "mt-4 grid-rows-[1fr] opacity-100"
+                : "grid-rows-[0fr] opacity-0"
+            }`}
+          >
+            <div className="overflow-hidden">
+              <div className="print-report-controls mb-3 flex flex-col gap-3 rounded-xl border border-slate-200 bg-slate-50 p-3 sm:flex-row sm:items-center sm:justify-between">
+                <p className="text-xs leading-5 text-slate-500">
+                  Preview, copy, or use your browser&apos;s Save as PDF option.
+                </p>
+                <div className="grid gap-2 sm:flex sm:justify-end">
+                  <button
+                    type="button"
+                    onClick={copyReport}
+                    aria-live="polite"
+                    className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-teal-300 hover:bg-teal-50 hover:text-teal-900 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-teal-700 focus:ring-offset-2 active:translate-y-0 active:scale-[0.98] sm:w-auto"
+                  >
+                    {copyStatus === "copied"
+                      ? "Copied"
+                      : copyStatus === "failed"
+                        ? "Copy failed"
+                        : "Copy report"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={printReport}
+                    className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-teal-700 bg-white px-4 text-sm font-semibold text-teal-800 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-teal-50 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-teal-700 focus:ring-offset-2 active:translate-y-0 active:scale-[0.98] sm:w-auto"
+                  >
+                    <svg
+                      aria-hidden="true"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      className="h-4 w-4"
+                      stroke="currentColor"
+                      strokeWidth="1.8"
+                    >
+                      <path
+                        d="M7 9V4h10v5M7 17H5.5A2.5 2.5 0 0 1 3 14.5v-3A2.5 2.5 0 0 1 5.5 9h13a2.5 2.5 0 0 1 2.5 2.5v3a2.5 2.5 0 0 1-2.5 2.5H17"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                      <path d="M7 14h10v6H7z" strokeLinejoin="round" />
+                    </svg>
+                    Print / Save as PDF
+                  </button>
+                </div>
+              </div>
+              <div className="print-report-area">
+                <ReportPreview
+                  comparisonResult={comparisonResult}
+                  comparisonPaymentSummaries={comparisonPaymentSummaries}
+                  selectedDecisionMode={selectedDecisionMode}
+                  metadata={reportMetadata}
+                  finalVerdict={finalVerdict}
+                  keyTakeaways={reportKeyTakeaways}
+                  negotiationItems={dealerNegotiationItems}
+                  quoteIntelligence={quoteIntelligence}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="rounded-xl border border-slate-200/80 bg-slate-50/80 p-4 sm:flex sm:items-center sm:justify-between sm:gap-4">
+          <div>
+            <p className="text-sm font-semibold text-slate-950">
+              Save or share the full comparison
+            </p>
+            <p className="mt-1 text-xs leading-5 text-slate-500">
+              Includes the final verdict, all report metrics, and the Dealer
+              Negotiation Assistant.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={copyReport}
+            aria-live="polite"
+            className="mt-3 w-full rounded-xl border border-teal-700 bg-teal-700 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-teal-800 hover:bg-teal-800 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-teal-700 focus:ring-offset-2 active:translate-y-0 active:scale-[0.98] sm:mt-0 sm:w-auto"
+          >
+            {copyStatus === "copied"
+              ? "Copied"
+              : copyStatus === "failed"
+                ? "Copy failed"
+                : "Copy report"}
+          </button>
+        </div>
+
         <CollapsibleSection
           eyebrow="Advanced analysis"
           title="Advanced quote intelligence"
@@ -2047,9 +2197,9 @@ export function ComparisonResults({
         </CollapsibleSection>
 
         <CollapsibleSection
-          eyebrow="Roadmap"
-          title="Future data-backed review"
-          description="Premium data architecture placeholder for future market and program benchmarks."
+          eyebrow="Coming soon"
+          title="Future premium review layer"
+          description="Planned data-backed review for market listings, lease programs, quote parsing, and AI negotiation guidance."
         >
           <DataBackedDealReview />
         </CollapsibleSection>
@@ -2064,156 +2214,6 @@ export function ComparisonResults({
             insights={buildComparisonInsights(comparisonResult)}
           />
         </CollapsibleSection>
-
-      <div className="mb-5">
-        <button
-          id="lease-report-preview-toggle"
-          type="button"
-          onClick={() => setIsReportPreviewOpen((isOpen) => !isOpen)}
-          aria-expanded={isReportPreviewOpen}
-          aria-controls="lease-report-preview"
-          className="group flex w-full items-center justify-between gap-3 overflow-hidden rounded-2xl border border-slate-800 bg-[radial-gradient(circle_at_top_right,rgba(45,212,191,0.2),transparent_40%),linear-gradient(to_bottom_right,#0f172a,#172554)] p-3.5 text-left text-white shadow-[0_22px_55px_-32px_rgba(15,23,42,0.9)] transition-all duration-300 hover:-translate-y-0.5 hover:border-teal-500/70 hover:shadow-[0_26px_60px_-30px_rgba(15,118,110,0.65)] focus:outline-none focus:ring-2 focus:ring-teal-600/50 focus:ring-offset-2 active:translate-y-0 active:scale-[0.995] sm:gap-4 sm:p-5"
-        >
-          <span className="flex min-w-0 items-start gap-3.5">
-            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-teal-400 text-slate-950 shadow-lg shadow-slate-950/30 transition-transform duration-300 group-hover:scale-105">
-              <svg
-                aria-hidden="true"
-                viewBox="0 0 24 24"
-                fill="none"
-                className="h-5 w-5"
-                stroke="currentColor"
-                strokeWidth="1.8"
-              >
-                <path
-                  d="M7 3.75h7l3 3V20.25H7V3.75Z"
-                  strokeLinejoin="round"
-                />
-                <path d="M14 3.75v3h3M9.5 11h5M9.5 14.5h5" strokeLinecap="round" />
-              </svg>
-            </span>
-            <span>
-              <span className="block text-xs font-semibold uppercase tracking-widest text-teal-300">
-                Report preview
-              </span>
-              <span className="mt-1 block text-base font-semibold">
-                {isReportPreviewOpen
-                  ? "Hide report preview"
-                  : "Preview report"}
-              </span>
-              <span className="mt-1 hidden text-sm leading-6 text-slate-300 sm:block">
-                Review a polished, share-ready view of the verdict, costs, and
-                negotiation plan.
-              </span>
-            </span>
-          </span>
-          <span
-            className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-white/15 bg-white/10 text-teal-100 transition-transform duration-300 ${
-              isReportPreviewOpen ? "rotate-180" : ""
-            }`}
-          >
-            <svg
-              aria-hidden="true"
-              viewBox="0 0 20 20"
-              fill="none"
-              className="h-4 w-4"
-              stroke="currentColor"
-              strokeWidth="2"
-            >
-              <path d="m4 7 6 6 6-6" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          </span>
-        </button>
-
-        <div
-          id="lease-report-preview"
-          aria-hidden={!isReportPreviewOpen}
-          className={`grid transition-all duration-500 ease-out ${
-            isReportPreviewOpen
-              ? "mt-4 grid-rows-[1fr] opacity-100"
-              : "grid-rows-[0fr] opacity-0"
-          }`}
-        >
-          <div className="overflow-hidden">
-            <div className="print-report-controls mb-3 flex flex-col gap-3 rounded-xl border border-slate-200 bg-slate-50 p-3 sm:flex-row sm:items-center sm:justify-between">
-              <p className="text-xs leading-5 text-slate-500">
-                Preview, copy, or use your browser&apos;s Save as PDF option.
-              </p>
-              <div className="grid gap-2 sm:flex sm:justify-end">
-                <button
-                  type="button"
-                  onClick={copyReport}
-                  aria-live="polite"
-                  className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-teal-300 hover:bg-teal-50 hover:text-teal-900 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-teal-700 focus:ring-offset-2 active:translate-y-0 active:scale-[0.98] sm:w-auto"
-                >
-                  {copyStatus === "copied"
-                    ? "Copied"
-                    : copyStatus === "failed"
-                      ? "Copy failed"
-                      : "Copy report"}
-                </button>
-                <button
-                  type="button"
-                  onClick={printReport}
-                  className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-teal-700 bg-white px-4 text-sm font-semibold text-teal-800 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-teal-50 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-teal-700 focus:ring-offset-2 active:translate-y-0 active:scale-[0.98] sm:w-auto"
-                >
-                  <svg
-                    aria-hidden="true"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    className="h-4 w-4"
-                    stroke="currentColor"
-                    strokeWidth="1.8"
-                  >
-                    <path
-                      d="M7 9V4h10v5M7 17H5.5A2.5 2.5 0 0 1 3 14.5v-3A2.5 2.5 0 0 1 5.5 9h13a2.5 2.5 0 0 1 2.5 2.5v3a2.5 2.5 0 0 1-2.5 2.5H17"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                    <path d="M7 14h10v6H7z" strokeLinejoin="round" />
-                  </svg>
-                  Print / Save as PDF
-                </button>
-              </div>
-            </div>
-            <div className="print-report-area">
-              <ReportPreview
-                comparisonResult={comparisonResult}
-                comparisonPaymentSummaries={comparisonPaymentSummaries}
-                selectedDecisionMode={selectedDecisionMode}
-                metadata={reportMetadata}
-                finalVerdict={finalVerdict}
-                keyTakeaways={reportKeyTakeaways}
-                negotiationItems={dealerNegotiationItems}
-                quoteIntelligence={quoteIntelligence}
-              />
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="rounded-xl border border-slate-200/80 bg-slate-50/80 p-4 sm:flex sm:items-center sm:justify-between sm:gap-4">
-        <div>
-          <p className="text-sm font-semibold text-slate-950">
-            Save or share the full comparison
-          </p>
-          <p className="mt-1 text-xs leading-5 text-slate-500">
-            Includes the final verdict, all report metrics, and the Dealer
-            Negotiation Assistant.
-          </p>
-        </div>
-        <button
-          type="button"
-          onClick={copyReport}
-          aria-live="polite"
-          className="mt-3 w-full rounded-xl border border-teal-700 bg-teal-700 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-teal-800 hover:bg-teal-800 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-teal-700 focus:ring-offset-2 active:translate-y-0 active:scale-[0.98] sm:mt-0 sm:w-auto"
-        >
-          {copyStatus === "copied"
-            ? "Copied"
-            : copyStatus === "failed"
-              ? "Copy failed"
-              : "Copy report"}
-        </button>
-      </div>
       </div>
 
       {isAssistantMounted
