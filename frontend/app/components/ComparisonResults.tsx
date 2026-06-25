@@ -19,6 +19,12 @@ export type ComparisonPaymentSummary = {
   quoteName: string;
   enteredMonthlyPayment: number;
   monthlyPaymentUsed: number;
+  taxIncludedInMonthlyPayment: boolean;
+  taxRate?: number;
+  dueOnDelivery?: number;
+  apr?: number;
+  moneyFactor?: number;
+  dealerNotes?: string;
 };
 
 export type DecisionMode =
@@ -67,6 +73,11 @@ type DecisionHighlight = {
   label: string;
   value: string;
   detail: string;
+};
+
+type QuoteContextItem = {
+  label: string;
+  value: string;
 };
 
 type RecommendationReason = {
@@ -156,8 +167,60 @@ function formatPercentage(value: number) {
   return `${percentageFormatter.format(value)}%`;
 }
 
+function formatMoneyFactor(value: number) {
+  return value.toFixed(5);
+}
+
 function formatCostPerKilometre(value: number) {
   return `${formatCurrency(value)} / km`;
+}
+
+function buildQuoteContextItems(
+  paymentSummary: ComparisonPaymentSummary | undefined,
+): QuoteContextItem[] {
+  if (!paymentSummary) {
+    return [];
+  }
+
+  const items: QuoteContextItem[] = [
+    {
+      label: "Tax included in payment",
+      value: paymentSummary.taxIncludedInMonthlyPayment ? "Yes" : "No",
+    },
+  ];
+
+  if (!paymentSummary.taxIncludedInMonthlyPayment) {
+    items.push({
+      label: "Tax rate added",
+      value:
+        paymentSummary.taxRate !== undefined
+          ? formatPercentage(paymentSummary.taxRate)
+          : "Not entered",
+    });
+  }
+
+  if (paymentSummary.dueOnDelivery !== undefined) {
+    items.push({
+      label: "Due on delivery",
+      value: formatCurrency(paymentSummary.dueOnDelivery),
+    });
+  }
+
+  if (paymentSummary.apr !== undefined) {
+    items.push({
+      label: "APR",
+      value: formatPercentage(paymentSummary.apr),
+    });
+  }
+
+  if (paymentSummary.moneyFactor !== undefined) {
+    items.push({
+      label: "Money factor",
+      value: formatMoneyFactor(paymentSummary.moneyFactor),
+    });
+  }
+
+  return items;
 }
 
 function padDatePart(value: number): string {
@@ -1390,6 +1453,25 @@ export function buildComparisonReport(
       `* Total allowed kilometres: ${formatKilometres(quote.totalAllowedKm)}`,
     ].join("\n");
   });
+  const quoteContextSections = paymentSummaries.flatMap((paymentSummary, index) => {
+    const quoteLabel = `Quote ${String.fromCharCode(65 + index)}`;
+    const contextItems = buildQuoteContextItems(paymentSummary);
+    const contextLines = [
+      `${quoteLabel.toUpperCase()} - ${quoteNames[index]}`,
+      "",
+      ...contextItems.map((item) => `* ${item.label}: ${item.value}`),
+    ];
+
+    if (paymentSummary.dealerNotes) {
+      contextLines.push(`* Dealer quote notes: ${paymentSummary.dealerNotes}`);
+    }
+
+    if (contextItems.length === 0 && !paymentSummary.dealerNotes) {
+      return [];
+    }
+
+    return [contextLines.join("\n")];
+  });
   const costSnapshotLines = comparison.results.slice(0, 2).flatMap(
     (quote, index) => {
       const quoteLabel = `Quote ${String.fromCharCode(65 + index)}`;
@@ -1510,6 +1592,13 @@ export function buildComparisonReport(
     "3. QUOTE COMPARISON",
     "",
     quoteSections.join("\n\n"),
+    "",
+    "Quote context:",
+    quoteContextSections.length > 0
+      ? quoteContextSections.join("\n\n")
+      : "No optional quote context was entered.",
+    "",
+    "Due on delivery is recorded for quote review context and is not double-counted unless the same amount is entered as cash down or fees.",
     "",
     "4. BUYOUT / VEHICLE CONTEXT",
     "",
@@ -1744,6 +1833,7 @@ export function ComparisonResults({
         const isBestFitForSelectedGoal =
           finalVerdict?.winningQuote === comparisonAnalysis;
         const quoteLabel = `Quote ${String.fromCharCode(65 + index)}`;
+        const quoteContextItems = buildQuoteContextItems(paymentSummaryForQuote);
 
         return (
           <article
@@ -1858,6 +1948,42 @@ export function ComparisonResults({
                 />
               ) : null}
             </dl>
+            {quoteContextItems.length > 0 ||
+            paymentSummaryForQuote?.dealerNotes ? (
+              <div className="mt-4 rounded-xl border border-slate-200 bg-white/80 p-3">
+                <p className="text-xs font-semibold uppercase tracking-widest text-slate-500">
+                  Quote context
+                </p>
+                {quoteContextItems.length > 0 ? (
+                  <dl className="mt-3 grid gap-2 sm:grid-cols-2">
+                    {quoteContextItems.map((item) => (
+                      <div
+                        key={`${quoteLabel}-${item.label}`}
+                        className="rounded-lg bg-slate-50 px-3 py-2"
+                      >
+                        <dt className="text-[0.68rem] font-semibold uppercase tracking-wide text-slate-500">
+                          {item.label}
+                        </dt>
+                        <dd className="mt-1 break-words text-sm font-semibold text-slate-900">
+                          {item.value}
+                        </dd>
+                      </div>
+                    ))}
+                  </dl>
+                ) : null}
+                {paymentSummaryForQuote?.dueOnDelivery !== undefined ? (
+                  <p className="mt-3 text-xs leading-5 text-slate-500">
+                    Due on delivery is not added to total cost unless it is also
+                    entered as cash down or fees.
+                  </p>
+                ) : null}
+                {paymentSummaryForQuote?.dealerNotes ? (
+                  <p className="mt-3 rounded-lg bg-slate-50 px-3 py-2 text-xs leading-5 text-slate-600">
+                    {paymentSummaryForQuote.dealerNotes}
+                  </p>
+                ) : null}
+              </div>
+            ) : null}
           </article>
         );
       })}

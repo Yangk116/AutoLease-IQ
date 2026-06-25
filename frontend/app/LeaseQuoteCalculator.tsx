@@ -18,7 +18,11 @@ import {
   type DecisionMode,
 } from "./components/ComparisonResults";
 import { ComparisonQuoteCard } from "./components/ComparisonQuoteCard";
-import type { ComparisonQuoteForm } from "./components/ComparisonQuoteCard";
+import type {
+  ComparisonQuoteContextNumericField,
+  ComparisonQuoteForm,
+  ComparisonQuoteOptionalNumericField,
+} from "./components/ComparisonQuoteCard";
 import { MetricCard } from "./components/MetricCard";
 import {
   MAX_SAVED_COMPARISONS,
@@ -172,6 +176,10 @@ type ComparisonQuoteFingerprint = {
   vehicleName: string | null;
   addTaxToMonthlyPayment: boolean;
   taxRate: number;
+  dueOnDelivery: number | null;
+  apr: number | null;
+  moneyFactor: number | null;
+  dealerNotes: string;
   downPayment: number;
   monthlyPayment: number;
   termMonths: number;
@@ -225,6 +233,7 @@ const defaultComparisonQuotes: ComparisonQuoteForm[] = [
     leaseEndFee: 0,
     addTaxToMonthlyPayment: false,
     taxRate: defaultTaxRate,
+    dealerNotes: "",
   },
   {
     id: "quote-b",
@@ -238,6 +247,7 @@ const defaultComparisonQuotes: ComparisonQuoteForm[] = [
     leaseEndFee: 0,
     addTaxToMonthlyPayment: false,
     taxRate: defaultTaxRate,
+    dealerNotes: "",
   },
 ];
 
@@ -261,6 +271,7 @@ const comparisonPresets: ComparisonPreset[] = [
         leaseEndFee: 500,
         addTaxToMonthlyPayment: false,
         taxRate: defaultTaxRate,
+        dealerNotes: "",
       },
       {
         id: "quote-b",
@@ -274,6 +285,7 @@ const comparisonPresets: ComparisonPreset[] = [
         leaseEndFee: 500,
         addTaxToMonthlyPayment: false,
         taxRate: defaultTaxRate,
+        dealerNotes: "",
       },
     ],
   },
@@ -296,6 +308,7 @@ const comparisonPresets: ComparisonPreset[] = [
         leaseEndFee: 450,
         addTaxToMonthlyPayment: false,
         taxRate: defaultTaxRate,
+        dealerNotes: "",
       },
       {
         id: "quote-b",
@@ -309,6 +322,7 @@ const comparisonPresets: ComparisonPreset[] = [
         leaseEndFee: 450,
         addTaxToMonthlyPayment: false,
         taxRate: defaultTaxRate,
+        dealerNotes: "",
       },
     ],
   },
@@ -336,6 +350,7 @@ const comparisonPresets: ComparisonPreset[] = [
         residualValue: 35_000,
         addTaxToMonthlyPayment: false,
         taxRate: defaultTaxRate,
+        dealerNotes: "",
       },
       {
         id: "quote-b",
@@ -354,6 +369,7 @@ const comparisonPresets: ComparisonPreset[] = [
         residualValue: 30_000,
         addTaxToMonthlyPayment: false,
         taxRate: defaultTaxRate,
+        dealerNotes: "",
       },
     ],
   },
@@ -385,6 +401,10 @@ function buildComparisonQuoteFingerprint(
     vehicleName: quote.vehicleName ?? null,
     addTaxToMonthlyPayment: quote.addTaxToMonthlyPayment,
     taxRate: quote.taxRate,
+    dueOnDelivery: quote.dueOnDelivery ?? null,
+    apr: quote.apr ?? null,
+    moneyFactor: quote.moneyFactor ?? null,
+    dealerNotes: quote.dealerNotes,
     downPayment: quote.downPayment,
     monthlyPayment: quote.monthlyPayment,
     termMonths: quote.termMonths,
@@ -666,6 +686,22 @@ export default function LeaseQuoteCalculator() {
     );
   }
 
+  function updateComparisonDealerNotes(
+    quoteId: ComparisonQuoteForm["id"],
+    value: string,
+  ) {
+    setComparisonQuotes((currentQuotes) =>
+      currentQuotes.map((currentQuote) =>
+        currentQuote.id === quoteId
+          ? {
+              ...currentQuote,
+              dealerNotes: value,
+            }
+          : currentQuote,
+      ),
+    );
+  }
+
   function updateComparisonNumericQuote(
     quoteId: ComparisonQuoteForm["id"],
     field: keyof Pick<
@@ -694,10 +730,7 @@ export default function LeaseQuoteCalculator() {
 
   function updateComparisonOptionalNumericQuote(
     quoteId: ComparisonQuoteForm["id"],
-    field: keyof Pick<
-      ComparisonQuoteForm,
-      "vehicleMsrp" | "sellingPrice" | "residualMsrp" | "residualValue"
-    >,
+    field: ComparisonQuoteOptionalNumericField | ComparisonQuoteContextNumericField,
     value: string,
   ) {
     setComparisonQuotes((currentQuotes) =>
@@ -721,7 +754,7 @@ export default function LeaseQuoteCalculator() {
         currentQuote.id === quoteId
           ? {
               ...currentQuote,
-              addTaxToMonthlyPayment: checked,
+              addTaxToMonthlyPayment: !checked,
             }
           : currentQuote,
       ),
@@ -776,6 +809,18 @@ export default function LeaseQuoteCalculator() {
             quoteName,
             enteredMonthlyPayment: comparisonQuote.monthlyPayment,
             monthlyPaymentUsed,
+            taxIncludedInMonthlyPayment:
+              !comparisonQuote.addTaxToMonthlyPayment,
+            taxRate: comparisonQuote.addTaxToMonthlyPayment
+              ? comparisonQuote.taxRate
+              : undefined,
+            dueOnDelivery: comparisonQuote.dueOnDelivery,
+            apr: comparisonQuote.apr,
+            moneyFactor: comparisonQuote.moneyFactor,
+            dealerNotes:
+              comparisonQuote.dealerNotes.trim() === ""
+                ? undefined
+                : comparisonQuote.dealerNotes.trim(),
           });
 
           return {
@@ -1493,9 +1538,10 @@ export default function LeaseQuoteCalculator() {
                 quote={comparisonQuote}
                 onQuoteNameChange={updateComparisonTextQuote}
                 onVehicleNameChange={updateComparisonVehicleName}
+                onDealerNotesChange={updateComparisonDealerNotes}
                 onNumericChange={updateComparisonNumericQuote}
                 onOptionalNumericChange={updateComparisonOptionalNumericQuote}
-                onTaxToggleChange={updateComparisonTaxToggle}
+                onTaxIncludedChange={updateComparisonTaxToggle}
               />
             ))}
           </div>

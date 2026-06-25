@@ -91,6 +91,15 @@ function readOptionalNumber(
   return isFiniteNumber(value) ? value : undefined;
 }
 
+function readOptionalString(
+  record: Record<string, unknown>,
+  key: string,
+): string | undefined {
+  const value = record[key];
+
+  return typeof value === "string" ? value : undefined;
+}
+
 function parseComparisonQuote(value: unknown): ComparisonQuoteForm | null {
   if (!isRecord(value)) {
     return null;
@@ -143,6 +152,10 @@ function parseComparisonQuote(value: unknown): ComparisonQuoteForm | null {
     sellingPrice: readOptionalNumber(value, "sellingPrice"),
     residualMsrp: readOptionalNumber(value, "residualMsrp"),
     residualValue: readOptionalNumber(value, "residualValue"),
+    dueOnDelivery: readOptionalNumber(value, "dueOnDelivery"),
+    apr: readOptionalNumber(value, "apr"),
+    moneyFactor: readOptionalNumber(value, "moneyFactor"),
+    dealerNotes: readOptionalString(value, "dealerNotes") ?? "",
   };
 }
 
