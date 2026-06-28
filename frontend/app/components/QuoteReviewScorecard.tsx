@@ -17,6 +17,12 @@ type QuoteReviewStatus =
   | "Needs attention"
   | "Not enough data";
 
+export type QuoteReviewOverallLabel =
+  | "Efficient structure"
+  | "Check carefully"
+  | "Needs review"
+  | "Needs more quote data";
+
 type ReviewCheck = {
   id:
     | "total-cost"
@@ -34,8 +40,15 @@ type ReviewCheck = {
 type QuoteReview = {
   quoteLabel: string;
   quoteName: string;
+  overallLabel: QuoteReviewOverallLabel;
+  overallDetail: string;
   checks: ReviewCheck[];
 };
+
+export type QuoteReviewScorecardSummary = Pick<
+  QuoteReview,
+  "overallDetail" | "overallLabel" | "quoteLabel" | "quoteName"
+>;
 
 type OptionalNumberMetric = keyof Pick<
   LeaseAnalysisResult,
@@ -51,6 +64,31 @@ const percentageFormatter = new Intl.NumberFormat("en-CA", {
   maximumFractionDigits: 1,
   minimumFractionDigits: 1,
 });
+
+export const quoteReviewScorecardTrustNote =
+  "Scorecard is based only on entered numbers. It does not use market listings, manufacturer programs, or dealer benchmarks.";
+
+const statusLegend: readonly {
+  status: QuoteReviewStatus;
+  description: string;
+}[] = [
+  {
+    status: "Looks efficient",
+    description: "Cleaner based on entered numbers",
+  },
+  {
+    status: "Worth checking",
+    description: "Ask dealer to confirm",
+  },
+  {
+    status: "Needs attention",
+    description: "Likely affects real cost or payment clarity",
+  },
+  {
+    status: "Not enough data",
+    description: "Add missing quote information",
+  },
+];
 
 function formatCurrency(value: number): string {
   return currencyFormatter.format(value);
@@ -151,7 +189,7 @@ function buildUpfrontCashCheck(
       status: "Needs attention",
       metric: `${formatPercentage(quote.upfrontRatio)} upfront`,
       detail:
-        "A large share of the entered total cost is paid upfront. Ask whether the same quote can be shown with less cash due at signing.",
+        "Large upfront share. Ask for a lower due-at-signing version.",
     };
   }
 
@@ -162,7 +200,7 @@ function buildUpfrontCashCheck(
       status: "Worth checking",
       metric: `${formatPercentage(quote.upfrontRatio)} upfront`,
       detail:
-        "This quote uses more upfront cash than a low-cash structure. Compare it with the other quote's due-at-signing amount.",
+        "Upfront cash is elevated compared with the entered structure.",
     };
   }
 
@@ -171,8 +209,7 @@ function buildUpfrontCashCheck(
     title: "Upfront cash pressure",
     status: "Looks efficient",
     metric: `${formatPercentage(quote.upfrontRatio)} upfront`,
-    detail:
-      "Upfront cash is a smaller share of the entered total lease cost.",
+    detail: "Lower upfront share of entered total lease cost.",
   };
 }
 
@@ -187,7 +224,7 @@ function getFeeClarityReview(quote: LeaseAnalysisResult): ReviewCheck {
       status: "Not enough data",
       metric: "No fees entered",
       detail:
-        "Confirm whether dealer, admin, acquisition, disposition, or lease-end fees are included elsewhere.",
+        "Confirm whether fees are included elsewhere.",
     };
   }
 
@@ -197,8 +234,7 @@ function getFeeClarityReview(quote: LeaseAnalysisResult): ReviewCheck {
       title: "Fee and tax clarity",
       status: "Worth checking",
       metric: `${formatCurrency(totalFees)} in fees`,
-      detail:
-        "Entered fees are a meaningful share of total cost. Ask for an itemized fee breakdown.",
+      detail: "Fees are a meaningful share of entered total cost.",
     };
   }
 
@@ -207,8 +243,7 @@ function getFeeClarityReview(quote: LeaseAnalysisResult): ReviewCheck {
     title: "Fee and tax clarity",
     status: "Looks efficient",
     metric: `${formatCurrency(totalFees)} in fees`,
-    detail:
-      "Fees are entered and do not dominate the total cost, based only on this quote's numbers.",
+    detail: "Fees are entered and do not dominate total cost.",
   };
 }
 
@@ -219,7 +254,7 @@ function getTaxClarityReview(
     return {
       status: "Not enough data",
       metric: "Payment basis missing",
-      detail: "Payment tax context was not available for this quote.",
+      detail: "Payment tax context is missing.",
     };
   }
 
@@ -227,7 +262,7 @@ function getTaxClarityReview(
     return {
       status: "Looks efficient",
       metric: "Tax included",
-      detail: "Monthly payment is marked as tax included.",
+      detail: "Monthly payment is marked tax included.",
     };
   }
 
@@ -235,15 +270,14 @@ function getTaxClarityReview(
     return {
       status: "Looks efficient",
       metric: `${formatPercentage(paymentSummary.taxRate)} tax entered`,
-      detail: "Payment is before tax, and a tax rate was entered.",
+      detail: "Before-tax payment has a tax rate entered.",
     };
   }
 
   return {
     status: "Needs attention",
     metric: "Before tax",
-    detail:
-      "Payment is before tax, but no tax rate was entered. The monthly view may be understated.",
+    detail: "Before-tax payment has no tax rate entered.",
   };
 }
 
@@ -316,8 +350,7 @@ function buildResidualContextCheck(
       title: "Buyout / residual context",
       status: "Not enough data",
       metric: "Residual missing",
-      detail:
-        "Add residual value or residual percentage to review lease-end buyout context.",
+      detail: "Add residual value or percentage for buyout context.",
     };
   }
 
@@ -333,8 +366,7 @@ function buildResidualContextCheck(
       title: "Buyout / residual context",
       status: "Worth checking",
       metric: residualMetric.label,
-      detail:
-        "Residual context is entered. Confirm the exact lease-end purchase amount and any added fees.",
+      detail: "Confirm exact lease-end purchase amount and added fees.",
     };
   }
 
@@ -346,8 +378,49 @@ function buildResidualContextCheck(
     status: isLowerResidual ? "Looks efficient" : "Worth checking",
     metric: residualMetric.label,
     detail: isLowerResidual
-      ? "Compared with the other quote, this entered residual is lower. That may reduce a future buyout amount but can raise payments."
-      : "Compared with the other quote, this entered residual is higher. That may lower payments but can raise a future buyout amount.",
+      ? "Lower entered residual than the other quote."
+      : "Higher entered residual than the other quote.",
+  };
+}
+
+function buildOverallReview(checks: ReviewCheck[]): {
+  overallLabel: QuoteReviewOverallLabel;
+  overallDetail: string;
+} {
+  const needsAttentionCount = checks.filter(
+    (check) => check.status === "Needs attention",
+  ).length;
+  const worthCheckingCount = checks.filter(
+    (check) => check.status === "Worth checking",
+  ).length;
+  const notEnoughDataCount = checks.filter(
+    (check) => check.status === "Not enough data",
+  ).length;
+
+  if (needsAttentionCount > 0) {
+    return {
+      overallLabel: "Needs review",
+      overallDetail: "At least one check affects cost or payment clarity.",
+    };
+  }
+
+  if (worthCheckingCount >= 2) {
+    return {
+      overallLabel: "Check carefully",
+      overallDetail: `${worthCheckingCount} checks are worth confirming with the dealer.`,
+    };
+  }
+
+  if (notEnoughDataCount >= 2) {
+    return {
+      overallLabel: "Needs more quote data",
+      overallDetail: `${notEnoughDataCount} checks need more quote information.`,
+    };
+  }
+
+  return {
+    overallLabel: "Efficient structure",
+    overallDetail: "Most checks look cleaner based on entered numbers.",
   };
 }
 
@@ -358,45 +431,48 @@ function buildQuoteReview(
   paymentSummaries: ScorecardPaymentSummary[],
 ): QuoteReview {
   const otherQuote = comparisonQuotes.find((candidate) => candidate !== quote);
+  const checks = [
+    buildLowerIsEfficientCheck(
+      quote,
+      otherQuote,
+      "totalCost",
+      "Total cost pressure",
+      formatCurrency(quote.totalCost),
+      "Lower total lease cost than the other quote.",
+      "Higher total lease cost than the other quote.",
+      "Total lease cost is close to the other quote.",
+    ),
+    buildLowerIsEfficientCheck(
+      quote,
+      otherQuote,
+      "trueMonthlyCost",
+      "True monthly pressure",
+      formatCurrency(quote.trueMonthlyCost),
+      "Lower true monthly after upfront cash and fees.",
+      "Higher true monthly after upfront cash and fees.",
+      "True monthly cost is close to the other quote.",
+    ),
+    buildUpfrontCashCheck(quote, otherQuote),
+    buildLowerIsEfficientCheck(
+      quote,
+      otherQuote,
+      "costPerKm",
+      "Mileage value",
+      formatCostPerKilometre(quote.costPerKm),
+      "Lower cost per kilometre than the other quote.",
+      "Higher cost per kilometre than the other quote.",
+      "Cost per kilometre is close to the other quote.",
+    ),
+    buildFeeAndTaxCheck(quote, paymentSummaries[index]),
+    buildResidualContextCheck(quote, otherQuote),
+  ];
+  const overallReview = buildOverallReview(checks);
 
   return {
     quoteLabel: getQuoteLabel(index),
     quoteName: getQuoteName(quote, index, paymentSummaries),
-    checks: [
-      buildLowerIsEfficientCheck(
-        quote,
-        otherQuote,
-        "totalCost",
-        "Total cost pressure",
-        formatCurrency(quote.totalCost),
-        "Lower total lease cost than the other entered quote.",
-        "Higher total lease cost than the other entered quote. Worth reviewing the cost drivers.",
-        "Total lease cost is close to the other entered quote.",
-      ),
-      buildLowerIsEfficientCheck(
-        quote,
-        otherQuote,
-        "trueMonthlyCost",
-        "True monthly pressure",
-        formatCurrency(quote.trueMonthlyCost),
-        "Lower true monthly cost after spreading upfront cash and fees across the term.",
-        "Higher true monthly cost after spreading upfront cash and fees across the term.",
-        "True monthly cost is close to the other entered quote.",
-      ),
-      buildUpfrontCashCheck(quote, otherQuote),
-      buildLowerIsEfficientCheck(
-        quote,
-        otherQuote,
-        "costPerKm",
-        "Mileage value",
-        formatCostPerKilometre(quote.costPerKm),
-        "Lower cost per kilometre than the other entered quote.",
-        "Higher cost per kilometre than the other entered quote.",
-        "Cost per kilometre is close to the other entered quote.",
-      ),
-      buildFeeAndTaxCheck(quote, paymentSummaries[index]),
-      buildResidualContextCheck(quote, otherQuote),
-    ],
+    ...overallReview,
+    checks,
   };
 }
 
@@ -414,6 +490,45 @@ function getStatusClasses(status: QuoteReviewStatus): string {
   }
 
   return "border-slate-200 bg-slate-50 text-slate-700";
+}
+
+function getOverallClasses(label: QuoteReviewOverallLabel): string {
+  if (label === "Efficient structure") {
+    return "border-emerald-200 bg-emerald-50 text-emerald-900";
+  }
+
+  if (label === "Check carefully") {
+    return "border-amber-200 bg-amber-50 text-amber-950";
+  }
+
+  if (label === "Needs review") {
+    return "border-rose-200 bg-rose-50 text-rose-900";
+  }
+
+  return "border-slate-200 bg-slate-50 text-slate-800";
+}
+
+export function buildQuoteReviewScorecardSummaries(
+  quotes: LeaseAnalysisResult[],
+  paymentSummaries: ScorecardPaymentSummary[],
+): QuoteReviewScorecardSummary[] {
+  const comparisonQuotes = quotes.slice(0, 2);
+
+  return comparisonQuotes.map((quote, index) => {
+    const review = buildQuoteReview(
+      quote,
+      index,
+      comparisonQuotes,
+      paymentSummaries,
+    );
+
+    return {
+      quoteLabel: review.quoteLabel,
+      quoteName: review.quoteName,
+      overallLabel: review.overallLabel,
+      overallDetail: review.overallDetail,
+    };
+  });
 }
 
 export function QuoteReviewScorecard({
@@ -447,52 +562,78 @@ export function QuoteReviewScorecard({
           </h4>
         </div>
         <p className="max-w-2xl text-sm leading-6 text-slate-500">
-          Scorecard is based only on entered numbers. It does not use market
-          listings, manufacturer programs, or dealer benchmarks.
+          {quoteReviewScorecardTrustNote}
         </p>
+      </div>
+
+      <div className="mt-3 grid gap-2 rounded-xl border border-slate-200 bg-slate-50/70 p-3 sm:grid-cols-2 lg:grid-cols-4">
+        {statusLegend.map((item) => (
+          <div key={item.status} className="min-w-0">
+            <span
+              className={`inline-flex rounded-full border px-2 py-0.5 text-[0.7rem] font-semibold ${getStatusClasses(
+                item.status,
+              )}`}
+            >
+              {item.status}
+            </span>
+            <p className="mt-1 text-xs leading-5 text-slate-500">
+              {item.description}
+            </p>
+          </div>
+        ))}
       </div>
 
       <div className="mt-4 grid gap-4 lg:grid-cols-2">
         {quoteReviews.map((review) => (
           <article
             key={review.quoteLabel}
-            className="rounded-xl border border-slate-200 bg-slate-50/70 p-3 sm:p-4"
+            className="overflow-hidden rounded-xl border border-slate-200 bg-slate-50/70"
           >
-            <div className="min-w-0">
-              <p className="text-xs font-semibold uppercase tracking-widest text-slate-500">
-                {review.quoteLabel}
-              </p>
-              <h5 className="mt-1 break-words text-base font-bold text-slate-950">
-                {review.quoteName}
-              </h5>
+            <div className="flex flex-col gap-3 border-b border-slate-200 bg-white p-3 sm:flex-row sm:items-start sm:justify-between">
+              <div className="min-w-0">
+                <p className="text-xs font-semibold uppercase tracking-widest text-slate-500">
+                  {review.quoteLabel}
+                </p>
+                <h5 className="mt-1 break-words text-base font-bold text-slate-950">
+                  {review.quoteName}
+                </h5>
+                <p className="mt-1 text-xs leading-5 text-slate-500">
+                  {review.overallDetail}
+                </p>
+              </div>
+              <span
+                className={`inline-flex w-fit shrink-0 rounded-full border px-2.5 py-1 text-xs font-bold ${getOverallClasses(
+                  review.overallLabel,
+                )}`}
+              >
+                {review.overallLabel}
+              </span>
             </div>
 
-            <div className="mt-3 grid gap-2.5">
+            <div className="divide-y divide-slate-200">
               {review.checks.map((check) => (
                 <div
                   key={`${review.quoteLabel}-${check.id}`}
-                  className="rounded-lg border border-slate-200 bg-white p-3"
+                  className="grid gap-2 px-3 py-2.5 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-start"
                 >
-                  <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-                    <div className="min-w-0">
-                      <p className="text-sm font-semibold text-slate-950">
-                        {check.title}
-                      </p>
-                      <p className="mt-0.5 break-words text-xs font-semibold uppercase tracking-wide text-slate-500">
-                        {check.metric}
-                      </p>
-                    </div>
-                    <span
-                      className={`inline-flex w-fit shrink-0 rounded-full border px-2.5 py-1 text-xs font-semibold ${getStatusClasses(
-                        check.status,
-                      )}`}
-                    >
-                      {check.status}
-                    </span>
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-slate-950">
+                      {check.title}
+                    </p>
+                    <p className="mt-0.5 break-words text-xs font-semibold uppercase tracking-wide text-slate-500">
+                      {check.metric}
+                    </p>
+                    <p className="mt-1 text-xs leading-5 text-slate-600">
+                      {check.detail}
+                    </p>
                   </div>
-                  <p className="mt-2 text-sm leading-6 text-slate-600">
-                    {check.detail}
-                  </p>
+                  <span
+                    className={`inline-flex w-fit shrink-0 rounded-full border px-2.5 py-1 text-xs font-semibold ${getStatusClasses(
+                      check.status,
+                    )}`}
+                  >
+                    {check.status}
+                  </span>
                 </div>
               ))}
             </div>

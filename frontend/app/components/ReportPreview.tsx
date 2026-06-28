@@ -10,6 +10,10 @@ import type {
   DecisionMode,
   FinalVerdict,
 } from "./ComparisonResults";
+import {
+  buildQuoteReviewScorecardSummaries,
+  quoteReviewScorecardTrustNote,
+} from "./QuoteReviewScorecard";
 import type { QuoteStructureIntelligenceResult } from "./QuoteStructureIntelligence";
 
 type ReportPreviewProps = {
@@ -181,6 +185,10 @@ export function ReportPreview({
       quote.residualValue !== undefined,
   );
   const bestFitLabel = getBestFitLabel(comparisonResult, finalVerdict);
+  const scorecardSummaries = buildQuoteReviewScorecardSummaries(
+    comparisonResult.results,
+    comparisonPaymentSummaries,
+  );
   const offerComparisonRows: OfferComparisonRow[] = [
     {
       label: "Monthly payment used",
@@ -621,8 +629,41 @@ export function ReportPreview({
             number="5"
             eyebrow="Structure review"
             title="Quote Intelligence"
-            description="Rule-based structure review using the numbers entered. Market benchmark coming soon."
+            description="Rule-based structure review using the numbers entered."
           />
+          <div className="mt-5 rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
+            <p className="text-xs font-bold uppercase tracking-wider text-teal-700">
+              Quote review scorecard
+            </p>
+            <div className="mt-3 grid gap-3 md:grid-cols-2">
+              {scorecardSummaries.map((summary) => (
+                <div
+                  key={`scorecard-summary-${summary.quoteLabel}`}
+                  className="rounded-xl border border-slate-200 bg-white p-3"
+                >
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                    <div className="min-w-0">
+                      <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
+                        {summary.quoteLabel}
+                      </p>
+                      <p className="mt-1 break-words text-sm font-semibold text-slate-950">
+                        {summary.quoteName}
+                      </p>
+                    </div>
+                    <span className="inline-flex w-fit shrink-0 rounded-full border border-teal-200 bg-teal-50 px-2.5 py-1 text-xs font-bold text-teal-900">
+                      {summary.overallLabel}
+                    </span>
+                  </div>
+                  <p className="mt-2 text-xs leading-5 text-slate-600">
+                    {summary.overallDetail}
+                  </p>
+                </div>
+              ))}
+            </div>
+            <p className="mt-3 text-xs leading-5 text-slate-500">
+              {quoteReviewScorecardTrustNote}
+            </p>
+          </div>
           <div className="mt-5 grid gap-3 lg:grid-cols-2">
             {quoteIntelligence.summary.slice(0, 3).map((observation) => (
               <div
