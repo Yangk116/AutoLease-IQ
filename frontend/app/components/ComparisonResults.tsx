@@ -13,6 +13,7 @@ import {
   buildQuoteStructureIntelligence,
   QuoteStructureIntelligencePanel,
 } from "./QuoteStructureIntelligence";
+import { QuoteReviewScorecard } from "./QuoteReviewScorecard";
 import { ReportPreview } from "./ReportPreview";
 
 export type ComparisonPaymentSummary = {
@@ -2161,6 +2162,11 @@ export function ComparisonResults({
             ))}
           </div>
         </section>
+
+        <QuoteReviewScorecard
+          quotes={comparisonResult.results}
+          paymentSummaries={comparisonPaymentSummaries}
+        />
 
         {quoteResultCards}
 
