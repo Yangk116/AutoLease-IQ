@@ -54,6 +54,7 @@ type ComparisonResultsProps = {
   comparisonResult: LeaseComparisonResult;
   comparisonPaymentSummaries: ComparisonPaymentSummary[];
   selectedDecisionMode: DecisionMode;
+  variant?: "full" | "review" | "report";
 };
 
 type CopyStatus = "idle" | "copied" | "failed";
@@ -1641,6 +1642,7 @@ export function ComparisonResults({
   comparisonResult,
   comparisonPaymentSummaries,
   selectedDecisionMode,
+  variant = "full",
 }: ComparisonResultsProps) {
   const [copyStatus, setCopyStatus] = useState<CopyStatus>("idle");
   const [isReportPreviewOpen, setIsReportPreviewOpen] = useState(false);
@@ -1991,6 +1993,61 @@ export function ComparisonResults({
     </div>
   );
 
+  if (variant === "report") {
+    return (
+      <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-[0_24px_70px_-45px_rgba(15,23,42,0.55)] sm:p-6">
+        <div className="mb-5 flex flex-col gap-3 rounded-xl border border-slate-200 bg-slate-50 p-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-widest text-teal-700">
+              Report Preview
+            </p>
+            <p className="mt-1 text-sm leading-6 text-slate-600">
+              Copy this report or use your browser&apos;s print dialog to save
+              it as a PDF.
+            </p>
+          </div>
+          <div className="grid gap-2 sm:flex sm:justify-end">
+            <button
+              type="button"
+              onClick={copyReport}
+              aria-live="polite"
+              className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-teal-300 hover:bg-teal-50 hover:text-teal-900 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-teal-700 focus:ring-offset-2 active:translate-y-0 active:scale-[0.98] sm:w-auto"
+            >
+              {copyStatus === "copied"
+                ? "Copied"
+                : copyStatus === "failed"
+                  ? "Copy failed"
+                  : "Copy report"}
+            </button>
+            <button
+              type="button"
+              onClick={printReport}
+              className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-teal-700 bg-white px-4 text-sm font-semibold text-teal-800 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-teal-50 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-teal-700 focus:ring-offset-2 active:translate-y-0 active:scale-[0.98] sm:w-auto"
+            >
+              Print / Save as PDF
+            </button>
+          </div>
+        </div>
+        <div className="print-report-area">
+          <ReportPreview
+            comparisonResult={comparisonResult}
+            comparisonPaymentSummaries={comparisonPaymentSummaries}
+            selectedDecisionMode={selectedDecisionMode}
+            metadata={reportMetadata}
+            finalVerdict={finalVerdict}
+            keyTakeaways={reportKeyTakeaways}
+            negotiationItems={dealerNegotiationItems}
+            quoteIntelligence={quoteIntelligence}
+          />
+        </div>
+        <p className="mt-4 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs leading-5 text-slate-500">
+          This report is generated from the numbers stored in this browser. It
+          does not use live market data, uploaded documents, or external AI.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <>
       <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-[0_24px_70px_-45px_rgba(15,23,42,0.55)] sm:p-6">
@@ -2170,7 +2227,8 @@ export function ComparisonResults({
 
         {quoteResultCards}
 
-        <div className="mb-5">
+        {variant === "full" ? (
+          <div className="mb-5">
           <button
             id="lease-report-preview-toggle"
             type="button"
@@ -2294,9 +2352,11 @@ export function ComparisonResults({
               </div>
             </div>
           </div>
-        </div>
+          </div>
+        ) : null}
 
-        <div className="rounded-xl border border-slate-200/80 bg-slate-50/80 p-4 sm:flex sm:items-center sm:justify-between sm:gap-4">
+        {variant === "full" ? (
+          <div className="rounded-xl border border-slate-200/80 bg-slate-50/80 p-4 sm:flex sm:items-center sm:justify-between sm:gap-4">
           <div>
             <p className="text-sm font-semibold text-slate-950">
               Save or share the full comparison
@@ -2318,7 +2378,8 @@ export function ComparisonResults({
                 ? "Copy failed"
                 : "Copy report"}
           </button>
-        </div>
+          </div>
+        ) : null}
 
         <CollapsibleSection
           eyebrow="Advanced analysis"

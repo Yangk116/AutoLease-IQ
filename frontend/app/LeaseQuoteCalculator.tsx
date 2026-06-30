@@ -4,7 +4,6 @@ import { useEffect, useRef, useState } from "react";
 
 import {
   analyzeLeaseQuote,
-  compareLeaseQuotes,
   type LeaseComparisonResult,
   type LeaseAnalysisResult,
   type LeaseQuoteInput,
@@ -25,9 +24,13 @@ import type {
 } from "./components/ComparisonQuoteCard";
 import { MetricCard } from "./components/MetricCard";
 import {
+  buildCurrentComparisonAnalysis,
+  readCurrentComparison,
+  writeCurrentComparison,
+} from "./components/comparisonStorage";
+import {
   MAX_SAVED_COMPARISONS,
   readSavedComparisons,
-  SavedComparisonsPanel,
   type SavedComparison,
   type SavedComparisonStatus,
   writeSavedComparisons,
@@ -629,6 +632,8 @@ export default function LeaseQuoteCalculator() {
     ComparisonPaymentSummary[]
   >([]);
   const [comparisonErrorMessage, setComparisonErrorMessage] = useState("");
+  const [isCurrentComparisonStored, setIsCurrentComparisonStored] =
+    useState(false);
   const [selectedDecisionMode, setSelectedDecisionMode] =
     useState<DecisionMode>("lowest-total-cost");
   const [isComparing, setIsComparing] = useState(false);
@@ -641,6 +646,15 @@ export default function LeaseQuoteCalculator() {
 
   useEffect(() => {
     const savedComparisonsFrame = requestAnimationFrame(() => {
+      const currentComparison = readCurrentComparison();
+
+      if (currentComparison) {
+        setComparisonQuotes(
+          currentComparison.quotes.map((currentQuote) => ({ ...currentQuote })),
+        );
+        setSelectedDecisionMode(currentComparison.decisionMode);
+      }
+
       setSavedComparisons(readSavedComparisons());
     });
 
@@ -832,6 +846,8 @@ export default function LeaseQuoteCalculator() {
     setComparisonResult(null);
     setComparisonPaymentSummaries([]);
     setComparisonErrorMessage("");
+    setIsCurrentComparisonStored(false);
+    setSavedComparisonStatus(null);
   }
 
   function compareOffers() {
@@ -843,64 +859,43 @@ export default function LeaseQuoteCalculator() {
     setComparisonResult(null);
     setComparisonPaymentSummaries([]);
     setComparisonErrorMessage("");
+    setIsCurrentComparisonStored(false);
 
     comparisonTimeout.current = setTimeout(() => {
       try {
-        const paymentSummaries: ComparisonPaymentSummary[] = [];
-        const cleanQuotes = comparisonQuotes.map((comparisonQuote) => {
-          const quoteName =
-            comparisonQuote.quoteName.trim() || comparisonQuote.label;
-          const vehicleName = comparisonQuote.vehicleName?.trim() || quoteName;
+        const quoteA = comparisonQuotes[0];
+        const quoteB = comparisonQuotes[1];
 
-          if (
-            comparisonQuote.addTaxToMonthlyPayment &&
-            comparisonQuote.taxRate < 0
-          ) {
-            throw new Error(`${quoteName}: Tax rate cannot be negative.`);
-          }
+        if (!quoteA || !quoteB) {
+          throw new Error("Enter two offers before comparing.");
+        }
 
-          const monthlyPaymentUsed = comparisonQuote.addTaxToMonthlyPayment
-            ? comparisonQuote.monthlyPayment *
-              (1 + comparisonQuote.taxRate / 100)
-            : comparisonQuote.monthlyPayment;
+        const currentComparison = {
+          updatedAt: new Date().toISOString(),
+          decisionMode: selectedDecisionMode,
+          quotes: [
+            { ...quoteA },
+            { ...quoteB },
+          ] as [ComparisonQuoteForm, ComparisonQuoteForm],
+        };
+        const analysis = buildCurrentComparisonAnalysis(currentComparison);
 
-          paymentSummaries.push({
-            quoteName,
-            enteredMonthlyPayment: comparisonQuote.monthlyPayment,
-            monthlyPaymentUsed,
-            taxIncludedInMonthlyPayment:
-              !comparisonQuote.addTaxToMonthlyPayment,
-            taxRate: comparisonQuote.addTaxToMonthlyPayment
-              ? comparisonQuote.taxRate
-              : undefined,
-            dueOnDelivery: comparisonQuote.dueOnDelivery,
-            apr: comparisonQuote.apr,
-            moneyFactor: comparisonQuote.moneyFactor,
-            dealerNotes:
-              comparisonQuote.dealerNotes.trim() === ""
-                ? undefined
-                : comparisonQuote.dealerNotes.trim(),
-          });
-
-          return {
-            vehicleName,
-            downPayment: comparisonQuote.downPayment,
-            monthlyPayment: monthlyPaymentUsed,
-            termMonths: comparisonQuote.termMonths,
-            annualMileage: comparisonQuote.annualMileage,
-            dealerFees: comparisonQuote.dealerFees,
-            leaseEndFee: comparisonQuote.leaseEndFee,
-            vehicleMsrp: comparisonQuote.vehicleMsrp,
-            sellingPrice: comparisonQuote.sellingPrice,
-            residualMsrp: comparisonQuote.residualMsrp,
-            residualValue: comparisonQuote.residualValue,
-          };
+        const storedCurrentComparison = writeCurrentComparison({
+          decisionMode: selectedDecisionMode,
+          quotes: currentComparison.quotes,
         });
 
-        const analysis = compareLeaseQuotes(cleanQuotes);
+        setComparisonResult(analysis.comparisonResult);
+        setComparisonPaymentSummaries(analysis.paymentSummaries);
+        setIsCurrentComparisonStored(storedCurrentComparison);
 
-        setComparisonResult(analysis);
-        setComparisonPaymentSummaries(paymentSummaries);
+        if (!storedCurrentComparison) {
+          setSavedComparisonStatus({
+            tone: "error",
+            message:
+              "Comparison generated, but this browser blocked local storage. Review and report pages may not open this comparison.",
+          });
+        }
       } catch (error) {
         setComparisonErrorMessage(
           error instanceof Error
@@ -914,43 +909,12 @@ export default function LeaseQuoteCalculator() {
     }, 650);
   }
 
-  function scrollToComparisonElement(elementId: string): void {
-    document.getElementById(elementId)?.scrollIntoView({
-      behavior: "smooth",
-      block: "start",
-    });
-  }
-
   function reviewVerdict(): void {
-    scrollToComparisonElement("comparison-results");
-  }
-
-  function openNegotiationAssistant(): void {
-    const assistantTrigger = document.getElementById(
-      "negotiation-assistant-trigger",
-    );
-
-    if (assistantTrigger instanceof HTMLButtonElement) {
-      assistantTrigger.click();
-    }
+    window.location.href = "/review";
   }
 
   function previewReport(): void {
-    const reportToggle = document.getElementById(
-      "lease-report-preview-toggle",
-    );
-
-    if (!(reportToggle instanceof HTMLButtonElement)) {
-      return;
-    }
-
-    if (reportToggle.getAttribute("aria-expanded") !== "true") {
-      reportToggle.click();
-    }
-
-    requestAnimationFrame(() => {
-      scrollToComparisonElement("lease-report-preview");
-    });
+    window.location.href = "/report";
   }
 
   function getComparisonQuoteName(index: number): string {
@@ -1064,51 +1028,6 @@ export default function LeaseQuoteCalculator() {
     });
   }
 
-  function loadSavedComparison(savedComparison: SavedComparison): void {
-    if (comparisonTimeout.current) {
-      clearTimeout(comparisonTimeout.current);
-      comparisonTimeout.current = null;
-    }
-
-    setIsComparing(false);
-    setComparisonQuotes(
-      savedComparison.quotes.map((savedQuote) => ({ ...savedQuote })),
-    );
-    setSelectedDecisionMode(savedComparison.decisionMode);
-    setComparisonResult(null);
-    setComparisonPaymentSummaries([]);
-    setComparisonErrorMessage("");
-    setSavedComparisonStatus({
-      tone: "success",
-      message: "Saved comparison loaded. Review the inputs and compare again.",
-    });
-
-    requestAnimationFrame(() => {
-      scrollToComparisonElement("saved-comparison-status");
-    });
-  }
-
-  function deleteSavedComparison(comparisonId: string): void {
-    const nextComparisons = savedComparisons.filter(
-      (comparison) => comparison.id !== comparisonId,
-    );
-
-    if (!writeSavedComparisons(nextComparisons)) {
-      setSavedComparisonStatus({
-        tone: "error",
-        message:
-          "The saved comparison could not be deleted. This browser may have blocked local storage.",
-      });
-      return;
-    }
-
-    setSavedComparisons(nextComparisons);
-    setSavedComparisonStatus({
-      tone: "success",
-      message: "Saved comparison deleted.",
-    });
-  }
-
   const hasComparisonResult = comparisonResult !== null && !isComparing;
   const guidedProgressSteps: GuidedProgressStep[] = [
     {
@@ -1126,19 +1045,19 @@ export default function LeaseQuoteCalculator() {
     {
       number: 3,
       label: "Review verdict",
-      href: "#comparison-results",
+      href: "/review",
       status: hasComparisonResult ? "active" : "locked",
     },
     {
       number: 4,
-      label: "Negotiate",
-      href: "#negotiation-assistant-trigger",
+      label: "Open report",
+      href: "/report",
       status: hasComparisonResult ? "available" : "locked",
     },
     {
       number: 5,
-      label: "Generate report",
-      href: "#lease-report-preview-toggle",
+      label: "Save work",
+      href: "/saved",
       status: hasComparisonResult ? "available" : "locked",
     },
   ];
@@ -1717,7 +1636,7 @@ export default function LeaseQuoteCalculator() {
 
               <div
                 className={`grid gap-2 sm:flex sm:flex-wrap lg:shrink-0 lg:justify-end ${
-                  hasComparisonResult ? "grid-cols-3" : "grid-cols-1"
+                  hasComparisonResult ? "grid-cols-2" : "grid-cols-1"
                 }`}
               >
                 {!hasComparisonResult ? (
@@ -1741,14 +1660,6 @@ export default function LeaseQuoteCalculator() {
                     </button>
                     <button
                       type="button"
-                      onClick={openNegotiationAssistant}
-                      className="inline-flex h-11 min-w-0 flex-1 items-center justify-center rounded-xl border border-teal-200 bg-teal-50 px-2 text-xs font-semibold text-teal-900 transition-all duration-200 hover:-translate-y-0.5 hover:border-teal-300 hover:bg-teal-100 focus:outline-none focus:ring-2 focus:ring-teal-600/40 focus:ring-offset-2 active:translate-y-0 active:scale-[0.98] sm:h-10 sm:flex-none sm:px-3.5 sm:text-sm"
-                    >
-                      <span className="sm:hidden">Assistant</span>
-                      <span className="hidden sm:inline">Open assistant</span>
-                    </button>
-                    <button
-                      type="button"
                       onClick={previewReport}
                       className="inline-flex h-11 min-w-0 flex-1 items-center justify-center rounded-xl border border-slate-200 bg-white px-2 text-xs font-semibold text-slate-700 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-teal-300 hover:bg-teal-50 hover:text-teal-900 focus:outline-none focus:ring-2 focus:ring-teal-600/40 focus:ring-offset-2 active:translate-y-0 active:scale-[0.98] sm:h-10 sm:flex-none sm:px-3.5 sm:text-sm"
                     >
@@ -1761,132 +1672,101 @@ export default function LeaseQuoteCalculator() {
             </div>
           </aside>
 
-          <section
-            id="report"
-            className="scroll-mt-32 border-t border-slate-200 pt-10 sm:scroll-mt-24"
-            aria-labelledby="report-section-title"
-          >
-            <div className="mb-6 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between sm:gap-6">
-              <div>
-                <p className="text-sm font-semibold uppercase tracking-widest text-teal-700">
-                  Report
-                </p>
-                <h2
-                  id="report-section-title"
-                  className="mt-2 text-2xl font-semibold tracking-tight text-slate-950 sm:text-3xl"
-                >
-                  Your decision summary
-                </h2>
+          {isComparing ? (
+            <div
+              className="comparison-loading rounded-2xl border border-slate-200/80 bg-white p-5 shadow-[0_18px_50px_-35px_rgba(15,23,42,0.5)] sm:p-6"
+              role="status"
+              aria-live="polite"
+            >
+              <div className="flex items-center gap-3">
+                <span className="h-9 w-9 animate-spin rounded-full border-[3px] border-teal-100 border-t-teal-700" />
+                <div>
+                  <p className="font-semibold text-slate-950">
+                    Comparing the full lease cost
+                  </p>
+                  <p className="mt-0.5 text-sm text-slate-500">
+                    Normalizing payments, upfront cash, mileage, and fees.
+                  </p>
+                </div>
               </div>
-              <p className="max-w-xl text-sm leading-6 text-slate-500">
-                Compare offers to unlock the final verdict, negotiation
-                questions, and premium report preview.
-              </p>
             </div>
+          ) : null}
 
-            {isComparing ? (
-              <div
-                className="comparison-loading rounded-2xl border border-slate-200/80 bg-white p-5 shadow-[0_18px_50px_-35px_rgba(15,23,42,0.5)] sm:p-6"
-                role="status"
-                aria-live="polite"
-              >
-                <div className="flex items-center gap-3">
-                  <span className="h-9 w-9 animate-spin rounded-full border-[3px] border-teal-100 border-t-teal-700" />
+          {comparisonResult && !isComparing ? (
+            <section
+              id="comparison-results"
+              className="comparison-results-reveal scroll-mt-32 space-y-5 sm:scroll-mt-24"
+              aria-labelledby="comparison-ready-title"
+            >
+              <div className="rounded-2xl border border-teal-200 bg-gradient-to-br from-teal-50/90 to-white p-5 shadow-[0_18px_45px_-35px_rgba(13,148,136,0.65)] sm:p-6">
+                <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                   <div>
-                    <p className="font-semibold text-slate-950">
-                      Comparing the full lease cost
+                    <p className="text-xs font-semibold uppercase tracking-widest text-teal-700">
+                      Comparison ready
                     </p>
-                    <p className="mt-0.5 text-sm text-slate-500">
-                      Normalizing payments, upfront cash, mileage, and fees.
+                    <h3
+                      id="comparison-ready-title"
+                      className="mt-2 text-xl font-semibold tracking-tight text-slate-950"
+                    >
+                      Open the focused review dashboard next.
+                    </h3>
+                    <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
+                      {isCurrentComparisonStored
+                        ? "The latest comparison has been saved as the active browser comparison. Review the verdict, generate a report, or save it to your local saved list."
+                        : "The comparison is available below, but this browser did not store it for the review and report pages."}
                     </p>
                   </div>
-                </div>
-                <div className="mt-6 grid gap-3 sm:grid-cols-2">
-                  {[0, 1, 2, 3].map((item) => (
-                    <div
-                      key={item}
-                      className="h-24 animate-pulse rounded-xl border border-slate-100 bg-slate-100/80"
-                    />
-                  ))}
-                </div>
-              </div>
-            ) : null}
-
-            {comparisonResult && !isComparing ? (
-              <div
-                id="comparison-results"
-                className="comparison-results-reveal scroll-mt-32 sm:scroll-mt-24"
-              >
-                <ComparisonResults
-                  comparisonResult={comparisonResult}
-                  comparisonPaymentSummaries={comparisonPaymentSummaries}
-                  selectedDecisionMode={selectedDecisionMode}
-                />
-                <div className="mt-5 rounded-2xl border border-teal-200 bg-gradient-to-br from-teal-50/80 to-white p-4 shadow-[0_18px_45px_-35px_rgba(13,148,136,0.65)] sm:flex sm:items-center sm:justify-between sm:gap-5 sm:p-5">
-                  <div>
-                    <p className="text-sm font-semibold text-slate-950">
-                      Keep this comparison on this device
-                    </p>
-                    <p className="mt-1 text-xs leading-5 text-slate-500">
-                      Save both offers, your selected goal, and the verdict
-                      summary in this browser.
-                    </p>
+                  <div className="grid gap-2 sm:flex lg:shrink-0">
+                    <a
+                      href="/review"
+                      className="inline-flex h-11 items-center justify-center rounded-xl bg-teal-700 px-4 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-teal-800 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-teal-600 focus:ring-offset-2 active:translate-y-0 active:scale-[0.98]"
+                    >
+                      Open review dashboard
+                    </a>
+                    <a
+                      href="/report"
+                      className="inline-flex h-11 items-center justify-center rounded-xl border border-teal-700 bg-white px-4 text-sm font-semibold text-teal-800 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-teal-50 focus:outline-none focus:ring-2 focus:ring-teal-600 focus:ring-offset-2 active:translate-y-0 active:scale-[0.98]"
+                    >
+                      Open report
+                    </a>
+                    <button
+                      type="button"
+                      onClick={saveComparison}
+                      className="inline-flex h-11 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-teal-300 hover:bg-teal-50 hover:text-teal-900 focus:outline-none focus:ring-2 focus:ring-teal-600/40 focus:ring-offset-2 active:translate-y-0 active:scale-[0.98]"
+                    >
+                      Save comparison
+                    </button>
                   </div>
-                  <button
-                    type="button"
-                    onClick={saveComparison}
-                    className="mt-3 inline-flex h-11 w-full items-center justify-center rounded-xl bg-teal-700 px-4 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-teal-800 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-teal-600 focus:ring-offset-2 active:translate-y-0 active:scale-[0.98] sm:mt-0 sm:w-auto"
-                  >
-                    Save comparison
-                  </button>
                 </div>
               </div>
-            ) : null}
 
-            {!comparisonResult && !isComparing ? (
-              <div className="rounded-2xl border border-dashed border-slate-300 bg-white/70 p-6 text-center sm:p-8">
-                <span className="mx-auto flex h-11 w-11 items-center justify-center rounded-xl bg-teal-50 text-teal-700 ring-1 ring-teal-100">
-                  <svg
-                    aria-hidden="true"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    className="h-5 w-5"
-                    stroke="currentColor"
-                    strokeWidth="1.8"
-                  >
-                    <path
-                      d="M7 3.75h7l3 3V20.25H7V3.75Z"
-                      strokeLinejoin="round"
-                    />
-                    <path
-                      d="M14 3.75v3h3M9.5 11h5M9.5 14.5h5"
-                      strokeLinecap="round"
-                    />
-                  </svg>
-                </span>
-                <h3 className="mt-4 text-base font-semibold text-slate-950">
-                  Your report will appear here
-                </h3>
-                <p className="mx-auto mt-2 max-w-lg text-sm leading-6 text-slate-500">
-                  Enter both offers, select what matters most, and choose
-                  Compare offers to generate the full decision report.
-                </p>
-                <a
-                  href="#examples"
-                  className="mt-5 inline-flex h-10 items-center justify-center rounded-xl border border-teal-700 bg-white px-4 text-sm font-semibold text-teal-800 shadow-sm transition-colors hover:bg-teal-50 focus:outline-none focus:ring-2 focus:ring-teal-700/30 focus:ring-offset-2"
-                >
-                  View sample offers
-                </a>
-              </div>
-            ) : null}
-          </section>
+              <details className="rounded-2xl border border-slate-200 bg-white p-4 shadow-[0_18px_50px_-38px_rgba(15,23,42,0.5)] sm:p-5">
+                <summary className="cursor-pointer text-sm font-semibold text-slate-800">
+                  View results on this page
+                </summary>
+                <div className="mt-5">
+                  <ComparisonResults
+                    comparisonResult={comparisonResult}
+                    comparisonPaymentSummaries={comparisonPaymentSummaries}
+                    selectedDecisionMode={selectedDecisionMode}
+                  />
+                </div>
+              </details>
+            </section>
+          ) : null}
 
-          <SavedComparisonsPanel
-            comparisons={savedComparisons}
-            status={savedComparisonStatus}
-            onLoad={loadSavedComparison}
-            onDelete={deleteSavedComparison}
-          />
+          <a
+            href="/saved"
+            className="block rounded-2xl border border-slate-200 bg-white p-4 text-sm shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-teal-200 hover:bg-teal-50/50 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-teal-700/30 focus:ring-offset-2 sm:p-5"
+          >
+            <span className="font-semibold text-slate-950">
+              Saved comparisons
+            </span>
+            <span className="mt-1 block text-slate-500">
+              Open your locally saved comparison list on the dedicated saved
+              page.
+            </span>
+          </a>
         </div>
       </div>
     </section>
