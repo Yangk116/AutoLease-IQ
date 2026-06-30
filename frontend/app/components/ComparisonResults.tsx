@@ -1694,6 +1694,7 @@ export function ComparisonResults({
     comparisonResult,
     selectedDecisionMode,
   );
+  const isReviewMode = variant === "review";
 
   useEffect(() => {
     return () => {
@@ -2073,7 +2074,9 @@ export function ComparisonResults({
               Comparison results
             </h3>
             <p className="mt-1 text-sm leading-6 text-slate-500">
-              Start with the verdict, then review the metrics and trade-offs.
+              {isReviewMode
+                ? "Use the verdict, recommendation reasons, negotiation targets, and scorecard to decide what to do next."
+                : "Start with the verdict, then review the metrics and trade-offs."}
             </p>
           </div>
         </div>
@@ -2223,9 +2226,10 @@ export function ComparisonResults({
         <QuoteReviewScorecard
           quotes={comparisonResult.results}
           paymentSummaries={comparisonPaymentSummaries}
+          variant={isReviewMode ? "compact" : "full"}
         />
 
-        {quoteResultCards}
+        {isReviewMode ? null : quoteResultCards}
 
         {variant === "full" ? (
           <div className="mb-5">
@@ -2381,32 +2385,97 @@ export function ComparisonResults({
           </div>
         ) : null}
 
-        <CollapsibleSection
-          eyebrow="Advanced analysis"
-          title="Advanced quote intelligence"
-          description="Rule-based structure review, dealer questions, and trust notes."
-        >
-          <QuoteStructureIntelligencePanel intelligence={quoteIntelligence} />
-        </CollapsibleSection>
+        {isReviewMode ? (
+          <CollapsibleSection
+            eyebrow="View details"
+            title="Advanced details"
+            description="Detailed quote metrics, rule-based structure review, planned premium review, and supporting comparison notes."
+          >
+            <div className="space-y-5">
+              <section>
+                <div className="mb-3">
+                  <p className="text-xs font-semibold uppercase tracking-widest text-teal-700">
+                    Detailed quote metrics
+                  </p>
+                  <h4 className="mt-1 text-base font-bold text-slate-950">
+                    Quote result cards
+                  </h4>
+                </div>
+                {quoteResultCards}
+              </section>
 
-        <CollapsibleSection
-          eyebrow="Coming soon"
-          title="Future premium review layer"
-          description="Planned data-backed review for market listings, lease programs, quote parsing, and AI negotiation guidance."
-        >
-          <DataBackedDealReview />
-        </CollapsibleSection>
+              <section>
+                <div className="mb-3">
+                  <p className="text-xs font-semibold uppercase tracking-widest text-teal-700">
+                    Advanced analysis
+                  </p>
+                  <h4 className="mt-1 text-base font-bold text-slate-950">
+                    Advanced quote intelligence
+                  </h4>
+                </div>
+                <QuoteStructureIntelligencePanel
+                  intelligence={quoteIntelligence}
+                />
+              </section>
 
-        <CollapsibleSection
-          eyebrow="Detailed analysis"
-          title="Supporting comparison summary"
-          description="Additional trade-off notes for users who want deeper context."
-        >
-          <InsightSummary
-            title="Comparison summary"
-            insights={buildComparisonInsights(comparisonResult)}
-          />
-        </CollapsibleSection>
+              <section>
+                <div className="mb-3">
+                  <p className="text-xs font-semibold uppercase tracking-widest text-teal-700">
+                    Coming soon
+                  </p>
+                  <h4 className="mt-1 text-base font-bold text-slate-950">
+                    Future premium review layer
+                  </h4>
+                </div>
+                <DataBackedDealReview />
+              </section>
+
+              <section>
+                <div className="mb-3">
+                  <p className="text-xs font-semibold uppercase tracking-widest text-teal-700">
+                    Full comparison details
+                  </p>
+                  <h4 className="mt-1 text-base font-bold text-slate-950">
+                    Supporting comparison summary
+                  </h4>
+                </div>
+                <InsightSummary
+                  title="Comparison summary"
+                  insights={buildComparisonInsights(comparisonResult)}
+                />
+              </section>
+            </div>
+          </CollapsibleSection>
+        ) : (
+          <>
+            <CollapsibleSection
+              eyebrow="Advanced analysis"
+              title="Advanced quote intelligence"
+              description="Rule-based structure review, dealer questions, and trust notes."
+            >
+              <QuoteStructureIntelligencePanel intelligence={quoteIntelligence} />
+            </CollapsibleSection>
+
+            <CollapsibleSection
+              eyebrow="Coming soon"
+              title="Future premium review layer"
+              description="Planned data-backed review for market listings, lease programs, quote parsing, and AI negotiation guidance."
+            >
+              <DataBackedDealReview />
+            </CollapsibleSection>
+
+            <CollapsibleSection
+              eyebrow="Detailed analysis"
+              title="Supporting comparison summary"
+              description="Additional trade-off notes for users who want deeper context."
+            >
+              <InsightSummary
+                title="Comparison summary"
+                insights={buildComparisonInsights(comparisonResult)}
+              />
+            </CollapsibleSection>
+          </>
+        )}
       </div>
 
       {isAssistantMounted

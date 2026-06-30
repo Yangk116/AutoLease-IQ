@@ -9,6 +9,7 @@ type ScorecardPaymentSummary = {
 type QuoteReviewScorecardProps = {
   quotes: LeaseAnalysisResult[];
   paymentSummaries: ScorecardPaymentSummary[];
+  variant?: "full" | "compact";
 };
 
 type QuoteReviewStatus =
@@ -66,7 +67,7 @@ const percentageFormatter = new Intl.NumberFormat("en-CA", {
 });
 
 export const quoteReviewScorecardTrustNote =
-  "Scorecard is based only on entered numbers. It does not use market listings, manufacturer programs, or dealer benchmarks.";
+  "Scorecard is based only on entered numbers. It does not use market data.";
 
 const statusLegend: readonly {
   status: QuoteReviewStatus;
@@ -508,6 +509,22 @@ function getOverallClasses(label: QuoteReviewOverallLabel): string {
   return "border-slate-200 bg-slate-50 text-slate-800";
 }
 
+function getPriorityChecks(checks: ReviewCheck[]): ReviewCheck[] {
+  return checks
+    .slice()
+    .sort((firstCheck, secondCheck) => {
+      const statusDifference =
+        getStatusRank(secondCheck.status) - getStatusRank(firstCheck.status);
+
+      if (statusDifference !== 0) {
+        return statusDifference;
+      }
+
+      return firstCheck.title.localeCompare(secondCheck.title);
+    })
+    .slice(0, 3);
+}
+
 export function buildQuoteReviewScorecardSummaries(
   quotes: LeaseAnalysisResult[],
   paymentSummaries: ScorecardPaymentSummary[],
@@ -534,6 +551,7 @@ export function buildQuoteReviewScorecardSummaries(
 export function QuoteReviewScorecard({
   quotes,
   paymentSummaries,
+  variant = "full",
 }: QuoteReviewScorecardProps) {
   const comparisonQuotes = quotes.slice(0, 2);
   const quoteReviews = comparisonQuotes.map((quote, index) =>
@@ -542,6 +560,87 @@ export function QuoteReviewScorecard({
 
   if (quoteReviews.length === 0) {
     return null;
+  }
+
+  if (variant === "compact") {
+    return (
+      <section
+        aria-labelledby="quote-review-scorecard-title"
+        className="mb-5 rounded-2xl border border-slate-200 bg-white p-4 shadow-[0_14px_42px_-34px_rgba(15,23,42,0.6)]"
+      >
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-widest text-teal-700">
+              Based on entered numbers
+            </p>
+            <h4
+              id="quote-review-scorecard-title"
+              className="mt-1 text-lg font-bold text-slate-950"
+            >
+              Quote Review Scorecard
+            </h4>
+          </div>
+          <p className="max-w-xl text-xs leading-5 text-slate-500">
+            {quoteReviewScorecardTrustNote}
+          </p>
+        </div>
+
+        <div className="mt-4 grid gap-3 lg:grid-cols-2">
+          {quoteReviews.map((review) => (
+            <article
+              key={review.quoteLabel}
+              className="rounded-xl border border-slate-200 bg-slate-50/70 p-3"
+            >
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                <div className="min-w-0">
+                  <p className="text-xs font-semibold uppercase tracking-widest text-slate-500">
+                    {review.quoteLabel}
+                  </p>
+                  <h5 className="mt-1 break-words text-base font-bold text-slate-950">
+                    {review.quoteName}
+                  </h5>
+                  <p className="mt-1 text-xs leading-5 text-slate-500">
+                    {review.overallDetail}
+                  </p>
+                </div>
+                <span
+                  className={`inline-flex w-fit shrink-0 rounded-full border px-2.5 py-1 text-xs font-bold ${getOverallClasses(
+                    review.overallLabel,
+                  )}`}
+                >
+                  {review.overallLabel}
+                </span>
+              </div>
+
+              <div className="mt-3 grid gap-2">
+                {getPriorityChecks(review.checks).map((check) => (
+                  <div
+                    key={`${review.quoteLabel}-${check.id}`}
+                    className="flex flex-col gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 sm:flex-row sm:items-center sm:justify-between"
+                  >
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-slate-950">
+                        {check.title}
+                      </p>
+                      <p className="mt-0.5 break-words text-xs font-semibold uppercase tracking-wide text-slate-500">
+                        {check.metric}
+                      </p>
+                    </div>
+                    <span
+                      className={`inline-flex w-fit shrink-0 rounded-full border px-2.5 py-1 text-xs font-semibold ${getStatusClasses(
+                        check.status,
+                      )}`}
+                    >
+                      {check.status}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </article>
+          ))}
+        </div>
+      </section>
+    );
   }
 
   return (
