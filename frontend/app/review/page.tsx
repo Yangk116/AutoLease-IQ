@@ -160,7 +160,7 @@ export default function ReviewPage() {
           </h1>
           <p className="mt-4 max-w-3xl text-base leading-7 text-slate-600 sm:text-lg">
             Start with the final verdict, then check recommendation reasons,
-            negotiation targets, scorecard signals, and compact quote metrics.
+            negotiation targets, and the compact Scorecard.
           </p>
         </div>
       </section>
@@ -186,7 +186,7 @@ export default function ReviewPage() {
                 href="/compare"
                 className="mt-5 inline-flex h-11 items-center justify-center rounded-xl bg-teal-700 px-5 text-sm font-semibold text-white shadow-sm transition-all hover:-translate-y-0.5 hover:bg-teal-800 focus:outline-none focus:ring-2 focus:ring-teal-700 focus:ring-offset-2 active:translate-y-0"
               >
-                Back to compare
+                Start a comparison
               </Link>
             </div>
           ) : null}
@@ -227,6 +227,12 @@ export default function ReviewPage() {
                   >
                     View full report
                   </Link>
+                  <Link
+                    href="/compare"
+                    className="inline-flex h-11 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 shadow-sm transition-all hover:-translate-y-0.5 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-2 active:translate-y-0"
+                  >
+                    Back to edit quotes
+                  </Link>
                   <button
                     type="button"
                     onClick={saveComparison}
@@ -234,12 +240,6 @@ export default function ReviewPage() {
                   >
                     Save comparison
                   </button>
-                  <Link
-                    href="/compare"
-                    className="inline-flex h-11 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 shadow-sm transition-all hover:-translate-y-0.5 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-2 active:translate-y-0"
-                  >
-                    Back to edit quotes
-                  </Link>
                 </div>
               </div>
 

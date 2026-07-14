@@ -6,7 +6,7 @@ import { SiteHeader } from "../components/SiteHeader";
 export const metadata: Metadata = {
   title: "Compare Lease Offers | AutoLease IQ",
   description:
-    "Compare two vehicle lease offers, review the final verdict, and generate a negotiation-ready report.",
+    "Enter two lease quotes, load presets, compare offers, then open review, report, or saved work.",
 };
 
 export default function ComparePage() {
@@ -23,8 +23,8 @@ export default function ComparePage() {
             Compare lease offers
           </h1>
           <p className="mt-4 max-w-3xl text-base leading-7 text-slate-600 sm:text-lg">
-            Enter two offers, compare true cost, review the final verdict, and
-            generate a negotiation-ready report.
+            Enter quotes, load a preset if useful, compare the offers, then
+            continue to review, report, or saved work.
           </p>
         </div>
       </section>

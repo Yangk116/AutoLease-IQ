@@ -102,8 +102,8 @@ export default function SavedPage() {
             Saved comparisons
           </h1>
           <p className="mt-4 max-w-3xl text-base leading-7 text-slate-600 sm:text-lg">
-            Load, delete, or open saved lease comparisons stored in this
-            browser.
+            Open saved lease comparisons in review, or remove old history
+            stored in this browser.
           </p>
           <Link
             href="/compare"

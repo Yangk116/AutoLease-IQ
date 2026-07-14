@@ -342,8 +342,8 @@ export function SavedComparisonsPanel({
           </h2>
         </div>
         <p className="max-w-xl text-sm leading-6 text-slate-500">
-          Reopen up to {MAX_SAVED_COMPARISONS} saved offers on this device.
-          Nothing is uploaded or synced.
+          Keep up to {MAX_SAVED_COMPARISONS} saved offers on this device and
+          open any item in the review dashboard. Nothing is uploaded or synced.
         </p>
       </div>
 
@@ -413,22 +413,22 @@ export function SavedComparisonsPanel({
               </dl>
 
               <div className="mt-4 flex flex-col gap-2 sm:flex-row">
-                <button
-                  type="button"
-                  onClick={() => onLoad(comparison)}
-                  className="inline-flex h-10 flex-1 items-center justify-center rounded-xl bg-teal-700 px-4 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-teal-800 focus:outline-none focus:ring-2 focus:ring-teal-600 focus:ring-offset-2 active:translate-y-0 active:scale-[0.98]"
-                >
-                  Load
-                </button>
                 {onOpenReview ? (
                   <button
                     type="button"
                     onClick={() => onOpenReview(comparison)}
-                    className="inline-flex h-10 flex-1 items-center justify-center rounded-xl border border-teal-700 bg-white px-4 text-sm font-semibold text-teal-800 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-teal-50 focus:outline-none focus:ring-2 focus:ring-teal-600 focus:ring-offset-2 active:translate-y-0 active:scale-[0.98]"
+                    className="inline-flex h-10 flex-1 items-center justify-center rounded-xl bg-teal-700 px-4 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-teal-800 focus:outline-none focus:ring-2 focus:ring-teal-600 focus:ring-offset-2 active:translate-y-0 active:scale-[0.98]"
                   >
                     Open review
                   </button>
                 ) : null}
+                <button
+                  type="button"
+                  onClick={() => onLoad(comparison)}
+                  className="inline-flex h-10 flex-1 items-center justify-center rounded-xl border border-teal-700 bg-white px-4 text-sm font-semibold text-teal-800 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-teal-50 focus:outline-none focus:ring-2 focus:ring-teal-600 focus:ring-offset-2 active:translate-y-0 active:scale-[0.98]"
+                >
+                  Load
+                </button>
                 <button
                   type="button"
                   onClick={() => onDelete(comparison.id)}

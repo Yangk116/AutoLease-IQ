@@ -43,7 +43,7 @@ export function SiteHeader({ currentPage }: SiteHeaderProps) {
         </Link>
 
         <nav
-          className="order-3 flex w-full items-center gap-1 overflow-x-auto rounded-xl bg-slate-100/80 p-1 [scrollbar-width:none] lg:order-none lg:w-auto"
+          className="order-3 flex w-full items-center gap-1 overflow-x-auto overscroll-x-contain rounded-xl bg-slate-100/80 p-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden lg:order-none lg:w-auto"
           aria-label="Primary navigation"
         >
           {navigationItems.map((item) => {
@@ -56,7 +56,7 @@ export function SiteHeader({ currentPage }: SiteHeaderProps) {
                 aria-current={isActive ? "page" : undefined}
                 className={`flex-1 whitespace-nowrap rounded-lg px-2 py-2 text-center text-[0.8125rem] font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-teal-700/30 sm:px-3 sm:text-sm lg:flex-none ${
                   isActive
-                    ? "bg-white text-slate-950 shadow-sm"
+                    ? "bg-white text-teal-900 shadow-sm ring-1 ring-teal-200"
                     : "text-slate-600 hover:bg-white hover:text-slate-950 hover:shadow-sm"
                 }`}
               >

@@ -82,7 +82,7 @@ export default function ReportPage() {
           {reportState.status === "empty" ? (
             <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-8 text-center shadow-sm">
               <h2 className="text-xl font-semibold text-slate-950">
-                No active comparison yet
+                No report available yet
               </h2>
               <p className="mx-auto mt-2 max-w-lg text-sm leading-6 text-slate-500">
                 Compare two lease offers first. The latest comparison becomes
@@ -92,7 +92,7 @@ export default function ReportPage() {
                 href="/compare"
                 className="mt-5 inline-flex h-11 items-center justify-center rounded-xl bg-teal-700 px-5 text-sm font-semibold text-white shadow-sm transition-all hover:-translate-y-0.5 hover:bg-teal-800 focus:outline-none focus:ring-2 focus:ring-teal-700 focus:ring-offset-2 active:translate-y-0"
               >
-                Back to compare
+                Start a comparison
               </Link>
             </div>
           ) : null}
@@ -116,22 +116,20 @@ export default function ReportPage() {
 
           {reportState.status === "ready" ? (
             <div className="space-y-5">
-              <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:flex sm:items-center sm:justify-between sm:gap-5 sm:p-5">
+              <div className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between sm:p-5">
                 <p className="text-sm leading-6 text-slate-600">
-                  Trust note: this page uses only the quote values saved in
-                  localStorage. No upload, OCR, live market data, or external AI
-                  call is involved.
+                  Review the decision dashboard or update the quote inputs.
                 </p>
-                <div className="mt-3 flex gap-2 sm:mt-0">
+                <div className="grid gap-2 sm:flex sm:shrink-0">
                   <Link
                     href="/review"
-                    className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 shadow-sm transition-all hover:-translate-y-0.5 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-2"
+                    className="inline-flex h-10 items-center justify-center rounded-xl border border-teal-700 bg-white px-4 text-sm font-semibold text-teal-800 shadow-sm transition-all hover:-translate-y-0.5 hover:bg-teal-50 focus:outline-none focus:ring-2 focus:ring-teal-700 focus:ring-offset-2"
                   >
                     Back to review
                   </Link>
                   <Link
                     href="/compare"
-                    className="inline-flex h-10 items-center justify-center rounded-xl border border-teal-700 bg-white px-4 text-sm font-semibold text-teal-800 shadow-sm transition-all hover:-translate-y-0.5 hover:bg-teal-50 focus:outline-none focus:ring-2 focus:ring-teal-700 focus:ring-offset-2"
+                    className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 shadow-sm transition-all hover:-translate-y-0.5 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-2"
                   >
                     Edit quotes
                   </Link>
@@ -140,7 +138,9 @@ export default function ReportPage() {
 
               <ComparisonResults
                 comparisonResult={reportState.analysis.comparisonResult}
-                comparisonPaymentSummaries={reportState.analysis.paymentSummaries}
+                comparisonPaymentSummaries={
+                  reportState.analysis.paymentSummaries
+                }
                 selectedDecisionMode={
                   reportState.analysis.currentComparison.decisionMode
                 }
