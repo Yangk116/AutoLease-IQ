@@ -93,28 +93,29 @@ export default function SavedPage() {
     <main className="min-h-screen overflow-x-hidden bg-slate-50 text-slate-950">
       <SiteHeader currentPage="saved" />
 
-      <section className="border-b border-slate-200/80 bg-white px-4 py-10 sm:px-8 sm:py-12">
+      <section className="border-b border-slate-200/80 bg-[radial-gradient(circle_at_top_right,rgba(20,184,166,0.1),transparent_30%),linear-gradient(to_bottom,#ffffff,#f8fafc)] px-4 py-9 sm:px-8 sm:py-11">
         <div className="mx-auto w-full max-w-6xl">
           <p className="text-sm font-semibold uppercase tracking-[0.18em] text-teal-700">
             Local saved work
           </p>
-          <h1 className="mt-3 text-3xl font-semibold tracking-tight text-slate-950 sm:text-4xl">
+          <h1 className="mt-2 text-3xl font-semibold tracking-tight text-slate-950 sm:text-4xl">
             Saved comparisons
           </h1>
-          <p className="mt-4 max-w-3xl text-base leading-7 text-slate-600 sm:text-lg">
-            Open saved lease comparisons in review, or remove old history
-            stored in this browser.
-          </p>
-          <Link
-            href="/compare"
-            className="mt-6 inline-flex h-11 items-center justify-center rounded-xl bg-teal-700 px-5 text-sm font-semibold text-white shadow-sm transition-all hover:-translate-y-0.5 hover:bg-teal-800 focus:outline-none focus:ring-2 focus:ring-teal-700 focus:ring-offset-2 active:translate-y-0"
-          >
-            Compare new offers
-          </Link>
+          <div className="mt-3 flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+            <p className="max-w-2xl text-base leading-7 text-slate-600 sm:text-lg">
+              Reopen, load, or remove comparison history saved locally in this browser.
+            </p>
+            <Link
+              href="/compare"
+              className="inline-flex h-11 shrink-0 items-center justify-center self-start rounded-xl bg-teal-700 px-5 text-sm font-semibold text-white shadow-sm transition-all hover:-translate-y-0.5 hover:bg-teal-800 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-teal-700 focus:ring-offset-2 active:translate-y-0 sm:self-auto"
+            >
+              Compare new offers
+            </Link>
+          </div>
         </div>
       </section>
 
-      <section className="px-4 py-10 sm:px-8 sm:py-14">
+      <section className="px-4 py-8 sm:px-8 sm:py-12">
         <div className="mx-auto w-full max-w-6xl">
           <SavedComparisonsPanel
             comparisons={savedComparisons}

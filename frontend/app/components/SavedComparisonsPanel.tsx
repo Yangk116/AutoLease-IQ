@@ -326,30 +326,33 @@ export function SavedComparisonsPanel({
   return (
     <section
       id="saved-comparisons"
-      className="scroll-mt-32 border-t border-slate-200 pt-10 sm:scroll-mt-24"
-      aria-labelledby="saved-comparisons-title"
+      className="scroll-mt-32 sm:scroll-mt-24"
+      aria-label="Saved comparison history"
     >
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between sm:gap-6">
-        <div>
-          <p className="text-sm font-semibold uppercase tracking-widest text-teal-700">
-            Local to this browser
-          </p>
-          <h2
-            id="saved-comparisons-title"
-            className="mt-2 text-2xl font-semibold tracking-tight text-slate-950 sm:text-3xl"
-          >
-            Saved comparisons
-          </h2>
+      <div className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-[0_16px_42px_-36px_rgba(15,23,42,0.5)] sm:flex-row sm:items-center sm:justify-between sm:p-5">
+        <div className="flex items-center gap-3">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-teal-50 text-sm font-bold text-teal-800 ring-1 ring-teal-100">
+            {comparisons.length}
+          </span>
+          <div>
+            <p className="text-sm font-semibold text-slate-950">
+              {comparisons.length === 1
+                ? "1 saved comparison"
+                : `${comparisons.length} saved comparisons`}
+            </p>
+            <p className="mt-0.5 text-xs text-slate-500">
+              Up to {MAX_SAVED_COMPARISONS} items in this browser
+            </p>
+          </div>
         </div>
-        <p className="max-w-xl text-sm leading-6 text-slate-500">
-          Keep up to {MAX_SAVED_COMPARISONS} saved offers on this device and
-          open any item in the review dashboard. Nothing is uploaded or synced.
+        <p className="max-w-xl text-xs leading-5 text-slate-500 sm:text-right">
+          Saved locally in this browser. Nothing is uploaded or synced.
         </p>
       </div>
 
       {status ? (
         <p
-          className={`mt-5 rounded-xl border px-4 py-3 text-sm font-medium shadow-sm ${getStatusClasses(
+          className={`mt-4 rounded-xl border px-4 py-3 text-sm font-medium shadow-sm ${getStatusClasses(
             status.tone,
           )}`}
           role="status"
@@ -360,18 +363,24 @@ export function SavedComparisonsPanel({
       ) : null}
 
       {comparisons.length === 0 ? (
-        <div className="mt-6 rounded-2xl border border-dashed border-slate-300 bg-white/70 p-6 text-center">
-          <p className="text-sm leading-6 text-slate-500">
-            Saved comparisons will appear here after you compare and save an
-            offer. Saved items stay only in this browser.
+        <div className="mt-4 rounded-[1.5rem] border border-dashed border-slate-300 bg-white p-8 text-center shadow-[0_18px_50px_-42px_rgba(15,23,42,0.5)] sm:p-10">
+          <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 text-lg font-bold text-slate-500 ring-1 ring-slate-200">
+            0
+          </span>
+          <h2 className="mt-4 text-lg font-semibold text-slate-950">
+            No saved comparisons yet
+          </h2>
+          <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-slate-500">
+            Compare two offers, then save the comparison from the workspace or
+            review dashboard. It will stay local to this browser.
           </p>
         </div>
       ) : (
-        <div className="mt-6 grid gap-4 lg:grid-cols-2">
+        <div className="mt-4 grid gap-4 lg:grid-cols-2">
           {comparisons.map((comparison) => (
             <article
               key={comparison.id}
-              className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-[0_18px_50px_-38px_rgba(15,23,42,0.55)] sm:p-5"
+              className="rounded-[1.35rem] border border-slate-200 bg-white p-4 shadow-[0_20px_55px_-40px_rgba(15,23,42,0.6)] transition-all duration-200 hover:border-slate-300 hover:shadow-[0_24px_60px_-38px_rgba(15,23,42,0.5)] sm:p-5"
             >
               <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div className="min-w-0">
@@ -400,7 +409,7 @@ export function SavedComparisonsPanel({
                 {comparison.summary.trueMonthlyCosts.map((cost, index) => (
                   <div
                     key={`${comparison.id}-${index}`}
-                    className="rounded-xl border border-slate-100 bg-slate-50/80 p-3"
+                    className="rounded-xl border border-slate-200 bg-slate-50/70 p-3"
                   >
                     <dt className="truncate text-xs font-medium text-slate-500">
                       {index === 0 ? "Quote A" : "Quote B"} - {cost.quoteName}
@@ -427,12 +436,12 @@ export function SavedComparisonsPanel({
                   onClick={() => onLoad(comparison)}
                   className="inline-flex h-10 flex-1 items-center justify-center rounded-xl border border-teal-700 bg-white px-4 text-sm font-semibold text-teal-800 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-teal-50 focus:outline-none focus:ring-2 focus:ring-teal-600 focus:ring-offset-2 active:translate-y-0 active:scale-[0.98]"
                 >
-                  Load
+                  Load as active
                 </button>
                 <button
                   type="button"
                   onClick={() => onDelete(comparison.id)}
-                  className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-slate-300 hover:bg-slate-50 hover:text-red-700 focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-2 active:translate-y-0 active:scale-[0.98]"
+                  className="inline-flex h-10 items-center justify-center rounded-xl border border-transparent bg-transparent px-3 text-sm font-semibold text-slate-500 transition-all duration-200 hover:bg-red-50 hover:text-red-700 focus:outline-none focus:ring-2 focus:ring-red-200 focus:ring-offset-2 active:scale-[0.98]"
                 >
                   Delete
                 </button>

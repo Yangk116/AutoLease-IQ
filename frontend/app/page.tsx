@@ -8,31 +8,26 @@ type ProductFlowItem = {
   description: string;
 };
 
-type LandingBenefit = {
-  title: string;
-  description: string;
-};
-
 const productFlow: ProductFlowItem[] = [
   {
     step: "01",
-    title: "Enter quote numbers",
-    description: "Add the payment, upfront cash, term, mileage, and fees.",
+    title: "Compare lease quotes",
+    description: "Enter two offers and normalize the costs behind each payment.",
   },
   {
     step: "02",
-    title: "Compare true cost",
-    description: "See what each offer costs beyond the advertised payment.",
+    title: "Review the dashboard",
+    description: "Focus on the verdict, trade-offs, and decision scorecard.",
   },
   {
     step: "03",
-    title: "Review final verdict",
-    description: "Choose a decision goal and understand the key trade-offs.",
+    title: "Generate a report",
+    description: "Copy, print, or save a formal comparison summary.",
   },
   {
     step: "04",
-    title: "Generate report",
-    description: "Save, print, or copy a polished comparison summary.",
+    title: "Keep local history",
+    description: "Save comparisons locally in this browser for later review.",
   },
 ];
 
@@ -43,29 +38,6 @@ const decisionSignals: string[] = [
   "Buyout and residual context",
 ];
 
-const landingBenefits: LandingBenefit[] = [
-  {
-    title: "Compare true cost",
-    description:
-      "Normalize payments, upfront cash, fees, term, and mileage into a fair comparison.",
-  },
-  {
-    title: "Understand trade-offs",
-    description:
-      "See where an offer wins and what you give up across cost, flexibility, and value.",
-  },
-  {
-    title: "Negotiate smarter",
-    description:
-      "Turn the quote details into focused questions for the dealer before you commit.",
-  },
-  {
-    title: "Save or print a report",
-    description:
-      "Keep a decision-ready summary you can review, copy, or bring into the showroom.",
-  },
-];
-
 export default function Home() {
   return (
     <main className="min-h-screen overflow-x-hidden bg-slate-50 text-slate-950">
@@ -73,21 +45,20 @@ export default function Home() {
 
       <section
         id="overview"
-        className="scroll-mt-32 border-b border-slate-200/80 bg-[radial-gradient(circle_at_top_right,rgba(20,184,166,0.13),transparent_34%),linear-gradient(to_bottom,#ffffff,#f8fafc)] px-6 pb-16 pt-14 sm:scroll-mt-24 sm:px-8 sm:pb-20 sm:pt-20"
+        className="scroll-mt-32 border-b border-slate-200/80 bg-[radial-gradient(circle_at_top_right,rgba(20,184,166,0.15),transparent_32%),linear-gradient(to_bottom,#ffffff,#f8fafc)] px-5 pb-14 pt-12 sm:scroll-mt-24 sm:px-8 sm:pb-16 sm:pt-18"
       >
         <div className="mx-auto w-full max-w-6xl">
-          <div className="grid gap-12 lg:grid-cols-[minmax(0,1.2fr)_minmax(320px,0.8fr)] lg:items-center">
+          <div className="grid gap-10 lg:grid-cols-[minmax(0,1.16fr)_minmax(320px,0.84fr)] lg:items-center">
             <div>
-              <p className="mb-5 text-sm font-semibold uppercase tracking-[0.2em] text-teal-700">
-                Vehicle lease intelligence
+              <p className="mb-4 text-sm font-semibold uppercase tracking-[0.2em] text-teal-700">
+                Clear lease comparison
               </p>
               <h1 className="max-w-4xl text-4xl font-semibold leading-[1.08] tracking-tight text-slate-950 sm:text-5xl lg:text-6xl">
                 Compare lease offers beyond the advertised monthly payment.
               </h1>
-              <p className="mt-6 max-w-3xl text-lg leading-8 text-slate-600">
-                Understand true monthly cost, upfront cash pressure, buyout
-                risk, and the questions worth asking before you sign. Then
-                generate a polished report you can save or print.
+              <p className="mt-5 max-w-2xl text-lg leading-8 text-slate-600">
+                Compare two offers, review the decision dashboard, and generate
+                a formal report from the numbers you enter.
               </p>
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">
                 <Link
@@ -105,7 +76,7 @@ export default function Home() {
               </div>
             </div>
 
-            <aside className="overflow-hidden rounded-[1.75rem] border border-slate-200 bg-slate-950 p-5 text-white shadow-[0_30px_80px_-45px_rgba(15,23,42,0.9)] sm:p-6">
+            <aside className="overflow-hidden rounded-[1.75rem] border border-slate-800 bg-[radial-gradient(circle_at_top_right,rgba(45,212,191,0.16),transparent_42%),linear-gradient(145deg,#0f172a,#111827)] p-5 text-white shadow-[0_30px_80px_-42px_rgba(15,23,42,0.9)] sm:p-6">
               <div className="flex items-center justify-between gap-4 border-b border-white/10 pb-5">
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-[0.18em] text-teal-300">
@@ -134,20 +105,19 @@ export default function Home() {
                   </div>
                 ))}
               </div>
-              <p className="mt-5 text-sm leading-6 text-slate-400">
-                Built to compare the numbers dealers emphasize with the costs
-                that actually shape your decision.
+              <p className="mt-5 border-t border-white/10 pt-4 text-xs leading-5 text-slate-400">
+                Based only on entered numbers. Does not use live market data.
               </p>
             </aside>
           </div>
 
-          <div className="mt-16">
+          <div className="mt-14">
             <div className="max-w-2xl">
               <p className="text-sm font-semibold uppercase tracking-[0.18em] text-teal-700">
                 How it works
               </p>
               <h2 className="mt-3 text-2xl font-semibold tracking-tight text-slate-950 sm:text-3xl">
-                A clear path from quote details to a confident decision.
+                One focused flow from quote details to saved work.
               </h2>
             </div>
 
@@ -179,46 +149,23 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="px-6 py-16 sm:px-8 sm:py-20">
+      <section className="px-5 py-12 sm:px-8 sm:py-14">
         <div className="mx-auto w-full max-w-6xl">
-          <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
-            <div className="max-w-2xl">
-              <p className="text-sm font-semibold uppercase tracking-[0.18em] text-teal-700">
-                Decision-ready output
+          <div className="flex flex-col gap-5 rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-[0_22px_60px_-44px_rgba(15,23,42,0.55)] sm:flex-row sm:items-center sm:justify-between sm:p-7">
+            <div>
+              <p className="text-sm font-semibold text-slate-950">
+                Ready to compare your offers?
               </p>
-              <h2 className="mt-3 text-3xl font-semibold tracking-tight text-slate-950 sm:text-4xl">
-                From dealer quote to decision-ready report.
-              </h2>
-              <p className="mt-4 text-base leading-7 text-slate-600">
-                Focus on the numbers and trade-offs that matter before the
-                paperwork is in front of you.
+              <p className="mt-1 text-sm leading-6 text-slate-500">
+                No upload or external AI call. Saved locally in this browser.
               </p>
             </div>
             <Link
               href="/compare"
-              className="inline-flex h-11 shrink-0 items-center justify-center self-start rounded-xl bg-slate-950 px-5 text-sm font-semibold text-white transition-all hover:-translate-y-0.5 hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-950 focus:ring-offset-2 active:translate-y-0 sm:self-auto"
+              className="inline-flex h-11 shrink-0 items-center justify-center self-start rounded-xl bg-slate-950 px-5 text-sm font-semibold text-white shadow-sm transition-all hover:-translate-y-0.5 hover:bg-slate-800 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-slate-950 focus:ring-offset-2 active:translate-y-0 sm:self-auto"
             >
               Compare your offers
             </Link>
-          </div>
-
-          <div className="mt-9 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {landingBenefits.map((benefit, index) => (
-              <article
-                key={benefit.title}
-                className="rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_16px_45px_-38px_rgba(15,23,42,0.55)]"
-              >
-                <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-teal-50 text-sm font-bold text-teal-800">
-                  {index + 1}
-                </span>
-                <h3 className="mt-5 text-lg font-semibold text-slate-950">
-                  {benefit.title}
-                </h3>
-                <p className="mt-2 text-sm leading-6 text-slate-600">
-                  {benefit.description}
-                </p>
-              </article>
-            ))}
           </div>
         </div>
       </section>

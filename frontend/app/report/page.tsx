@@ -53,25 +53,25 @@ export default function ReportPage() {
   }, []);
 
   return (
-    <main className="min-h-screen overflow-x-hidden bg-slate-50 text-slate-950">
+    <main className="min-h-screen overflow-x-hidden bg-slate-100 text-slate-950">
       <SiteHeader currentPage="report" />
 
-      <section className="border-b border-slate-200/80 bg-white px-4 py-10 sm:px-8 sm:py-12">
+      <section className="border-b border-slate-200/80 bg-white px-4 py-9 sm:px-8 sm:py-11">
         <div className="mx-auto w-full max-w-6xl">
           <p className="text-sm font-semibold uppercase tracking-[0.18em] text-teal-700">
             Formal report
           </p>
-          <h1 className="mt-3 text-3xl font-semibold tracking-tight text-slate-950 sm:text-4xl">
+          <h1 className="mt-2 text-3xl font-semibold tracking-tight text-slate-950 sm:text-4xl">
             Lease comparison report
           </h1>
-          <p className="mt-4 max-w-3xl text-base leading-7 text-slate-600 sm:text-lg">
-            Copy, print, or save a PDF of the latest comparison, including full
-            quote context and detailed metrics.
+          <p className="mt-3 max-w-2xl text-base leading-7 text-slate-600 sm:text-lg">
+            A formal, printable view of the latest comparison with the quote
+            context and detailed metrics you entered.
           </p>
         </div>
       </section>
 
-      <section className="px-4 py-10 sm:px-8 sm:py-14">
+      <section className="px-4 py-8 sm:px-8 sm:py-12">
         <div className="mx-auto w-full max-w-6xl">
           {reportState.status === "loading" ? (
             <div className="rounded-2xl border border-slate-200 bg-white p-6 text-sm text-slate-600 shadow-sm">
@@ -116,10 +116,15 @@ export default function ReportPage() {
 
           {reportState.status === "ready" ? (
             <div className="space-y-5">
-              <div className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between sm:p-5">
-                <p className="text-sm leading-6 text-slate-600">
-                  Review the decision dashboard or update the quote inputs.
-                </p>
+              <div className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-[0_18px_45px_-38px_rgba(15,23,42,0.55)] sm:flex-row sm:items-center sm:justify-between sm:p-5">
+                <div>
+                  <p className="text-sm font-semibold text-slate-950">
+                    Report workspace
+                  </p>
+                  <p className="mt-1 text-xs leading-5 text-slate-500">
+                    Use the controls below to copy, print, or save as PDF.
+                  </p>
+                </div>
                 <div className="grid gap-2 sm:flex sm:shrink-0">
                   <Link
                     href="/review"

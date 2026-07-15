@@ -180,7 +180,7 @@ const dealerQuoteContextFields: DealerQuoteContextFieldConfig[] = [
 ];
 
 const fieldInputClasses =
-  "h-11 rounded-md border border-slate-300 bg-white px-3 text-base text-slate-950 shadow-sm outline-none transition focus:border-teal-700 focus:ring-2 focus:ring-teal-700/20";
+  "h-11 rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-950 shadow-[0_4px_14px_-12px_rgba(15,23,42,0.65)] outline-none transition focus:border-teal-700 focus:ring-2 focus:ring-teal-700/20";
 
 export function ComparisonQuoteCard({
   quote,
@@ -194,12 +194,12 @@ export function ComparisonQuoteCard({
   const isTaxIncludedInPayment = !quote.addTaxToMonthlyPayment;
 
   return (
-    <article className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-[0_18px_50px_-38px_rgba(15,23,42,0.55)] transition-all duration-300 hover:border-slate-300 hover:shadow-[0_22px_55px_-35px_rgba(15,23,42,0.45)] sm:p-6">
-      <div className="mb-5 flex items-center justify-between gap-3">
-        <h3 className="text-lg font-semibold text-slate-950">
+    <article className="rounded-[1.35rem] border border-slate-200 bg-white p-5 shadow-[0_20px_55px_-40px_rgba(15,23,42,0.6)] transition-all duration-300 hover:border-slate-300 hover:shadow-[0_24px_60px_-38px_rgba(15,23,42,0.5)] sm:p-6">
+      <div className="-mx-5 -mt-5 mb-6 flex items-center justify-between gap-3 rounded-t-[1.25rem] border-b border-slate-800 bg-slate-950 p-5 sm:-mx-6 sm:-mt-6 sm:p-6">
+        <h3 className="text-lg font-semibold text-white">
           {quote.label}
         </h3>
-        <span className="rounded-full border border-teal-100 bg-teal-50 px-3 py-1 text-xs font-semibold text-teal-700">
+        <span className="rounded-full border border-teal-300/20 bg-teal-300/10 px-3 py-1 text-xs font-semibold text-teal-200">
           Offer
         </span>
       </div>
@@ -218,7 +218,7 @@ export function ComparisonQuoteCard({
         </label>
       </div>
 
-      <section className="mt-5 rounded-xl border border-slate-200 bg-slate-50/70 p-4">
+      <section className="mt-5 rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
         <div>
           <p className="text-sm font-semibold text-slate-950">
             Dealer quote details
@@ -232,7 +232,7 @@ export function ComparisonQuoteCard({
 
         <div className="mt-5 space-y-6">
           <section>
-            <h4 className="text-xs font-semibold uppercase tracking-widest text-teal-700">
+            <h4 className="flex items-center gap-3 text-xs font-semibold uppercase tracking-widest text-teal-700 after:h-px after:flex-1 after:bg-slate-200">
               Vehicle and price
             </h4>
             <div className="mt-3 grid gap-4 sm:grid-cols-2">
@@ -280,7 +280,7 @@ export function ComparisonQuoteCard({
           </section>
 
           <section>
-            <h4 className="text-xs font-semibold uppercase tracking-widest text-teal-700">
+            <h4 className="flex items-center gap-3 text-xs font-semibold uppercase tracking-widest text-teal-700 after:h-px after:flex-1 after:bg-slate-200">
               Lease terms
             </h4>
             <div className="mt-3 grid gap-4 sm:grid-cols-2">
@@ -377,7 +377,7 @@ export function ComparisonQuoteCard({
           </section>
 
           <section>
-            <h4 className="text-xs font-semibold uppercase tracking-widest text-teal-700">
+            <h4 className="flex items-center gap-3 text-xs font-semibold uppercase tracking-widest text-teal-700 after:h-px after:flex-1 after:bg-slate-200">
               Cash and fees
             </h4>
             <div className="mt-3 grid gap-4 sm:grid-cols-2">
@@ -457,7 +457,7 @@ export function ComparisonQuoteCard({
           </section>
 
           <section>
-            <h4 className="text-xs font-semibold uppercase tracking-widest text-teal-700">
+            <h4 className="flex items-center gap-3 text-xs font-semibold uppercase tracking-widest text-teal-700 after:h-px after:flex-1 after:bg-slate-200">
               Notes
             </h4>
             <label className="mt-3 flex flex-col gap-2 text-sm font-medium text-slate-700">
@@ -469,7 +469,7 @@ export function ComparisonQuoteCard({
                 }
                 rows={3}
                 placeholder="Incentives, add-ons, quote expiry, included taxes, or dealer comments."
-                className="min-h-24 resize-y rounded-md border border-slate-300 bg-white px-3 py-2 text-base text-slate-950 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-teal-700 focus:ring-2 focus:ring-teal-700/20"
+                className="min-h-24 resize-y rounded-xl border border-slate-300 bg-white px-3 py-2 text-base text-slate-950 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-teal-700 focus:ring-2 focus:ring-teal-700/20"
               />
             </label>
           </section>

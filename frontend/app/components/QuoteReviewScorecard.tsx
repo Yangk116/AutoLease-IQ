@@ -566,9 +566,9 @@ export function QuoteReviewScorecard({
     return (
       <section
         aria-labelledby="quote-review-scorecard-title"
-        className="mb-5 rounded-2xl border border-slate-200 bg-white p-4 shadow-[0_14px_42px_-34px_rgba(15,23,42,0.6)]"
+        className="mb-5 rounded-2xl border border-slate-200 bg-slate-50/70 p-4 shadow-[0_16px_45px_-36px_rgba(15,23,42,0.6)] sm:p-5"
       >
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+        <div className="grid gap-2 border-b border-slate-200 pb-4 lg:grid-cols-[minmax(0,0.7fr)_minmax(280px,1.3fr)] lg:items-start lg:gap-8">
           <div>
             <p className="text-xs font-semibold uppercase tracking-widest text-teal-700">
               Based on entered numbers
@@ -580,16 +580,16 @@ export function QuoteReviewScorecard({
               Quote Review Scorecard
             </h4>
           </div>
-          <p className="max-w-xl text-xs leading-5 text-slate-500">
+          <p className="text-xs leading-5 text-slate-500 lg:text-right">
             {quoteReviewScorecardTrustNote}
           </p>
         </div>
 
-        <div className="mt-4 grid gap-3 lg:grid-cols-2">
+        <div className="mt-4 grid gap-4 lg:grid-cols-2">
           {quoteReviews.map((review) => (
             <article
               key={review.quoteLabel}
-              className="rounded-xl border border-slate-200 bg-slate-50/70 p-3"
+              className="overflow-hidden rounded-xl border border-slate-200 bg-white p-3 shadow-[0_14px_34px_-30px_rgba(15,23,42,0.6)]"
             >
               <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                 <div className="min-w-0">
@@ -616,7 +616,7 @@ export function QuoteReviewScorecard({
                 {getPriorityChecks(review.checks).map((check) => (
                   <div
                     key={`${review.quoteLabel}-${check.id}`}
-                    className="flex flex-col gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 sm:flex-row sm:items-center sm:justify-between"
+                    className="flex flex-col gap-2 rounded-lg border border-slate-200 bg-slate-50/70 px-3 py-2 sm:flex-row sm:items-center sm:justify-between"
                   >
                     <div className="min-w-0">
                       <p className="text-sm font-semibold text-slate-950">

@@ -281,7 +281,7 @@ export function ReportPreview({
     );
 
   return (
-    <article className="overflow-hidden rounded-[1.25rem] border border-slate-200 bg-slate-50 shadow-[0_28px_80px_-48px_rgba(15,23,42,0.75)] sm:rounded-[1.75rem]">
+    <article className="overflow-hidden rounded-[1.25rem] border border-slate-300 bg-slate-50 shadow-[0_30px_90px_-52px_rgba(15,23,42,0.78)] sm:rounded-[1.75rem]">
       <header className="report-print-header border-b border-slate-200 bg-slate-950 px-4 py-6 text-white sm:px-8 sm:py-9">
         <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
           <div>
@@ -336,7 +336,7 @@ export function ReportPreview({
         </div>
       </header>
 
-      <div className="space-y-4 p-3 sm:space-y-6 sm:p-6 lg:p-8">
+      <div className="space-y-4 p-3 sm:space-y-5 sm:p-6 lg:p-8">
         <section className="report-print-card overflow-hidden rounded-2xl border border-teal-200 bg-white shadow-[0_18px_45px_-34px_rgba(13,148,136,0.8)]">
           <div className="border-b border-teal-100 p-5 sm:p-6">
             <ReportSectionHeading

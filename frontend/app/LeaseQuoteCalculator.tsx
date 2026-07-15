@@ -744,25 +744,26 @@ export default function LeaseQuoteCalculator() {
   return (
     <section
       id="compare"
-      className="scroll-mt-32 bg-white px-4 py-10 sm:scroll-mt-24 sm:px-8 sm:py-14"
+      className="scroll-mt-32 bg-slate-50 px-4 py-8 sm:scroll-mt-24 sm:px-8 sm:py-12"
     >
-      <div className="mx-auto w-full max-w-6xl rounded-[1.5rem] border border-slate-200 bg-slate-50/80 p-4 shadow-[0_28px_80px_-60px_rgba(15,23,42,0.65)] sm:rounded-[2rem] sm:p-8 lg:p-10">
-        <div>
-          <p className="mb-4 text-sm font-semibold uppercase tracking-widest text-teal-700">
-            Compare workflow
-          </p>
-          <h2 className="text-3xl font-semibold tracking-tight text-slate-950 sm:text-4xl">
-            Enter quotes and compare
-          </h2>
-          <p className="mt-5 max-w-3xl text-base leading-7 text-slate-600">
-            Enter the main numbers from two offers, load a preset when useful,
-            compare once, then open the focused review, report, or saved
-            history.
+      <div className="mx-auto w-full max-w-6xl rounded-[1.5rem] border border-slate-200 bg-white p-4 shadow-[0_30px_80px_-58px_rgba(15,23,42,0.65)] sm:rounded-[2rem] sm:p-7 lg:p-8">
+        <div className="flex flex-col gap-2 border-b border-slate-200 pb-5 sm:flex-row sm:items-end sm:justify-between sm:gap-6">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-teal-700">
+              Offer workspace
+            </p>
+            <h2 className="mt-1 text-xl font-semibold tracking-tight text-slate-950 sm:text-2xl">
+              Two quotes, one consistent comparison
+            </h2>
+          </div>
+          <p className="max-w-md text-sm leading-6 text-slate-500 sm:text-right">
+            Enter the figures as shown. Optional context stays separate from
+            calculated costs.
           </p>
         </div>
 
         <nav
-          className="mt-8 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_18px_50px_-38px_rgba(15,23,42,0.55)]"
+          className="mt-6 overflow-hidden rounded-2xl border border-slate-200 bg-slate-50/70 shadow-[0_18px_50px_-40px_rgba(15,23,42,0.5)]"
           aria-label="Lease comparison progress"
         >
           <div className="overscroll-x-contain overflow-x-auto px-3 pb-4 pt-5 [scrollbar-width:thin] sm:px-6 sm:pb-5">
@@ -858,16 +859,15 @@ export default function LeaseQuoteCalculator() {
               })}
             </ol>
           </div>
-          <p className="border-t border-slate-100 bg-slate-50/70 px-4 py-3 text-xs leading-5 text-slate-600 sm:px-6 sm:text-sm sm:leading-6">
-            Follow the flow from raw lease numbers to a final verdict,
-            negotiation strategy, and shareable report.
+          <p className="border-t border-slate-200 bg-white px-4 py-3 text-xs leading-5 text-slate-500 sm:px-6">
+            Review, report, and saved history unlock after the comparison is ready.
           </p>
         </nav>
 
-        <div className="mt-8 space-y-6">
+        <div className="mt-6 space-y-5">
           <div
             id="examples"
-            className="scroll-mt-32 rounded-2xl border border-teal-100 bg-gradient-to-br from-teal-50/80 to-white p-4 shadow-[0_12px_35px_-28px_rgba(13,148,136,0.8)] sm:scroll-mt-24 sm:p-5"
+            className="scroll-mt-32 rounded-2xl border border-slate-200 bg-slate-50/70 p-4 sm:scroll-mt-24 sm:p-5"
           >
             <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
               <div>
@@ -879,7 +879,7 @@ export default function LeaseQuoteCalculator() {
                   the advertised monthly payment.
                 </p>
               </div>
-              <span className="mt-1 shrink-0 text-xs font-medium text-slate-500">
+              <span className="mt-1 shrink-0 rounded-full border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-500">
                 Samples only — not recommendations
               </span>
             </div>
@@ -893,7 +893,7 @@ export default function LeaseQuoteCalculator() {
                   key={preset.id}
                   type="button"
                   onClick={() => loadComparisonPreset(preset)}
-                  className="group cursor-pointer rounded-xl border border-slate-200 bg-white p-3.5 text-left shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-teal-300 hover:bg-teal-50 hover:shadow-md active:translate-y-0 active:scale-[0.99] focus:outline-none focus:ring-2 focus:ring-teal-700 focus:ring-offset-2"
+                  className="group cursor-pointer rounded-xl border border-slate-200 bg-white p-3.5 text-left shadow-[0_10px_28px_-24px_rgba(15,23,42,0.55)] transition-all duration-200 hover:-translate-y-0.5 hover:border-teal-300 hover:bg-teal-50/70 hover:shadow-md active:translate-y-0 active:scale-[0.99] focus:outline-none focus:ring-2 focus:ring-teal-700 focus:ring-offset-2"
                 >
                   <span className="block text-sm font-semibold text-teal-800 transition-colors group-hover:text-teal-900">
                     {preset.name}
@@ -906,11 +906,11 @@ export default function LeaseQuoteCalculator() {
             </div>
           </div>
 
-          <aside className="rounded-2xl border border-slate-200 bg-white p-4 shadow-[0_12px_35px_-30px_rgba(15,23,42,0.35)] sm:p-5">
-            <h3 className="text-sm font-semibold text-slate-950">
+          <aside className="rounded-2xl border border-slate-800 bg-slate-950 p-4 text-white shadow-[0_18px_45px_-34px_rgba(15,23,42,0.8)] sm:p-5">
+            <h3 className="text-sm font-semibold text-white">
               I have a dealer quote
             </h3>
-            <ul className="mt-3 grid gap-x-5 gap-y-2 text-xs leading-5 text-slate-600 sm:grid-cols-2 lg:grid-cols-3">
+            <ul className="mt-3 grid gap-x-5 gap-y-2 text-xs leading-5 text-slate-300 sm:grid-cols-2 lg:grid-cols-3">
               <li>Use the dealer&apos;s monthly payment exactly as shown.</li>
               <li>
                 If payment includes tax, keep &quot;Tax included in monthly
@@ -959,10 +959,13 @@ export default function LeaseQuoteCalculator() {
             ))}
           </div>
 
-          <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-[0_12px_35px_-28px_rgba(15,23,42,0.45)]">
+          <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4 sm:p-5">
             <h3 className="text-sm font-semibold text-slate-950">
               What matters most to you?
             </h3>
+            <p className="mt-1 text-xs leading-5 text-slate-500">
+              This sets the recommendation lens; it does not change the calculations.
+            </p>
             <div className="mt-3 flex flex-wrap gap-2">
               {decisionModeOptions.map((option) => {
                 const isSelected = selectedDecisionMode === option.value;
@@ -985,11 +988,20 @@ export default function LeaseQuoteCalculator() {
             </div>
           </div>
 
-          <button
+          <div className="flex flex-col gap-3 rounded-2xl border border-teal-200 bg-[linear-gradient(to_bottom_right,#f0fdfa,#ffffff)] p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
+            <div>
+              <p className="text-sm font-semibold text-slate-950">
+                Ready to compare?
+              </p>
+              <p className="mt-1 text-xs leading-5 text-slate-500">
+                Next: open the decision dashboard, then generate or save the report.
+              </p>
+            </div>
+            <button
             type="button"
             onClick={compareOffers}
             disabled={isComparing}
-            className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-teal-700 px-6 text-base font-semibold text-white shadow-[0_10px_25px_-12px_rgba(13,148,136,0.9)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-teal-800 hover:shadow-[0_14px_30px_-12px_rgba(13,148,136,0.8)] focus:outline-none focus:ring-2 focus:ring-teal-600 focus:ring-offset-2 active:translate-y-0 active:scale-[0.98] disabled:cursor-wait disabled:opacity-80 disabled:hover:translate-y-0 sm:w-auto"
+            className="inline-flex h-12 w-full shrink-0 items-center justify-center gap-2 rounded-xl bg-teal-700 px-6 text-base font-semibold text-white shadow-[0_10px_25px_-12px_rgba(13,148,136,0.9)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-teal-800 hover:shadow-[0_14px_30px_-12px_rgba(13,148,136,0.8)] focus:outline-none focus:ring-2 focus:ring-teal-600 focus:ring-offset-2 active:translate-y-0 active:scale-[0.98] disabled:cursor-wait disabled:opacity-80 disabled:hover:translate-y-0 sm:w-auto"
           >
             {isComparing ? (
               <>
@@ -1002,7 +1014,8 @@ export default function LeaseQuoteCalculator() {
             ) : (
               "Compare offers"
             )}
-          </button>
+            </button>
+          </div>
 
           {comparisonErrorMessage ? (
             <p className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
@@ -1011,7 +1024,7 @@ export default function LeaseQuoteCalculator() {
           ) : null}
 
           <aside
-            className="sticky bottom-[max(0.5rem,env(safe-area-inset-bottom))] z-20 rounded-2xl border border-teal-200/90 bg-white/95 p-2.5 shadow-[0_20px_55px_-25px_rgba(15,118,110,0.45)] backdrop-blur-md sm:bottom-4 sm:p-4"
+            className="sticky bottom-[max(0.5rem,env(safe-area-inset-bottom))] z-20 rounded-2xl border border-slate-700/90 bg-slate-950/95 p-2.5 text-white shadow-[0_22px_60px_-24px_rgba(15,23,42,0.75)] backdrop-blur-md sm:bottom-4 sm:p-4"
             aria-label="Next step"
             aria-live="polite"
           >
@@ -1037,7 +1050,7 @@ export default function LeaseQuoteCalculator() {
                   <p className="text-[0.6875rem] font-semibold uppercase tracking-widest text-teal-700 sm:text-xs">
                     Next step
                   </p>
-                  <p className="mt-1 hidden text-sm leading-5 text-slate-600 sm:block">
+                  <p className="mt-1 hidden text-sm leading-5 text-slate-300 sm:block">
                     {isComparing
                       ? "Comparing your offers and preparing the final verdict."
                       : hasComparisonResult
@@ -1066,7 +1079,7 @@ export default function LeaseQuoteCalculator() {
                     <button
                       type="button"
                       onClick={reviewVerdict}
-                      className="inline-flex h-11 min-w-0 flex-1 items-center justify-center rounded-xl bg-teal-700 px-2 text-xs font-semibold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-teal-800 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-teal-600 focus:ring-offset-2 active:translate-y-0 active:scale-[0.98] sm:h-10 sm:flex-none sm:px-3.5 sm:text-sm"
+                      className="inline-flex h-11 min-w-0 flex-1 items-center justify-center rounded-xl bg-teal-400 px-2 text-xs font-semibold text-slate-950 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-teal-300 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-teal-300 focus:ring-offset-2 focus:ring-offset-slate-950 active:translate-y-0 active:scale-[0.98] sm:h-10 sm:flex-none sm:px-3.5 sm:text-sm"
                     >
                       <span className="sm:hidden">Verdict</span>
                       <span className="hidden sm:inline">Review verdict</span>
@@ -1074,7 +1087,7 @@ export default function LeaseQuoteCalculator() {
                     <button
                       type="button"
                       onClick={previewReport}
-                      className="inline-flex h-11 min-w-0 flex-1 items-center justify-center rounded-xl border border-slate-200 bg-white px-2 text-xs font-semibold text-slate-700 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-teal-300 hover:bg-teal-50 hover:text-teal-900 focus:outline-none focus:ring-2 focus:ring-teal-600/40 focus:ring-offset-2 active:translate-y-0 active:scale-[0.98] sm:h-10 sm:flex-none sm:px-3.5 sm:text-sm"
+                      className="inline-flex h-11 min-w-0 flex-1 items-center justify-center rounded-xl border border-white/20 bg-white/10 px-2 text-xs font-semibold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-teal-300/50 hover:bg-white/15 focus:outline-none focus:ring-2 focus:ring-teal-300/60 focus:ring-offset-2 focus:ring-offset-slate-950 active:translate-y-0 active:scale-[0.98] sm:h-10 sm:flex-none sm:px-3.5 sm:text-sm"
                     >
                       <span className="sm:hidden">Report</span>
                       <span className="hidden sm:inline">Preview report</span>
@@ -1111,7 +1124,7 @@ export default function LeaseQuoteCalculator() {
               className="comparison-results-reveal scroll-mt-32 space-y-5 sm:scroll-mt-24"
               aria-labelledby="comparison-ready-title"
             >
-              <div className="rounded-2xl border border-teal-200 bg-gradient-to-br from-teal-50/90 to-white p-5 shadow-[0_18px_45px_-35px_rgba(13,148,136,0.65)] sm:p-6">
+              <div className="overflow-hidden rounded-2xl border border-teal-200 bg-gradient-to-br from-teal-50/90 to-white p-5 shadow-[0_22px_55px_-36px_rgba(13,148,136,0.7)] sm:p-6">
                 <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                   <div>
                     <p className="text-xs font-semibold uppercase tracking-widest text-teal-700">
@@ -1119,7 +1132,7 @@ export default function LeaseQuoteCalculator() {
                     </p>
                     <h3
                       id="comparison-ready-title"
-                      className="mt-2 text-xl font-semibold tracking-tight text-slate-950"
+                      className="mt-2 text-xl font-semibold tracking-tight text-slate-950 sm:text-2xl"
                     >
                       Open the focused review dashboard next.
                     </h3>

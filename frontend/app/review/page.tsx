@@ -150,22 +150,22 @@ export default function ReviewPage() {
     <main className="min-h-screen overflow-x-hidden bg-slate-50 text-slate-950">
       <SiteHeader currentPage="review" />
 
-      <section className="border-b border-slate-200/80 bg-white px-4 py-10 sm:px-8 sm:py-12">
+      <section className="border-b border-slate-200/80 bg-[radial-gradient(circle_at_top_right,rgba(20,184,166,0.1),transparent_30%),linear-gradient(to_bottom,#ffffff,#f8fafc)] px-4 py-9 sm:px-8 sm:py-11">
         <div className="mx-auto w-full max-w-6xl">
           <p className="text-sm font-semibold uppercase tracking-[0.18em] text-teal-700">
             Decision dashboard
           </p>
-          <h1 className="mt-3 text-3xl font-semibold tracking-tight text-slate-950 sm:text-4xl">
+          <h1 className="mt-2 text-3xl font-semibold tracking-tight text-slate-950 sm:text-4xl">
             Review your comparison
           </h1>
-          <p className="mt-4 max-w-3xl text-base leading-7 text-slate-600 sm:text-lg">
-            Start with the final verdict, then check recommendation reasons,
-            negotiation targets, and the compact Scorecard.
+          <p className="mt-3 max-w-2xl text-base leading-7 text-slate-600 sm:text-lg">
+            Start with the recommendation, then check the reasons, negotiation
+            targets, and compact scorecard.
           </p>
         </div>
       </section>
 
-      <section className="px-4 py-10 sm:px-8 sm:py-14">
+      <section className="px-4 py-8 sm:px-8 sm:py-12">
         <div className="mx-auto w-full max-w-6xl">
           {reviewState.status === "loading" ? (
             <div className="rounded-2xl border border-slate-200 bg-white p-6 text-sm text-slate-600 shadow-sm">
@@ -210,33 +210,35 @@ export default function ReviewPage() {
 
           {reviewState.status === "ready" ? (
             <div className="space-y-5">
-              <div className="rounded-2xl border border-teal-200 bg-white p-4 shadow-[0_18px_45px_-35px_rgba(13,148,136,0.65)] sm:flex sm:items-center sm:justify-between sm:gap-5 sm:p-5">
+              <div className="rounded-2xl border border-slate-800 bg-[radial-gradient(circle_at_top_right,rgba(45,212,191,0.15),transparent_38%),linear-gradient(145deg,#0f172a,#111827)] p-4 text-white shadow-[0_24px_60px_-34px_rgba(15,23,42,0.85)] sm:flex sm:items-center sm:justify-between sm:gap-5 sm:p-5">
                 <div>
-                  <p className="text-sm font-semibold text-slate-950">
-                    Comparison ready
+                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-teal-300">
+                    Decision workspace
                   </p>
-                  <p className="mt-1 text-xs leading-5 text-slate-500">
-                    Use this dashboard for the decision, or open the formal
-                    report when you are ready to copy or print it.
+                  <p className="mt-1 text-sm font-semibold text-white">
+                    Comparison ready for review
+                  </p>
+                  <p className="mt-1 text-xs leading-5 text-slate-300">
+                    Based only on entered numbers.
                   </p>
                 </div>
                 <div className="mt-3 grid gap-2 sm:mt-0 sm:flex">
                   <Link
                     href="/report"
-                    className="inline-flex h-11 items-center justify-center rounded-xl bg-teal-700 px-4 text-sm font-semibold text-white shadow-sm transition-all hover:-translate-y-0.5 hover:bg-teal-800 focus:outline-none focus:ring-2 focus:ring-teal-700 focus:ring-offset-2 active:translate-y-0"
+                    className="inline-flex h-11 items-center justify-center rounded-xl bg-teal-400 px-4 text-sm font-semibold text-slate-950 shadow-sm transition-all hover:-translate-y-0.5 hover:bg-teal-300 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-teal-300 focus:ring-offset-2 focus:ring-offset-slate-950 active:translate-y-0"
                   >
                     View full report
                   </Link>
                   <Link
                     href="/compare"
-                    className="inline-flex h-11 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 shadow-sm transition-all hover:-translate-y-0.5 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-2 active:translate-y-0"
+                    className="inline-flex h-11 items-center justify-center rounded-xl border border-white/15 bg-white/10 px-4 text-sm font-semibold text-white shadow-sm transition-all hover:-translate-y-0.5 hover:bg-white/15 focus:outline-none focus:ring-2 focus:ring-white/50 focus:ring-offset-2 focus:ring-offset-slate-950 active:translate-y-0"
                   >
                     Back to edit quotes
                   </Link>
                   <button
                     type="button"
                     onClick={saveComparison}
-                    className="inline-flex h-11 items-center justify-center rounded-xl border border-teal-700 bg-white px-4 text-sm font-semibold text-teal-800 shadow-sm transition-all hover:-translate-y-0.5 hover:bg-teal-50 focus:outline-none focus:ring-2 focus:ring-teal-700 focus:ring-offset-2 active:translate-y-0"
+                    className="inline-flex h-11 items-center justify-center rounded-xl border border-white/15 bg-transparent px-4 text-sm font-semibold text-teal-200 transition-all hover:-translate-y-0.5 hover:border-teal-300/50 hover:bg-teal-300/10 focus:outline-none focus:ring-2 focus:ring-teal-300/50 focus:ring-offset-2 focus:ring-offset-slate-950 active:translate-y-0"
                   >
                     Save comparison
                   </button>
