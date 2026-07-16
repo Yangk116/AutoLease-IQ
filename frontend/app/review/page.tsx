@@ -210,8 +210,8 @@ export default function ReviewPage() {
 
           {reviewState.status === "ready" ? (
             <div className="space-y-5">
-              <div className="rounded-2xl border border-slate-800 bg-[radial-gradient(circle_at_top_right,rgba(45,212,191,0.15),transparent_38%),linear-gradient(145deg,#0f172a,#111827)] p-4 text-white shadow-[0_24px_60px_-34px_rgba(15,23,42,0.85)] sm:flex sm:items-center sm:justify-between sm:gap-5 sm:p-5">
-                <div>
+              <div className="rounded-2xl border border-slate-800 bg-[radial-gradient(circle_at_top_right,rgba(45,212,191,0.15),transparent_38%),linear-gradient(145deg,#0f172a,#111827)] p-4 text-white shadow-[0_24px_60px_-34px_rgba(15,23,42,0.85)] sm:p-5 lg:flex lg:items-center lg:justify-between lg:gap-5">
+                <div className="min-w-0">
                   <p className="text-xs font-semibold uppercase tracking-[0.18em] text-teal-300">
                     Decision workspace
                   </p>
@@ -222,7 +222,7 @@ export default function ReviewPage() {
                     Based only on entered numbers.
                   </p>
                 </div>
-                <div className="mt-3 grid gap-2 sm:mt-0 sm:flex">
+                <div className="mt-3 grid gap-2 sm:grid-cols-3 lg:mt-0 lg:flex lg:shrink-0">
                   <Link
                     href="/report"
                     className="inline-flex h-11 items-center justify-center rounded-xl bg-teal-400 px-4 text-sm font-semibold text-slate-950 shadow-sm transition-all hover:-translate-y-0.5 hover:bg-teal-300 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-teal-300 focus:ring-offset-2 focus:ring-offset-slate-950 active:translate-y-0"

@@ -56,13 +56,13 @@ export default function Home() {
     <main className="min-h-screen overflow-x-hidden bg-slate-50 text-slate-950">
       <SiteHeader currentPage="home" />
 
-      <section className="border-b border-slate-200/80 bg-[radial-gradient(circle_at_top_right,rgba(20,184,166,0.14),transparent_32%),linear-gradient(to_bottom,#ffffff,#f8fafc)] px-5 pb-14 pt-12 sm:px-8 sm:pb-16 sm:pt-16">
+      <section className="border-b border-slate-200/80 bg-[radial-gradient(circle_at_top_right,rgba(20,184,166,0.14),transparent_32%),linear-gradient(to_bottom,#ffffff,#f8fafc)] px-4 pb-12 pt-10 sm:px-8 sm:pb-16 sm:pt-16">
         <div className="mx-auto grid w-full max-w-6xl gap-10 lg:grid-cols-[minmax(0,1.05fr)_minmax(340px,0.95fr)] lg:items-center lg:gap-14">
           <div className="min-w-0">
             <p className="text-sm font-semibold uppercase tracking-[0.2em] text-teal-700">
               Clear lease comparison
             </p>
-            <h1 className="mt-4 max-w-3xl text-4xl font-semibold leading-[1.08] tracking-tight text-slate-950 sm:text-5xl lg:text-6xl">
+            <h1 className="mt-4 max-w-3xl text-3xl font-semibold leading-[1.1] tracking-tight text-slate-950 min-[390px]:text-4xl sm:text-5xl sm:leading-[1.08] lg:text-6xl">
               Compare lease quotes with the full cost in view.
             </h1>
             <p className="mt-5 max-w-2xl text-lg leading-8 text-slate-600">
@@ -88,7 +88,7 @@ export default function Home() {
             </div>
 
             <div
-              className="mt-7 rounded-2xl border border-slate-200 bg-white/80 p-4 shadow-sm"
+              className="mt-7 rounded-2xl border border-slate-200 bg-white/80 p-3.5 shadow-sm sm:p-4"
               role="note"
               aria-label="Product data and privacy notes"
             >
@@ -124,7 +124,7 @@ export default function Home() {
               </span>
             </div>
 
-            <div className="mt-5 grid min-w-0 grid-cols-2 gap-3">
+            <div className="mt-5 grid min-w-0 grid-cols-1 gap-3 min-[360px]:grid-cols-2">
               {previewQuotes.map((quote) => (
                 <article
                   key={quote.name}
@@ -188,7 +188,7 @@ export default function Home() {
 
       <section
         id="how-it-works"
-        className="scroll-mt-32 px-5 py-14 sm:scroll-mt-24 sm:px-8 sm:py-16"
+        className="scroll-mt-32 px-4 py-12 sm:scroll-mt-24 sm:px-8 sm:py-16"
         aria-labelledby="workflow-title"
       >
         <div className="mx-auto w-full max-w-6xl">

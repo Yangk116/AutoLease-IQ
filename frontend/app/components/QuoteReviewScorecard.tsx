@@ -568,8 +568,8 @@ export function QuoteReviewScorecard({
         aria-labelledby="quote-review-scorecard-title"
         className="mb-5 rounded-2xl border border-slate-200 bg-slate-50/70 p-4 shadow-[0_16px_45px_-36px_rgba(15,23,42,0.6)] sm:p-5"
       >
-        <div className="grid gap-2 border-b border-slate-200 pb-4 lg:grid-cols-[minmax(0,0.7fr)_minmax(280px,1.3fr)] lg:items-start lg:gap-8">
-          <div>
+        <div className="grid min-w-0 gap-2 border-b border-slate-200 pb-4 lg:grid-cols-[minmax(0,0.7fr)_minmax(280px,1.3fr)] lg:items-start lg:gap-8">
+          <div className="min-w-0">
             <p className="text-xs font-semibold uppercase tracking-widest text-teal-700">
               Based on entered numbers
             </p>
@@ -589,7 +589,7 @@ export function QuoteReviewScorecard({
           {quoteReviews.map((review) => (
             <article
               key={review.quoteLabel}
-              className="overflow-hidden rounded-xl border border-slate-200 bg-white p-3 shadow-[0_14px_34px_-30px_rgba(15,23,42,0.6)]"
+              className="min-w-0 overflow-hidden rounded-xl border border-slate-200 bg-white p-3 shadow-[0_14px_34px_-30px_rgba(15,23,42,0.6)]"
             >
               <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                 <div className="min-w-0">
@@ -604,7 +604,7 @@ export function QuoteReviewScorecard({
                   </p>
                 </div>
                 <span
-                  className={`inline-flex w-fit shrink-0 rounded-full border px-2.5 py-1 text-xs font-bold ${getOverallClasses(
+                  className={`inline-flex w-fit max-w-full rounded-full border px-2.5 py-1 text-left text-xs font-bold break-words ${getOverallClasses(
                     review.overallLabel,
                   )}`}
                 >
@@ -627,7 +627,7 @@ export function QuoteReviewScorecard({
                       </p>
                     </div>
                     <span
-                      className={`inline-flex w-fit shrink-0 rounded-full border px-2.5 py-1 text-xs font-semibold ${getStatusClasses(
+                      className={`inline-flex w-fit max-w-full rounded-full border px-2.5 py-1 text-left text-xs font-semibold break-words ${getStatusClasses(
                         check.status,
                       )}`}
                     >
@@ -669,7 +669,7 @@ export function QuoteReviewScorecard({
         {statusLegend.map((item) => (
           <div key={item.status} className="min-w-0">
             <span
-              className={`inline-flex rounded-full border px-2 py-0.5 text-[0.7rem] font-semibold ${getStatusClasses(
+              className={`inline-flex max-w-full rounded-full border px-2 py-0.5 text-[0.7rem] font-semibold break-words ${getStatusClasses(
                 item.status,
               )}`}
             >
@@ -686,7 +686,7 @@ export function QuoteReviewScorecard({
         {quoteReviews.map((review) => (
           <article
             key={review.quoteLabel}
-            className="overflow-hidden rounded-xl border border-slate-200 bg-slate-50/70"
+            className="min-w-0 overflow-hidden rounded-xl border border-slate-200 bg-slate-50/70"
           >
             <div className="flex flex-col gap-3 border-b border-slate-200 bg-white p-3 sm:flex-row sm:items-start sm:justify-between">
               <div className="min-w-0">
@@ -701,7 +701,7 @@ export function QuoteReviewScorecard({
                 </p>
               </div>
               <span
-                className={`inline-flex w-fit shrink-0 rounded-full border px-2.5 py-1 text-xs font-bold ${getOverallClasses(
+                className={`inline-flex w-fit max-w-full rounded-full border px-2.5 py-1 text-left text-xs font-bold break-words ${getOverallClasses(
                   review.overallLabel,
                 )}`}
               >
@@ -727,7 +727,7 @@ export function QuoteReviewScorecard({
                     </p>
                   </div>
                   <span
-                    className={`inline-flex w-fit shrink-0 rounded-full border px-2.5 py-1 text-xs font-semibold ${getStatusClasses(
+                    className={`inline-flex w-fit max-w-full rounded-full border px-2.5 py-1 text-left text-xs font-semibold break-words ${getStatusClasses(
                       check.status,
                     )}`}
                   >

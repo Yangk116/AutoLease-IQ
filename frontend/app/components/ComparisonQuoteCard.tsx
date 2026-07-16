@@ -180,7 +180,7 @@ const dealerQuoteContextFields: DealerQuoteContextFieldConfig[] = [
 ];
 
 const fieldInputClasses =
-  "h-11 rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-950 shadow-[0_4px_14px_-12px_rgba(15,23,42,0.65)] outline-none transition focus:border-teal-700 focus:ring-2 focus:ring-teal-700/20";
+  "h-11 w-full min-w-0 rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-950 shadow-[0_4px_14px_-12px_rgba(15,23,42,0.65)] outline-none transition focus:border-teal-700 focus:ring-2 focus:ring-teal-700/20";
 
 export function ComparisonQuoteCard({
   quote,
@@ -194,8 +194,8 @@ export function ComparisonQuoteCard({
   const isTaxIncludedInPayment = !quote.addTaxToMonthlyPayment;
 
   return (
-    <article className="rounded-[1.35rem] border border-slate-200 bg-white p-5 shadow-[0_20px_55px_-40px_rgba(15,23,42,0.6)] transition-all duration-300 hover:border-slate-300 hover:shadow-[0_24px_60px_-38px_rgba(15,23,42,0.5)] sm:p-6">
-      <div className="-mx-5 -mt-5 mb-6 flex items-center justify-between gap-3 rounded-t-[1.25rem] border-b border-slate-800 bg-slate-950 p-5 sm:-mx-6 sm:-mt-6 sm:p-6">
+    <article className="min-w-0 rounded-[1.35rem] border border-slate-200 bg-white p-4 shadow-[0_20px_55px_-40px_rgba(15,23,42,0.6)] transition-all duration-300 hover:border-slate-300 hover:shadow-[0_24px_60px_-38px_rgba(15,23,42,0.5)] sm:p-6">
+      <div className="-mx-4 -mt-4 mb-5 flex items-center justify-between gap-3 rounded-t-[1.25rem] border-b border-slate-800 bg-slate-950 p-4 sm:-mx-6 sm:-mt-6 sm:mb-6 sm:p-6">
         <h3 className="text-lg font-semibold text-white">
           {quote.label}
         </h3>
@@ -205,7 +205,7 @@ export function ComparisonQuoteCard({
       </div>
 
       <div className="grid gap-4">
-        <label className="flex flex-col gap-2 text-sm font-medium text-slate-700 sm:col-span-2">
+        <label className="flex min-w-0 flex-col gap-2 text-sm font-medium text-slate-700 sm:col-span-2">
           Quote name
           <input
             type="text"
@@ -218,7 +218,7 @@ export function ComparisonQuoteCard({
         </label>
       </div>
 
-      <section className="mt-5 rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
+      <section className="mt-5 min-w-0 rounded-2xl border border-slate-200 bg-slate-50/70 p-3 sm:p-4">
         <div>
           <p className="text-sm font-semibold text-slate-950">
             Dealer quote details
@@ -236,7 +236,7 @@ export function ComparisonQuoteCard({
               Vehicle and price
             </h4>
             <div className="mt-3 grid gap-4 sm:grid-cols-2">
-              <label className="flex flex-col gap-2 text-sm font-medium text-slate-700 sm:col-span-2">
+              <label className="flex min-w-0 flex-col gap-2 text-sm font-medium text-slate-700 sm:col-span-2">
                 Vehicle name / label
                 <input
                   type="text"
@@ -252,7 +252,7 @@ export function ComparisonQuoteCard({
               {vehicleDealFields.map((field) => (
                 <label
                   key={field.name}
-                  className="flex flex-col gap-2 text-sm font-medium text-slate-700"
+                  className="flex min-w-0 flex-col gap-2 text-sm font-medium text-slate-700"
                 >
                   {field.label}
                   <input
@@ -287,7 +287,7 @@ export function ComparisonQuoteCard({
               {mainFields.map((field) => (
                 <label
                   key={field.name}
-                  className="flex flex-col gap-2 text-sm font-medium text-slate-700"
+                  className="flex min-w-0 flex-col gap-2 text-sm font-medium text-slate-700"
                 >
                   {field.label}
                   <input
@@ -330,7 +330,7 @@ export function ComparisonQuoteCard({
                 </label>
 
                 {!isTaxIncludedInPayment ? (
-                  <label className="mt-4 flex max-w-40 flex-col gap-2 text-sm font-medium text-slate-700">
+                  <label className="mt-4 flex w-full max-w-40 min-w-0 flex-col gap-2 text-sm font-medium text-slate-700">
                     Tax rate (%)
                     <input
                       type="number"
@@ -351,7 +351,7 @@ export function ComparisonQuoteCard({
                 .map((field) => (
                   <label
                     key={field.name}
-                    className="flex flex-col gap-2 text-sm font-medium text-slate-700"
+                    className="flex min-w-0 flex-col gap-2 text-sm font-medium text-slate-700"
                   >
                     {field.label}
                     <input
@@ -381,7 +381,7 @@ export function ComparisonQuoteCard({
               Cash and fees
             </h4>
             <div className="mt-3 grid gap-4 sm:grid-cols-2">
-              <label className="flex flex-col gap-2 text-sm font-medium text-slate-700">
+              <label className="flex min-w-0 flex-col gap-2 text-sm font-medium text-slate-700">
                 Cash down
                 <input
                   type="number"
@@ -403,7 +403,7 @@ export function ComparisonQuoteCard({
                 .map((field) => (
                   <label
                     key={field.name}
-                    className="flex flex-col gap-2 text-sm font-medium text-slate-700"
+                    className="flex min-w-0 flex-col gap-2 text-sm font-medium text-slate-700"
                   >
                     {field.label}
                     <input
@@ -429,7 +429,7 @@ export function ComparisonQuoteCard({
               {advancedFeeFields.map((field) => (
                 <label
                   key={field.name}
-                  className="flex flex-col gap-2 text-sm font-medium text-slate-700"
+                  className="flex min-w-0 flex-col gap-2 text-sm font-medium text-slate-700"
                 >
                   {field.label}
                   <input
@@ -460,7 +460,7 @@ export function ComparisonQuoteCard({
             <h4 className="flex items-center gap-3 text-xs font-semibold uppercase tracking-widest text-teal-700 after:h-px after:flex-1 after:bg-slate-200">
               Notes
             </h4>
-            <label className="mt-3 flex flex-col gap-2 text-sm font-medium text-slate-700">
+            <label className="mt-3 flex min-w-0 flex-col gap-2 text-sm font-medium text-slate-700">
               Dealer quote notes
               <textarea
                 value={quote.dealerNotes}
@@ -469,7 +469,7 @@ export function ComparisonQuoteCard({
                 }
                 rows={3}
                 placeholder="Incentives, add-ons, quote expiry, included taxes, or dealer comments."
-                className="min-h-24 resize-y rounded-xl border border-slate-300 bg-white px-3 py-2 text-base text-slate-950 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-teal-700 focus:ring-2 focus:ring-teal-700/20"
+                className="min-h-24 w-full min-w-0 resize-y rounded-xl border border-slate-300 bg-white px-3 py-2 text-base text-slate-950 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-teal-700 focus:ring-2 focus:ring-teal-700/20"
               />
             </label>
           </section>

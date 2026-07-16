@@ -13,7 +13,7 @@ export function MetricCard({
 }: MetricCardProps) {
   return (
     <div
-      className={`group rounded-xl border p-4 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md ${
+      className={`group min-w-0 rounded-xl border p-4 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md ${
         prominent
           ? "border-teal-200/90 bg-gradient-to-br from-teal-50 to-white shadow-[0_10px_25px_-22px_rgba(13,148,136,0.9)]"
           : "border-slate-200/80 bg-white shadow-[0_8px_22px_-22px_rgba(15,23,42,0.7)]"
@@ -23,8 +23,10 @@ export function MetricCard({
         {label}
       </dt>
       <dd
-        className={`mt-2 font-semibold text-slate-950 ${
-          prominent ? "text-2xl tracking-tight tabular-nums" : "text-lg tabular-nums"
+        className={`mt-2 break-words font-semibold text-slate-950 ${
+          prominent
+            ? "text-xl tracking-tight tabular-nums sm:text-2xl"
+            : "text-lg tabular-nums"
         }`}
       >
         {value}

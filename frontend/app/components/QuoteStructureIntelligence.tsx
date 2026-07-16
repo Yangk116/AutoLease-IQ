@@ -687,9 +687,9 @@ export function QuoteStructureIntelligencePanel({
       aria-labelledby="quote-intelligence-title"
       className="mb-5 overflow-hidden rounded-2xl border border-slate-200 bg-[linear-gradient(to_bottom,#f8fafc,#ffffff)] shadow-[0_18px_55px_-38px_rgba(15,23,42,0.55)]"
     >
-      <div className="border-b border-slate-200 bg-slate-950 p-5 text-white sm:p-6">
+      <div className="border-b border-slate-200 bg-slate-950 p-4 text-white sm:p-6">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-          <div>
+          <div className="min-w-0">
             <p className="text-xs font-semibold uppercase tracking-widest text-teal-300">
               Advisor insight layer
             </p>
@@ -704,7 +704,7 @@ export function QuoteStructureIntelligencePanel({
               benchmark coming soon.
             </p>
           </div>
-          <span className="inline-flex w-fit rounded-full border border-teal-300/30 bg-teal-400/10 px-3 py-1.5 text-xs font-semibold text-teal-100">
+          <span className="inline-flex w-fit max-w-full rounded-full border border-teal-300/30 bg-teal-400/10 px-3 py-1.5 text-left text-xs font-semibold break-words text-teal-100">
             No live market listings
           </span>
         </div>
@@ -750,7 +750,7 @@ export function QuoteStructureIntelligencePanel({
                     className="rounded-xl border border-slate-200 bg-slate-50/80 p-3"
                   >
                     <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-                      <div>
+                      <div className="min-w-0">
                         <p className="text-sm font-semibold text-slate-950">
                           {category.title}
                         </p>
@@ -759,7 +759,7 @@ export function QuoteStructureIntelligencePanel({
                         </p>
                       </div>
                       <span
-                        className={`inline-flex w-fit shrink-0 rounded-full border px-2.5 py-1 text-xs font-semibold ${getLabelClasses(
+                        className={`inline-flex w-fit max-w-full rounded-full border px-2.5 py-1 text-left text-xs font-semibold break-words ${getLabelClasses(
                           category.label,
                         )}`}
                       >

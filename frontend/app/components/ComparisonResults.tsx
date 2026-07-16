@@ -1211,7 +1211,9 @@ function CollapsibleSection({
           </svg>
         </span>
       </summary>
-      <div className="border-t border-slate-200 bg-white p-4 sm:p-5">{children}</div>
+      <div className="min-w-0 border-t border-slate-200 bg-white p-3 sm:p-5">
+        {children}
+      </div>
     </details>
   );
 }
@@ -1822,7 +1824,7 @@ export function ComparisonResults({
   }
 
   const quoteResultCards = (
-    <div className="mb-5 grid gap-4 xl:grid-cols-2">
+    <div className="mb-5 grid min-w-0 gap-4 xl:grid-cols-2">
       {comparisonResult.results.map((comparisonAnalysis, index) => {
         const paymentSummaryForQuote = comparisonPaymentSummaries[index];
         const isBestTotalCost =
@@ -1842,7 +1844,7 @@ export function ComparisonResults({
         return (
           <article
             key={`${comparisonAnalysis.vehicleName ?? "quote"}-${index}`}
-            className={`rounded-2xl border p-4 transition-all duration-300 sm:p-5 ${
+            className={`min-w-0 rounded-2xl border p-4 transition-all duration-300 sm:p-5 ${
               isBestFitForSelectedGoal
                 ? "border-teal-300 bg-gradient-to-br from-teal-50 via-white to-white shadow-[0_20px_45px_-30px_rgba(13,148,136,0.75)] ring-1 ring-teal-100"
                 : "border-slate-200/80 bg-slate-50/70 shadow-[0_12px_35px_-30px_rgba(15,23,42,0.5)] hover:-translate-y-0.5 hover:bg-white hover:shadow-md"
@@ -1853,7 +1855,7 @@ export function ComparisonResults({
                 <p className="text-xs font-semibold uppercase tracking-widest text-slate-500">
                   {quoteLabel}
                 </p>
-                <h4 className="mt-1 text-xl font-bold text-slate-950">
+                <h4 className="mt-1 break-words text-xl font-bold text-slate-950">
                   {getQuoteDisplayName(comparisonAnalysis, quoteLabel)}
                 </h4>
               </div>
@@ -1996,7 +1998,7 @@ export function ComparisonResults({
 
   if (variant === "report") {
     return (
-      <div className="rounded-[1.5rem] border border-slate-200 bg-white p-3 shadow-[0_28px_80px_-48px_rgba(15,23,42,0.6)] sm:p-5">
+      <div className="min-w-0 rounded-[1.5rem] border border-slate-200 bg-white p-2 shadow-[0_28px_80px_-48px_rgba(15,23,42,0.6)] sm:p-5">
         <div className="mb-5 flex flex-col gap-3 rounded-2xl border border-slate-800 bg-slate-950 p-4 text-white shadow-[0_18px_45px_-34px_rgba(15,23,42,0.8)] sm:flex-row sm:items-center sm:justify-between sm:p-5">
           <div>
             <p className="text-xs font-semibold uppercase tracking-widest text-teal-300">
@@ -2012,7 +2014,7 @@ export function ComparisonResults({
               type="button"
               onClick={copyReport}
               aria-live="polite"
-              className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-white/20 bg-white/10 px-4 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-white/15 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-white/50 focus:ring-offset-2 focus:ring-offset-slate-950 active:translate-y-0 active:scale-[0.98] sm:w-auto"
+              className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-white/20 bg-white/10 px-4 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-white/15 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-white/50 focus:ring-offset-2 focus:ring-offset-slate-950 active:translate-y-0 active:scale-[0.98] sm:w-auto"
             >
               {copyStatus === "copied"
                 ? "Copied"
@@ -2023,13 +2025,13 @@ export function ComparisonResults({
             <button
               type="button"
               onClick={printReport}
-              className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-teal-400 px-4 text-sm font-semibold text-slate-950 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-teal-300 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-teal-300 focus:ring-offset-2 focus:ring-offset-slate-950 active:translate-y-0 active:scale-[0.98] sm:w-auto"
+              className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-teal-400 px-4 text-sm font-semibold text-slate-950 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-teal-300 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-teal-300 focus:ring-offset-2 focus:ring-offset-slate-950 active:translate-y-0 active:scale-[0.98] sm:w-auto"
             >
               Print / Save as PDF
             </button>
           </div>
         </div>
-        <div className="print-report-area">
+        <div className="min-w-0 print-report-area">
           <ReportPreview
             comparisonResult={comparisonResult}
             comparisonPaymentSummaries={comparisonPaymentSummaries}
@@ -2051,7 +2053,7 @@ export function ComparisonResults({
 
   return (
     <>
-      <div className="rounded-[1.5rem] border border-slate-200 bg-white p-4 shadow-[0_28px_75px_-48px_rgba(15,23,42,0.6)] sm:p-6">
+      <div className="min-w-0 rounded-[1.5rem] border border-slate-200 bg-white p-3 shadow-[0_28px_75px_-48px_rgba(15,23,42,0.6)] sm:p-6">
         <div className="mb-6 flex items-start gap-3">
           <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-teal-50 text-teal-700 ring-1 ring-teal-100">
             <svg
@@ -2108,7 +2110,7 @@ export function ComparisonResults({
                 ) : null}
               </div>
 
-              <p className="mt-5 text-xl font-semibold leading-8 text-slate-950 sm:text-2xl sm:leading-9">
+              <p className="mt-5 break-words text-xl font-semibold leading-8 text-slate-950 sm:text-2xl sm:leading-9">
                 {finalVerdict?.headline ??
                   "A final verdict is not available for this comparison."}
               </p>
@@ -2310,7 +2312,7 @@ export function ComparisonResults({
                     type="button"
                     onClick={copyReport}
                     aria-live="polite"
-                    className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-teal-300 hover:bg-teal-50 hover:text-teal-900 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-teal-700 focus:ring-offset-2 active:translate-y-0 active:scale-[0.98] sm:w-auto"
+                    className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-teal-300 hover:bg-teal-50 hover:text-teal-900 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-teal-700 focus:ring-offset-2 active:translate-y-0 active:scale-[0.98] sm:w-auto"
                   >
                     {copyStatus === "copied"
                       ? "Copied"
@@ -2321,7 +2323,7 @@ export function ComparisonResults({
                   <button
                     type="button"
                     onClick={printReport}
-                    className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-teal-700 bg-white px-4 text-sm font-semibold text-teal-800 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-teal-50 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-teal-700 focus:ring-offset-2 active:translate-y-0 active:scale-[0.98] sm:w-auto"
+                    className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-teal-700 bg-white px-4 text-sm font-semibold text-teal-800 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-teal-50 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-teal-700 focus:ring-offset-2 active:translate-y-0 active:scale-[0.98] sm:w-auto"
                   >
                     <svg
                       aria-hidden="true"
@@ -2342,7 +2344,7 @@ export function ComparisonResults({
                   </button>
                 </div>
               </div>
-              <div className="print-report-area">
+              <div className="min-w-0 print-report-area">
                 <ReportPreview
                   comparisonResult={comparisonResult}
                   comparisonPaymentSummaries={comparisonPaymentSummaries}
@@ -2498,7 +2500,7 @@ export function ComparisonResults({
                 ref={assistantCloseButtonRef}
                 type="button"
                 onClick={closeAssistant}
-                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 shadow-sm transition-all duration-200 hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900 focus:outline-none focus:ring-2 focus:ring-teal-600/40 active:scale-95"
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 shadow-sm transition-all duration-200 hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900 focus:outline-none focus:ring-2 focus:ring-teal-600/40 active:scale-95"
                 aria-label="Close negotiation assistant"
               >
                 <svg

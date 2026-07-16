@@ -141,11 +141,11 @@ function ReportSectionHeading({
   description?: string;
 }) {
   return (
-    <div className="flex items-start gap-3">
+    <div className="flex min-w-0 items-start gap-3">
       <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-teal-200 bg-teal-50 text-xs font-black text-teal-800">
         {number}
       </span>
-      <div>
+      <div className="min-w-0">
         <p className="text-[0.68rem] font-bold uppercase tracking-[0.2em] text-teal-700">
           {eyebrow}
         </p>
@@ -281,10 +281,10 @@ export function ReportPreview({
     );
 
   return (
-    <article className="overflow-hidden rounded-[1.25rem] border border-slate-300 bg-slate-50 shadow-[0_30px_90px_-52px_rgba(15,23,42,0.78)] sm:rounded-[1.75rem]">
+    <article className="min-w-0 overflow-hidden rounded-[1.25rem] border border-slate-300 bg-slate-50 shadow-[0_30px_90px_-52px_rgba(15,23,42,0.78)] sm:rounded-[1.75rem]">
       <header className="report-print-header border-b border-slate-200 bg-slate-950 px-4 py-6 text-white sm:px-8 sm:py-9">
         <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
-          <div>
+          <div className="min-w-0">
             <div className="flex items-center gap-2.5">
               <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-teal-400 font-black text-slate-950 shadow-lg shadow-teal-950/20 print:bg-white print:ring-1 print:ring-slate-300">
                 IQ
@@ -306,7 +306,7 @@ export function ReportPreview({
                 <dt className="text-[0.65rem] font-bold uppercase tracking-wider text-teal-200">
                   Generated
                 </dt>
-                <dd className="mt-1 font-semibold text-white">
+                <dd className="mt-1 break-words font-semibold text-white">
                   {metadata.generatedAtLabel}
                 </dd>
               </div>
@@ -314,7 +314,7 @@ export function ReportPreview({
                 <dt className="text-[0.65rem] font-bold uppercase tracking-wider text-teal-200">
                   Report ID
                 </dt>
-                <dd className="mt-1 font-semibold text-white">
+                <dd className="mt-1 break-all font-semibold text-white">
                   {metadata.reportId}
                 </dd>
               </div>
@@ -322,7 +322,7 @@ export function ReportPreview({
                 <dt className="text-[0.65rem] font-bold uppercase tracking-wider text-teal-200">
                   Decision mode
                 </dt>
-                <dd className="mt-1 font-semibold text-white">
+                <dd className="mt-1 break-words font-semibold text-white">
                   {decisionModeLabels[selectedDecisionMode]}
                 </dd>
               </div>
@@ -336,9 +336,9 @@ export function ReportPreview({
         </div>
       </header>
 
-      <div className="space-y-4 p-3 sm:space-y-5 sm:p-6 lg:p-8">
+      <div className="min-w-0 space-y-4 p-2 sm:space-y-5 sm:p-6 lg:p-8">
         <section className="report-print-card overflow-hidden rounded-2xl border border-teal-200 bg-white shadow-[0_18px_45px_-34px_rgba(13,148,136,0.8)]">
-          <div className="border-b border-teal-100 p-5 sm:p-6">
+          <div className="border-b border-teal-100 p-4 sm:p-6">
             <ReportSectionHeading
               number="1"
               eyebrow="Decision review"
@@ -346,7 +346,7 @@ export function ReportPreview({
             />
           </div>
           <div className="grid lg:grid-cols-[0.78fr_1.22fr]">
-            <div className="bg-slate-950 p-5 text-white sm:p-6">
+            <div className="min-w-0 bg-slate-950 p-4 text-white sm:p-6">
               <p className="text-xs font-bold uppercase tracking-[0.18em] text-teal-200">
                 Final verdict
               </p>
@@ -356,11 +356,11 @@ export function ReportPreview({
               <p className="mt-1 break-words text-3xl font-black tracking-tight sm:text-4xl">
                 {bestFitLabel}
               </p>
-              <span className="mt-5 inline-flex rounded-full border border-teal-300/30 bg-teal-400/10 px-3 py-1.5 text-xs font-semibold text-teal-100">
+              <span className="mt-5 inline-flex max-w-full rounded-full border border-teal-300/30 bg-teal-400/10 px-3 py-1.5 text-xs font-semibold break-words text-teal-100">
                 Goal: {decisionModeLabels[selectedDecisionMode]}
               </span>
             </div>
-            <div className="p-5 sm:p-6">
+            <div className="min-w-0 p-4 sm:p-6">
               <p className="text-xl font-bold leading-8 text-slate-950">
                 {finalVerdict?.headline ??
                   "A final verdict is not available for this comparison."}
@@ -406,7 +406,7 @@ export function ReportPreview({
           </div>
         </section>
 
-        <section className="report-print-card rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_16px_40px_-34px_rgba(15,23,42,0.65)] sm:p-6">
+        <section className="report-print-card min-w-0 rounded-2xl border border-slate-200 bg-white p-4 shadow-[0_16px_40px_-34px_rgba(15,23,42,0.65)] sm:p-6">
           <ReportSectionHeading
             number="2"
             eyebrow="Financial overview"
@@ -446,7 +446,7 @@ export function ReportPreview({
           </div>
         </section>
 
-        <section className="report-print-card rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_16px_40px_-34px_rgba(15,23,42,0.65)] sm:p-6">
+        <section className="report-print-card min-w-0 rounded-2xl border border-slate-200 bg-white p-4 shadow-[0_16px_40px_-34px_rgba(15,23,42,0.65)] sm:p-6">
           <ReportSectionHeading
             number="3"
             eyebrow="Offer details"
@@ -520,7 +520,7 @@ export function ReportPreview({
                   <p className="text-xs font-bold uppercase tracking-wider text-teal-700">
                     {item.label} notes
                   </p>
-                  <p className="mt-2 text-sm leading-6 text-slate-700">
+                  <p className="mt-2 break-words text-sm leading-6 text-slate-700">
                     {item.notes}
                   </p>
                 </div>
@@ -529,7 +529,7 @@ export function ReportPreview({
           ) : null}
         </section>
 
-        <section className="report-print-card rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_16px_40px_-34px_rgba(15,23,42,0.65)] sm:p-6">
+        <section className="report-print-card min-w-0 rounded-2xl border border-slate-200 bg-white p-4 shadow-[0_16px_40px_-34px_rgba(15,23,42,0.65)] sm:p-6">
           <ReportSectionHeading
             number="4"
             eyebrow="Vehicle economics"
@@ -547,7 +547,7 @@ export function ReportPreview({
                     <p className="text-xs font-bold uppercase tracking-wider text-teal-700">
                       {getQuoteLabel(index)}
                     </p>
-                    <p className="mt-1 font-semibold text-slate-950">
+                    <p className="mt-1 break-words font-semibold text-slate-950">
                       {getQuoteName(
                         quote,
                         index,
@@ -556,39 +556,39 @@ export function ReportPreview({
                     </p>
                     <dl className="mt-4 space-y-2.5 text-sm">
                       {quote.discountPercentage !== undefined ? (
-                        <div className="flex items-center justify-between gap-4">
-                          <dt className="text-slate-500">
+                        <div className="flex min-w-0 items-start justify-between gap-3">
+                          <dt className="min-w-0 text-slate-500">
                             Discount percentage
                           </dt>
-                          <dd className="font-semibold text-slate-900">
+                          <dd className="max-w-full break-words text-right font-semibold text-slate-900">
                             {formatPercentage(quote.discountPercentage)}
                           </dd>
                         </div>
                       ) : null}
                       {quote.residualPercentage !== undefined ? (
-                        <div className="flex items-center justify-between gap-4">
-                          <dt className="text-slate-500">
+                        <div className="flex min-w-0 items-start justify-between gap-3">
+                          <dt className="min-w-0 text-slate-500">
                             Residual percentage
                           </dt>
-                          <dd className="font-semibold text-slate-900">
+                          <dd className="max-w-full break-words text-right font-semibold text-slate-900">
                             {formatPercentage(quote.residualPercentage)}
                           </dd>
                         </div>
                       ) : null}
                       {quote.residualValue !== undefined ? (
-                        <div className="flex items-center justify-between gap-4">
-                          <dt className="text-slate-500">Residual value</dt>
-                          <dd className="font-semibold text-slate-900">
+                        <div className="flex min-w-0 items-start justify-between gap-3">
+                          <dt className="min-w-0 text-slate-500">Residual value</dt>
+                          <dd className="max-w-full break-words text-right font-semibold text-slate-900">
                             {formatCurrency(quote.residualValue)}
                           </dd>
                         </div>
                       ) : null}
                       {quote.depreciationAmount !== undefined ? (
-                        <div className="flex items-center justify-between gap-4">
-                          <dt className="text-slate-500">
+                        <div className="flex min-w-0 items-start justify-between gap-3">
+                          <dt className="min-w-0 text-slate-500">
                             Depreciation amount
                           </dt>
-                          <dd className="font-semibold text-slate-900">
+                          <dd className="max-w-full break-words text-right font-semibold text-slate-900">
                             {formatCurrency(quote.depreciationAmount)}
                           </dd>
                         </div>
@@ -624,7 +624,7 @@ export function ReportPreview({
           )}
         </section>
 
-        <section className="report-print-card rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_16px_40px_-34px_rgba(15,23,42,0.65)] sm:p-6">
+        <section className="report-print-card min-w-0 rounded-2xl border border-slate-200 bg-white p-4 shadow-[0_16px_40px_-34px_rgba(15,23,42,0.65)] sm:p-6">
           <ReportSectionHeading
             number="5"
             eyebrow="Structure review"
@@ -650,7 +650,7 @@ export function ReportPreview({
                         {summary.quoteName}
                       </p>
                     </div>
-                    <span className="inline-flex w-fit shrink-0 rounded-full border border-teal-200 bg-teal-50 px-2.5 py-1 text-xs font-bold text-teal-900">
+                    <span className="inline-flex w-fit max-w-full rounded-full border border-teal-200 bg-teal-50 px-2.5 py-1 text-left text-xs font-bold break-words text-teal-900">
                       {summary.overallLabel}
                     </span>
                   </div>
@@ -702,7 +702,7 @@ export function ReportPreview({
           </p>
         </section>
 
-        <section className="report-print-card rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_16px_40px_-34px_rgba(15,23,42,0.65)] sm:p-6">
+        <section className="report-print-card min-w-0 rounded-2xl border border-slate-200 bg-white p-4 shadow-[0_16px_40px_-34px_rgba(15,23,42,0.65)] sm:p-6">
           <ReportSectionHeading
             number="6"
             eyebrow="Dealer conversation"
@@ -729,7 +729,7 @@ export function ReportPreview({
           </div>
         </section>
 
-        <section className="report-print-card rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_16px_40px_-34px_rgba(15,23,42,0.65)] sm:p-6">
+        <section className="report-print-card min-w-0 rounded-2xl border border-slate-200 bg-white p-4 shadow-[0_16px_40px_-34px_rgba(15,23,42,0.65)] sm:p-6">
           <ReportSectionHeading
             number="7"
             eyebrow="Trust note"

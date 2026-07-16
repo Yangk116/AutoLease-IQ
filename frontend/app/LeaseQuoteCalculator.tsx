@@ -746,7 +746,7 @@ export default function LeaseQuoteCalculator() {
       id="compare"
       className="scroll-mt-32 bg-slate-50 px-4 py-8 sm:scroll-mt-24 sm:px-8 sm:py-12"
     >
-      <div className="mx-auto w-full max-w-6xl rounded-[1.5rem] border border-slate-200 bg-white p-4 shadow-[0_30px_80px_-58px_rgba(15,23,42,0.65)] sm:rounded-[2rem] sm:p-7 lg:p-8">
+      <div className="mx-auto min-w-0 w-full max-w-6xl rounded-[1.5rem] border border-slate-200 bg-white p-3 shadow-[0_30px_80px_-58px_rgba(15,23,42,0.65)] sm:rounded-[2rem] sm:p-7 lg:p-8">
         <div className="flex flex-col gap-2 border-b border-slate-200 pb-5 sm:flex-row sm:items-end sm:justify-between sm:gap-6">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-teal-700">
@@ -879,7 +879,7 @@ export default function LeaseQuoteCalculator() {
                   the advertised monthly payment.
                 </p>
               </div>
-              <span className="mt-1 shrink-0 rounded-full border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-500">
+              <span className="mt-1 w-fit max-w-full rounded-full border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium leading-5 text-slate-500">
                 Samples only — not recommendations
               </span>
             </div>
@@ -975,7 +975,7 @@ export default function LeaseQuoteCalculator() {
                     key={option.value}
                     type="button"
                     onClick={() => setSelectedDecisionMode(option.value)}
-                    className={`rounded-full border px-3.5 py-2 text-sm font-semibold transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-teal-600/30 focus:ring-offset-2 active:scale-[0.97] ${
+                    className={`min-h-11 rounded-full border px-3.5 py-2 text-sm font-semibold transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-teal-600/30 focus:ring-offset-2 active:scale-[0.97] ${
                       isSelected
                         ? "border-teal-700 bg-teal-700 text-white shadow-sm"
                         : "border-slate-200 bg-white text-slate-700 hover:-translate-y-0.5 hover:border-teal-300 hover:bg-teal-50 hover:text-teal-900 hover:shadow-sm"
@@ -1070,7 +1070,7 @@ export default function LeaseQuoteCalculator() {
                     type="button"
                     onClick={compareOffers}
                     disabled={isComparing}
-                    className="inline-flex h-11 flex-1 items-center justify-center rounded-xl bg-teal-700 px-4 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-teal-800 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-teal-600 focus:ring-offset-2 active:translate-y-0 active:scale-[0.98] disabled:cursor-wait disabled:opacity-75 disabled:hover:translate-y-0 sm:h-10 sm:flex-none"
+                    className="inline-flex h-11 flex-1 items-center justify-center rounded-xl bg-teal-700 px-4 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-teal-800 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-teal-600 focus:ring-offset-2 active:translate-y-0 active:scale-[0.98] disabled:cursor-wait disabled:opacity-75 disabled:hover:translate-y-0 sm:flex-none"
                   >
                     {isComparing ? "Comparing offers..." : "Compare offers"}
                   </button>
@@ -1079,7 +1079,7 @@ export default function LeaseQuoteCalculator() {
                     <button
                       type="button"
                       onClick={reviewVerdict}
-                      className="inline-flex h-11 min-w-0 flex-1 items-center justify-center rounded-xl bg-teal-400 px-2 text-xs font-semibold text-slate-950 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-teal-300 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-teal-300 focus:ring-offset-2 focus:ring-offset-slate-950 active:translate-y-0 active:scale-[0.98] sm:h-10 sm:flex-none sm:px-3.5 sm:text-sm"
+                      className="inline-flex h-11 min-w-0 flex-1 items-center justify-center rounded-xl bg-teal-400 px-2 text-xs font-semibold text-slate-950 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-teal-300 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-teal-300 focus:ring-offset-2 focus:ring-offset-slate-950 active:translate-y-0 active:scale-[0.98] sm:flex-none sm:px-3.5 sm:text-sm"
                     >
                       <span className="sm:hidden">Verdict</span>
                       <span className="hidden sm:inline">Review verdict</span>
@@ -1087,7 +1087,7 @@ export default function LeaseQuoteCalculator() {
                     <button
                       type="button"
                       onClick={previewReport}
-                      className="inline-flex h-11 min-w-0 flex-1 items-center justify-center rounded-xl border border-white/20 bg-white/10 px-2 text-xs font-semibold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-teal-300/50 hover:bg-white/15 focus:outline-none focus:ring-2 focus:ring-teal-300/60 focus:ring-offset-2 focus:ring-offset-slate-950 active:translate-y-0 active:scale-[0.98] sm:h-10 sm:flex-none sm:px-3.5 sm:text-sm"
+                      className="inline-flex h-11 min-w-0 flex-1 items-center justify-center rounded-xl border border-white/20 bg-white/10 px-2 text-xs font-semibold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-teal-300/50 hover:bg-white/15 focus:outline-none focus:ring-2 focus:ring-teal-300/60 focus:ring-offset-2 focus:ring-offset-slate-950 active:translate-y-0 active:scale-[0.98] sm:flex-none sm:px-3.5 sm:text-sm"
                     >
                       <span className="sm:hidden">Report</span>
                       <span className="hidden sm:inline">Preview report</span>
@@ -1104,9 +1104,9 @@ export default function LeaseQuoteCalculator() {
               role="status"
               aria-live="polite"
             >
-              <div className="flex items-center gap-3">
+              <div className="flex min-w-0 items-center gap-3">
                 <span className="h-9 w-9 animate-spin rounded-full border-[3px] border-teal-100 border-t-teal-700" />
-                <div>
+                <div className="min-w-0">
                   <p className="font-semibold text-slate-950">
                     Comparing the full lease cost
                   </p>

@@ -196,12 +196,12 @@ export function MarketBenchmarkStrategy() {
             key={source.id}
             className="rounded-lg border border-slate-200 bg-slate-50/70 p-3"
           >
-            <div className="flex items-start justify-between gap-2 lg:block">
-              <h6 className="text-xs font-semibold leading-5 text-slate-950">
+            <div className="flex min-w-0 flex-col items-start gap-2 min-[420px]:flex-row min-[420px]:justify-between lg:block">
+              <h6 className="min-w-0 break-words text-xs font-semibold leading-5 text-slate-950">
                 {categoryLabels[source.category]}
               </h6>
               <span
-                className={`shrink-0 rounded-full border px-2 py-0.5 text-[0.65rem] font-semibold lg:mt-2 lg:inline-flex ${getSourceStatusClasses(
+                className={`max-w-full rounded-full border px-2 py-0.5 text-left text-[0.65rem] font-semibold break-words lg:mt-2 lg:inline-flex ${getSourceStatusClasses(
                   source.status,
                 )}`}
               >
@@ -229,11 +229,11 @@ export function MarketBenchmarkStrategy() {
                 key={finding.title}
                 className="rounded-md border border-slate-200 bg-white p-2.5"
               >
-                <div className="flex items-start justify-between gap-2">
-                  <p className="text-xs font-semibold text-slate-950">
+                <div className="flex min-w-0 flex-col items-start gap-2 min-[420px]:flex-row min-[420px]:justify-between">
+                  <p className="min-w-0 break-words text-xs font-semibold text-slate-950">
                     {finding.title}
                   </p>
-                  <span className="shrink-0 rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[0.65rem] font-semibold text-slate-600">
+                  <span className="max-w-full rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-left text-[0.65rem] font-semibold break-words text-slate-600">
                     {finding.valueLabel ?? "Not connected"}
                   </span>
                 </div>

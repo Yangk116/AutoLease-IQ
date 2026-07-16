@@ -167,12 +167,12 @@ export function DataBackedDealReview() {
             key={layer.label}
             className="rounded-lg border border-slate-200 bg-white p-3"
           >
-            <div className="flex items-start justify-between gap-2">
-              <p className="text-sm font-semibold text-slate-950">
+            <div className="flex min-w-0 flex-col items-start gap-2 min-[420px]:flex-row min-[420px]:justify-between">
+              <p className="min-w-0 break-words text-sm font-semibold text-slate-950">
                 {layer.label}
               </p>
               <span
-                className={`shrink-0 rounded-full border px-2 py-0.5 text-[0.68rem] font-semibold ${getStatusClasses(
+                className={`max-w-full rounded-full border px-2 py-0.5 text-left text-[0.68rem] font-semibold break-words ${getStatusClasses(
                   layer.status,
                 )}`}
               >

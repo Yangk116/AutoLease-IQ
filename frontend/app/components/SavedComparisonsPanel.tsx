@@ -330,11 +330,11 @@ export function SavedComparisonsPanel({
       aria-label="Saved comparison history"
     >
       <div className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-[0_16px_42px_-36px_rgba(15,23,42,0.5)] sm:flex-row sm:items-center sm:justify-between sm:p-5">
-        <div className="flex items-center gap-3">
+        <div className="flex min-w-0 items-center gap-3">
           <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-teal-50 text-sm font-bold text-teal-800 ring-1 ring-teal-100">
             {comparisons.length}
           </span>
-          <div>
+          <div className="min-w-0">
             <p className="text-sm font-semibold text-slate-950">
               {comparisons.length === 1
                 ? "1 saved comparison"
@@ -363,7 +363,7 @@ export function SavedComparisonsPanel({
       ) : null}
 
       {comparisons.length === 0 ? (
-        <div className="mt-4 rounded-[1.5rem] border border-dashed border-slate-300 bg-white p-8 text-center shadow-[0_18px_50px_-42px_rgba(15,23,42,0.5)] sm:p-10">
+        <div className="mt-4 rounded-[1.5rem] border border-dashed border-slate-300 bg-white p-6 text-center shadow-[0_18px_50px_-42px_rgba(15,23,42,0.5)] sm:p-10">
           <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 text-lg font-bold text-slate-500 ring-1 ring-slate-200">
             0
           </span>
@@ -380,26 +380,26 @@ export function SavedComparisonsPanel({
           {comparisons.map((comparison) => (
             <article
               key={comparison.id}
-              className="rounded-[1.35rem] border border-slate-200 bg-white p-4 shadow-[0_20px_55px_-40px_rgba(15,23,42,0.6)] transition-all duration-200 hover:border-slate-300 hover:shadow-[0_24px_60px_-38px_rgba(15,23,42,0.5)] sm:p-5"
+              className="min-w-0 rounded-[1.35rem] border border-slate-200 bg-white p-4 shadow-[0_20px_55px_-40px_rgba(15,23,42,0.6)] transition-all duration-200 hover:border-slate-300 hover:shadow-[0_24px_60px_-38px_rgba(15,23,42,0.5)] sm:p-5"
             >
               <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div className="min-w-0">
-                  <h3 className="truncate text-base font-semibold text-slate-950">
+                  <h3 className="break-words text-base font-semibold text-slate-950">
                     {comparison.title}
                   </h3>
                   <p className="mt-1 text-xs text-slate-500">
                     Saved {formatSavedAt(comparison.savedAt)}
                   </p>
-                  <p className="mt-2 text-xs font-semibold uppercase tracking-widest text-teal-700">
+                  <p className="mt-2 break-words text-xs font-semibold uppercase tracking-widest text-teal-700">
                     {decisionModeLabels[comparison.decisionMode]}
                   </p>
                 </div>
                 {comparison.summary.finalWinner ? (
-                  <span className="inline-flex w-fit max-w-full shrink-0 rounded-full border border-teal-100 bg-teal-50 px-2.5 py-1 text-xs font-semibold text-teal-800">
+                  <span className="inline-flex w-fit max-w-full rounded-full border border-teal-100 bg-teal-50 px-2.5 py-1 text-left text-xs font-semibold break-words text-teal-800">
                     {getVerdictLabel(comparison)}
                   </span>
                 ) : (
-                  <span className="inline-flex w-fit max-w-full shrink-0 rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-800">
+                  <span className="inline-flex w-fit max-w-full rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-left text-xs font-semibold break-words text-amber-800">
                     {getVerdictLabel(comparison)}
                   </span>
                 )}
@@ -411,10 +411,10 @@ export function SavedComparisonsPanel({
                     key={`${comparison.id}-${index}`}
                     className="rounded-xl border border-slate-200 bg-slate-50/70 p-3"
                   >
-                    <dt className="truncate text-xs font-medium text-slate-500">
+                    <dt className="break-words text-xs font-medium text-slate-500">
                       {index === 0 ? "Quote A" : "Quote B"} - {cost.quoteName}
                     </dt>
-                    <dd className="mt-1 font-semibold text-slate-950">
+                    <dd className="mt-1 break-words font-semibold text-slate-950">
                       {currencyFormatter.format(cost.value)} true monthly
                     </dd>
                   </div>
@@ -426,7 +426,7 @@ export function SavedComparisonsPanel({
                   <button
                     type="button"
                     onClick={() => onOpenReview(comparison)}
-                    className="inline-flex h-10 flex-1 items-center justify-center rounded-xl bg-teal-700 px-4 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-teal-800 focus:outline-none focus:ring-2 focus:ring-teal-600 focus:ring-offset-2 active:translate-y-0 active:scale-[0.98]"
+                    className="inline-flex h-11 flex-1 items-center justify-center rounded-xl bg-teal-700 px-4 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-teal-800 focus:outline-none focus:ring-2 focus:ring-teal-600 focus:ring-offset-2 active:translate-y-0 active:scale-[0.98]"
                   >
                     Open review
                   </button>
@@ -434,14 +434,14 @@ export function SavedComparisonsPanel({
                 <button
                   type="button"
                   onClick={() => onLoad(comparison)}
-                  className="inline-flex h-10 flex-1 items-center justify-center rounded-xl border border-teal-700 bg-white px-4 text-sm font-semibold text-teal-800 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-teal-50 focus:outline-none focus:ring-2 focus:ring-teal-600 focus:ring-offset-2 active:translate-y-0 active:scale-[0.98]"
+                  className="inline-flex h-11 flex-1 items-center justify-center rounded-xl border border-teal-700 bg-white px-4 text-sm font-semibold text-teal-800 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-teal-50 focus:outline-none focus:ring-2 focus:ring-teal-600 focus:ring-offset-2 active:translate-y-0 active:scale-[0.98]"
                 >
                   Load as active
                 </button>
                 <button
                   type="button"
                   onClick={() => onDelete(comparison.id)}
-                  className="inline-flex h-10 items-center justify-center rounded-xl border border-transparent bg-transparent px-3 text-sm font-semibold text-slate-500 transition-all duration-200 hover:bg-red-50 hover:text-red-700 focus:outline-none focus:ring-2 focus:ring-red-200 focus:ring-offset-2 active:scale-[0.98]"
+                  className="inline-flex h-11 items-center justify-center rounded-xl border border-transparent bg-transparent px-3 text-sm font-semibold text-slate-500 transition-all duration-200 hover:bg-red-50 hover:text-red-700 focus:outline-none focus:ring-2 focus:ring-red-200 focus:ring-offset-2 active:scale-[0.98]"
                 >
                   Delete
                 </button>
