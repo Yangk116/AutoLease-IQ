@@ -8,34 +8,47 @@ type ProductFlowItem = {
   description: string;
 };
 
+type PreviewQuote = {
+  name: string;
+  monthlyPayment: string;
+  dueAtSigning: string;
+};
+
 const productFlow: ProductFlowItem[] = [
   {
     step: "01",
-    title: "Compare lease quotes",
-    description: "Enter two offers and normalize the costs behind each payment.",
+    title: "Enter two quotes",
+    description: "Add the payment, upfront costs, mileage, residual, and fees.",
   },
   {
     step: "02",
-    title: "Review the dashboard",
-    description: "Focus on the verdict, trade-offs, and decision scorecard.",
+    title: "Review the decision dashboard",
+    description: "See the recommendation, scorecard, and key trade-offs.",
   },
   {
     step: "03",
-    title: "Generate a report",
-    description: "Copy, print, or save a formal comparison summary.",
-  },
-  {
-    step: "04",
-    title: "Keep local history",
-    description: "Save comparisons locally in this browser for later review.",
+    title: "Open or print the report",
+    description: "Move from the compact review into a formal summary.",
   },
 ];
 
-const decisionSignals: string[] = [
-  "True monthly cost",
-  "Upfront cash pressure",
-  "Mileage value",
-  "Buyout and residual context",
+const previewQuotes: PreviewQuote[] = [
+  {
+    name: "Quote A",
+    monthlyPayment: "$489 / month",
+    dueAtSigning: "$3,100 due at signing",
+  },
+  {
+    name: "Quote B",
+    monthlyPayment: "$515 / month",
+    dueAtSigning: "$1,900 due at signing",
+  },
+];
+
+const trustNotes: string[] = [
+  "Based only on entered numbers",
+  "Saved comparisons stay locally in this browser",
+  "No upload, live market data, or external AI call",
 ];
 
 export default function Home() {
@@ -43,128 +56,191 @@ export default function Home() {
     <main className="min-h-screen overflow-x-hidden bg-slate-50 text-slate-950">
       <SiteHeader currentPage="home" />
 
-      <section
-        id="overview"
-        className="scroll-mt-32 border-b border-slate-200/80 bg-[radial-gradient(circle_at_top_right,rgba(20,184,166,0.15),transparent_32%),linear-gradient(to_bottom,#ffffff,#f8fafc)] px-5 pb-14 pt-12 sm:scroll-mt-24 sm:px-8 sm:pb-16 sm:pt-18"
-      >
-        <div className="mx-auto w-full max-w-6xl">
-          <div className="grid gap-10 lg:grid-cols-[minmax(0,1.16fr)_minmax(320px,0.84fr)] lg:items-center">
-            <div>
-              <p className="mb-4 text-sm font-semibold uppercase tracking-[0.2em] text-teal-700">
-                Clear lease comparison
-              </p>
-              <h1 className="max-w-4xl text-4xl font-semibold leading-[1.08] tracking-tight text-slate-950 sm:text-5xl lg:text-6xl">
-                Compare lease offers beyond the advertised monthly payment.
-              </h1>
-              <p className="mt-5 max-w-2xl text-lg leading-8 text-slate-600">
-                Compare two offers, review the decision dashboard, and generate
-                a formal report from the numbers you enter.
-              </p>
-              <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-                <Link
-                  href="/compare"
-                  className="inline-flex h-12 items-center justify-center rounded-xl bg-teal-700 px-6 text-base font-semibold text-white shadow-[0_12px_28px_-14px_rgba(13,148,136,0.85)] transition-all hover:-translate-y-0.5 hover:bg-teal-800 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-teal-700 focus:ring-offset-2 active:translate-y-0"
-                >
-                  Start comparing
-                </Link>
-                <Link
-                  href="/compare#examples"
-                  className="inline-flex h-12 items-center justify-center rounded-xl border border-slate-300 bg-white px-6 text-base font-semibold text-slate-800 shadow-sm transition-all hover:-translate-y-0.5 hover:border-teal-300 hover:bg-teal-50 hover:text-teal-900 focus:outline-none focus:ring-2 focus:ring-teal-700/30 focus:ring-offset-2 active:translate-y-0"
-                >
-                  Try sample offers
-                </Link>
-              </div>
+      <section className="border-b border-slate-200/80 bg-[radial-gradient(circle_at_top_right,rgba(20,184,166,0.14),transparent_32%),linear-gradient(to_bottom,#ffffff,#f8fafc)] px-5 pb-14 pt-12 sm:px-8 sm:pb-16 sm:pt-16">
+        <div className="mx-auto grid w-full max-w-6xl gap-10 lg:grid-cols-[minmax(0,1.05fr)_minmax(340px,0.95fr)] lg:items-center lg:gap-14">
+          <div className="min-w-0">
+            <p className="text-sm font-semibold uppercase tracking-[0.2em] text-teal-700">
+              Clear lease comparison
+            </p>
+            <h1 className="mt-4 max-w-3xl text-4xl font-semibold leading-[1.08] tracking-tight text-slate-950 sm:text-5xl lg:text-6xl">
+              Compare lease quotes with the full cost in view.
+            </h1>
+            <p className="mt-5 max-w-2xl text-lg leading-8 text-slate-600">
+              Enter two lease quotes and compare true monthly cost, upfront
+              cost, mileage value, plus residual and fee context. Then review a
+              decision dashboard and open a printable report from the quote
+              details you entered.
+            </p>
+
+            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+              <Link
+                href="/compare"
+                className="inline-flex h-12 w-full items-center justify-center rounded-xl bg-teal-700 px-6 text-base font-semibold text-white shadow-[0_12px_28px_-14px_rgba(13,148,136,0.85)] transition-all hover:-translate-y-0.5 hover:bg-teal-800 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-teal-700 focus:ring-offset-2 active:translate-y-0 sm:w-auto"
+              >
+                Compare lease offers
+              </Link>
+              <Link
+                href="#how-it-works"
+                className="inline-flex h-12 w-full items-center justify-center rounded-xl border border-slate-300 bg-white px-6 text-base font-semibold text-slate-800 shadow-sm transition-all hover:-translate-y-0.5 hover:border-teal-300 hover:bg-teal-50 hover:text-teal-900 focus:outline-none focus:ring-2 focus:ring-teal-700 focus:ring-offset-2 active:translate-y-0 sm:w-auto"
+              >
+                View how it works
+              </Link>
             </div>
 
-            <aside className="overflow-hidden rounded-[1.75rem] border border-slate-800 bg-[radial-gradient(circle_at_top_right,rgba(45,212,191,0.16),transparent_42%),linear-gradient(145deg,#0f172a,#111827)] p-5 text-white shadow-[0_30px_80px_-42px_rgba(15,23,42,0.9)] sm:p-6">
-              <div className="flex items-center justify-between gap-4 border-b border-white/10 pb-5">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-teal-300">
-                    Decision snapshot
+            <div
+              className="mt-7 rounded-2xl border border-slate-200 bg-white/80 p-4 shadow-sm"
+              role="note"
+              aria-label="Product data and privacy notes"
+            >
+              <ul className="grid gap-2 text-sm leading-6 text-slate-600 sm:grid-cols-3 sm:gap-4">
+                {trustNotes.map((note) => (
+                  <li key={note} className="flex gap-2">
+                    <span
+                      className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-teal-600"
+                      aria-hidden="true"
+                    />
+                    <span>{note}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+
+          <aside
+            className="min-w-0 overflow-hidden rounded-[1.75rem] border border-slate-800 bg-[radial-gradient(circle_at_top_right,rgba(45,212,191,0.16),transparent_42%),linear-gradient(145deg,#0f172a,#111827)] p-5 text-white shadow-[0_30px_80px_-42px_rgba(15,23,42,0.9)] sm:p-6"
+            aria-labelledby="preview-title"
+          >
+            <div className="flex flex-wrap items-start justify-between gap-3 border-b border-white/10 pb-5">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-teal-300">
+                  Example interface
+                </p>
+                <h2 id="preview-title" className="mt-1 text-xl font-semibold">
+                  Illustrative comparison preview
+                </h2>
+              </div>
+              <span className="rounded-full border border-teal-300/20 bg-teal-300/10 px-3 py-1 text-xs font-semibold text-teal-200">
+                Static sample
+              </span>
+            </div>
+
+            <div className="mt-5 grid min-w-0 grid-cols-2 gap-3">
+              {previewQuotes.map((quote) => (
+                <article
+                  key={quote.name}
+                  className="min-w-0 rounded-xl border border-white/10 bg-white/[0.06] p-3.5"
+                  aria-label={`${quote.name} illustrative values`}
+                >
+                  <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
+                    {quote.name}
                   </p>
-                  <h2 className="mt-1 text-xl font-semibold">
-                    See the full lease structure
-                  </h2>
-                </div>
-                <span className="rounded-full border border-teal-300/20 bg-teal-300/10 px-3 py-1 text-xs font-semibold text-teal-200">
-                  4 signals
-                </span>
-              </div>
-              <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
-                {decisionSignals.map((signal, index) => (
-                  <div
+                  <p className="mt-2 break-words text-base font-semibold text-white sm:text-lg">
+                    {quote.monthlyPayment}
+                  </p>
+                  <p className="mt-1 break-words text-xs leading-5 text-slate-400">
+                    {quote.dueAtSigning}
+                  </p>
+                </article>
+              ))}
+            </div>
+
+            <div className="mt-3 rounded-xl border border-teal-300/20 bg-teal-300/10 p-4">
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-teal-300">
+                Illustrative verdict
+              </p>
+              <p className="mt-1 text-base font-semibold text-white">
+                Quote B leads for upfront flexibility.
+              </p>
+              <p className="mt-1 text-xs leading-5 text-slate-300">
+                The dashboard explains the trade-offs behind the recommendation.
+              </p>
+            </div>
+
+            <div className="mt-3 rounded-xl border border-white/10 bg-white/[0.04] p-4">
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
+                Review scorecard
+              </p>
+              <div className="mt-3 flex flex-wrap gap-2" aria-label="Example scorecard categories">
+                {[
+                  "True monthly cost",
+                  "Mileage value",
+                  "Residual + fees",
+                ].map((signal) => (
+                  <span
                     key={signal}
-                    className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/[0.06] p-3.5"
+                    className="rounded-lg border border-white/10 bg-white/[0.06] px-2.5 py-1.5 text-xs font-medium text-slate-200"
                   >
-                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-teal-400 text-xs font-black text-slate-950">
-                      {index + 1}
-                    </span>
-                    <span className="text-sm font-medium text-slate-100">
-                      {signal}
-                    </span>
-                  </div>
+                    {signal}
+                  </span>
                 ))}
               </div>
-              <p className="mt-5 border-t border-white/10 pt-4 text-xs leading-5 text-slate-400">
-                Based only on entered numbers. Does not use live market data.
-              </p>
-            </aside>
-          </div>
-
-          <div className="mt-14">
-            <div className="max-w-2xl">
-              <p className="text-sm font-semibold uppercase tracking-[0.18em] text-teal-700">
-                How it works
-              </p>
-              <h2 className="mt-3 text-2xl font-semibold tracking-tight text-slate-950 sm:text-3xl">
-                One focused flow from quote details to saved work.
-              </h2>
-            </div>
-
-            <div className="mt-7 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_18px_55px_-42px_rgba(15,23,42,0.55)]">
-              <div className="grid sm:grid-cols-2 lg:grid-cols-4">
-                {productFlow.map((item, index) => (
-                  <article
-                    key={item.step}
-                    className={`p-5 sm:p-6 ${
-                      index > 0 ? "border-t border-slate-200" : ""
-                    } ${index % 2 === 1 ? "sm:border-l" : ""} ${
-                      index >= 2 ? "sm:border-t" : "sm:border-t-0"
-                    } ${index > 0 ? "lg:border-l lg:border-t-0" : ""}`}
-                  >
-                    <p className="text-xs font-bold tracking-[0.18em] text-teal-700">
-                      STEP {item.step}
-                    </p>
-                    <h3 className="mt-3 text-base font-semibold text-slate-950">
-                      {item.title}
-                    </h3>
-                    <p className="mt-2 text-sm leading-6 text-slate-500">
-                      {item.description}
-                    </p>
-                  </article>
-                ))}
+              <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-white/10 pt-3 text-xs font-semibold text-slate-300">
+                <span>Decision dashboard</span>
+                <span aria-hidden="true" className="text-teal-300">
+                  →
+                </span>
+                <span>Open or print report</span>
               </div>
             </div>
-          </div>
+          </aside>
         </div>
       </section>
 
-      <section className="px-5 py-12 sm:px-8 sm:py-14">
+      <section
+        id="how-it-works"
+        className="scroll-mt-32 px-5 py-14 sm:scroll-mt-24 sm:px-8 sm:py-16"
+        aria-labelledby="workflow-title"
+      >
         <div className="mx-auto w-full max-w-6xl">
-          <div className="flex flex-col gap-5 rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-[0_22px_60px_-44px_rgba(15,23,42,0.55)] sm:flex-row sm:items-center sm:justify-between sm:p-7">
+          <div className="max-w-2xl">
+            <p className="text-sm font-semibold uppercase tracking-[0.18em] text-teal-700">
+              How it works
+            </p>
+            <h2
+              id="workflow-title"
+              className="mt-3 text-3xl font-semibold tracking-tight text-slate-950 sm:text-4xl"
+            >
+              From two quotes to a clear decision path.
+            </h2>
+          </div>
+
+          <ol className="mt-8 grid overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_18px_55px_-42px_rgba(15,23,42,0.55)] md:grid-cols-3">
+            {productFlow.map((item, index) => (
+              <li
+                key={item.step}
+                className={`p-5 sm:p-6 ${
+                  index > 0
+                    ? "border-t border-slate-200 md:border-l md:border-t-0"
+                    : ""
+                }`}
+              >
+                <p className="text-xs font-bold tracking-[0.18em] text-teal-700">
+                  STEP {item.step}
+                </p>
+                <h3 className="mt-3 text-base font-semibold text-slate-950">
+                  {item.title}
+                </h3>
+                <p className="mt-2 text-sm leading-6 text-slate-500">
+                  {item.description}
+                </p>
+              </li>
+            ))}
+          </ol>
+
+          <div className="mt-8 flex flex-col gap-5 rounded-[1.5rem] border border-slate-200 bg-slate-950 p-5 text-white shadow-[0_22px_60px_-44px_rgba(15,23,42,0.85)] sm:flex-row sm:items-center sm:justify-between sm:p-7">
             <div>
-              <p className="text-sm font-semibold text-slate-950">
-                Ready to compare your offers?
-              </p>
-              <p className="mt-1 text-sm leading-6 text-slate-500">
-                No upload or external AI call. Saved locally in this browser.
+              <h2 className="text-lg font-semibold">
+                Put your two lease quotes side by side.
+              </h2>
+              <p className="mt-1 text-sm leading-6 text-slate-400">
+                Start with the details already shown on your offers.
               </p>
             </div>
             <Link
               href="/compare"
-              className="inline-flex h-11 shrink-0 items-center justify-center self-start rounded-xl bg-slate-950 px-5 text-sm font-semibold text-white shadow-sm transition-all hover:-translate-y-0.5 hover:bg-slate-800 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-slate-950 focus:ring-offset-2 active:translate-y-0 sm:self-auto"
+              className="inline-flex h-11 w-full shrink-0 items-center justify-center rounded-xl bg-teal-500 px-5 text-sm font-semibold text-slate-950 shadow-sm transition-all hover:-translate-y-0.5 hover:bg-teal-400 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-teal-300 focus:ring-offset-2 focus:ring-offset-slate-950 active:translate-y-0 sm:w-auto"
             >
-              Compare your offers
+              Compare lease offers
             </Link>
           </div>
         </div>

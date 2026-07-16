@@ -21,7 +21,7 @@ const navigationItems: NavigationItem[] = [
 ];
 
 const pageCtas: Record<SiteHeaderPage, { href: string; label: string }> = {
-  home: { href: "/compare", label: "Start comparing" },
+  home: { href: "/compare", label: "Compare lease offers" },
   compare: { href: "#comparison-offers-inputs", label: "Enter quotes" },
   review: { href: "/compare", label: "Edit quotes" },
   report: { href: "/compare", label: "New comparison" },
