@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import {
@@ -14,6 +15,7 @@ import { SiteHeader } from "../components/SiteHeader";
 import { writeCurrentComparison } from "../components/comparisonStorage";
 
 export default function SavedPage() {
+  const router = useRouter();
   const [savedComparisons, setSavedComparisons] = useState<SavedComparison[]>(
     [],
   );
@@ -65,7 +67,7 @@ export default function SavedPage() {
       return;
     }
 
-    window.location.href = "/review";
+    router.push("/review");
   }
 
   function deleteSavedComparison(comparisonId: string): void {

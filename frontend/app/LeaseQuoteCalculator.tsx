@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 
 import { type LeaseComparisonResult } from "@/lib/leaseCalculations";
@@ -409,10 +410,24 @@ export default function LeaseQuoteCalculator() {
     };
   }, []);
 
+  function invalidateComparison(): void {
+    if (comparisonTimeout.current) {
+      clearTimeout(comparisonTimeout.current);
+      comparisonTimeout.current = null;
+    }
+
+    setIsComparing(false);
+    setComparisonResult(null);
+    setComparisonErrorMessage("");
+    setIsCurrentComparisonStored(false);
+    setSavedComparisonStatus(null);
+  }
+
   function updateComparisonTextQuote(
     quoteId: ComparisonQuoteForm["id"],
     value: string,
   ) {
+    invalidateComparison();
     setComparisonQuotes((currentQuotes) =>
       currentQuotes.map((currentQuote) =>
         currentQuote.id === quoteId
@@ -429,6 +444,7 @@ export default function LeaseQuoteCalculator() {
     quoteId: ComparisonQuoteForm["id"],
     value: string,
   ) {
+    invalidateComparison();
     setComparisonQuotes((currentQuotes) =>
       currentQuotes.map((currentQuote) =>
         currentQuote.id === quoteId
@@ -445,6 +461,7 @@ export default function LeaseQuoteCalculator() {
     quoteId: ComparisonQuoteForm["id"],
     value: string,
   ) {
+    invalidateComparison();
     setComparisonQuotes((currentQuotes) =>
       currentQuotes.map((currentQuote) =>
         currentQuote.id === quoteId
@@ -471,6 +488,7 @@ export default function LeaseQuoteCalculator() {
     >,
     value: string,
   ) {
+    invalidateComparison();
     setComparisonQuotes((currentQuotes) =>
       currentQuotes.map((currentQuote) =>
         currentQuote.id === quoteId
@@ -488,6 +506,7 @@ export default function LeaseQuoteCalculator() {
     field: ComparisonQuoteOptionalNumericField | ComparisonQuoteContextNumericField,
     value: string,
   ) {
+    invalidateComparison();
     setComparisonQuotes((currentQuotes) =>
       currentQuotes.map((currentQuote) =>
         currentQuote.id === quoteId
@@ -504,6 +523,7 @@ export default function LeaseQuoteCalculator() {
     quoteId: ComparisonQuoteForm["id"],
     checked: boolean,
   ) {
+    invalidateComparison();
     setComparisonQuotes((currentQuotes) =>
       currentQuotes.map((currentQuote) =>
         currentQuote.id === quoteId
@@ -517,18 +537,9 @@ export default function LeaseQuoteCalculator() {
   }
 
   function loadComparisonPreset(preset: ComparisonPreset) {
-    if (comparisonTimeout.current) {
-      clearTimeout(comparisonTimeout.current);
-      comparisonTimeout.current = null;
-    }
-
-    setIsComparing(false);
+    invalidateComparison();
     setComparisonQuotes(preset.quotes.map((presetQuote) => ({ ...presetQuote })));
     setSelectedDecisionMode(preset.decisionMode);
-    setComparisonResult(null);
-    setComparisonErrorMessage("");
-    setIsCurrentComparisonStored(false);
-    setSavedComparisonStatus(null);
   }
 
   function compareOffers() {
@@ -588,12 +599,9 @@ export default function LeaseQuoteCalculator() {
     }, 650);
   }
 
-  function reviewVerdict(): void {
-    window.location.href = "/review";
-  }
-
-  function previewReport(): void {
-    window.location.href = "/report";
+  function updateDecisionMode(decisionMode: DecisionMode): void {
+    invalidateComparison();
+    setSelectedDecisionMode(decisionMode);
   }
 
   function getComparisonQuoteName(index: number): string {
@@ -846,13 +854,13 @@ export default function LeaseQuoteCalculator() {
                         {stepContent}
                       </div>
                     ) : (
-                      <a
+                      <Link
                         href={step.href}
                         className={stepClasses}
                         aria-current={isActive ? "step" : undefined}
                       >
                         {stepContent}
-                      </a>
+                      </Link>
                     )}
                   </li>
                 );
@@ -974,7 +982,7 @@ export default function LeaseQuoteCalculator() {
                   <button
                     key={option.value}
                     type="button"
-                    onClick={() => setSelectedDecisionMode(option.value)}
+                    onClick={() => updateDecisionMode(option.value)}
                     className={`min-h-11 rounded-full border px-3.5 py-2 text-sm font-semibold transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-teal-600/30 focus:ring-offset-2 active:scale-[0.97] ${
                       isSelected
                         ? "border-teal-700 bg-teal-700 text-white shadow-sm"
@@ -1076,22 +1084,20 @@ export default function LeaseQuoteCalculator() {
                   </button>
                 ) : (
                   <>
-                    <button
-                      type="button"
-                      onClick={reviewVerdict}
+                    <Link
+                      href="/review"
                       className="inline-flex h-11 min-w-0 flex-1 items-center justify-center rounded-xl bg-teal-400 px-2 text-xs font-semibold text-slate-950 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-teal-300 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-teal-300 focus:ring-offset-2 focus:ring-offset-slate-950 active:translate-y-0 active:scale-[0.98] sm:flex-none sm:px-3.5 sm:text-sm"
                     >
                       <span className="sm:hidden">Verdict</span>
                       <span className="hidden sm:inline">Review verdict</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={previewReport}
+                    </Link>
+                    <Link
+                      href="/report"
                       className="inline-flex h-11 min-w-0 flex-1 items-center justify-center rounded-xl border border-white/20 bg-white/10 px-2 text-xs font-semibold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-teal-300/50 hover:bg-white/15 focus:outline-none focus:ring-2 focus:ring-teal-300/60 focus:ring-offset-2 focus:ring-offset-slate-950 active:translate-y-0 active:scale-[0.98] sm:flex-none sm:px-3.5 sm:text-sm"
                     >
                       <span className="sm:hidden">Report</span>
                       <span className="hidden sm:inline">Preview report</span>
-                    </button>
+                    </Link>
                   </>
                 )}
               </div>
@@ -1143,18 +1149,18 @@ export default function LeaseQuoteCalculator() {
                     </p>
                   </div>
                   <div className="grid gap-2 sm:flex lg:shrink-0">
-                    <a
+                    <Link
                       href="/review"
                       className="inline-flex h-11 items-center justify-center rounded-xl bg-teal-700 px-4 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-teal-800 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-teal-600 focus:ring-offset-2 active:translate-y-0 active:scale-[0.98]"
                     >
                       Open review dashboard
-                    </a>
-                    <a
+                    </Link>
+                    <Link
                       href="/report"
                       className="inline-flex h-11 items-center justify-center rounded-xl border border-teal-700 bg-white px-4 text-sm font-semibold text-teal-800 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-teal-50 focus:outline-none focus:ring-2 focus:ring-teal-600 focus:ring-offset-2 active:translate-y-0 active:scale-[0.98]"
                     >
                       Open report
-                    </a>
+                    </Link>
                     <button
                       type="button"
                       onClick={saveComparison}
@@ -1169,7 +1175,7 @@ export default function LeaseQuoteCalculator() {
             </section>
           ) : null}
 
-          <a
+          <Link
             href="/saved"
             className="block rounded-2xl border border-slate-200 bg-white p-4 text-sm shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-teal-200 hover:bg-teal-50/50 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-teal-700/30 focus:ring-offset-2 sm:p-5"
           >
@@ -1180,7 +1186,7 @@ export default function LeaseQuoteCalculator() {
               Open your locally saved comparison list on the dedicated saved
               page.
             </span>
-          </a>
+          </Link>
         </div>
       </div>
     </section>
