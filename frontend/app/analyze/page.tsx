@@ -6,7 +6,7 @@ import { SiteHeader } from "../components/SiteHeader";
 export const metadata: Metadata = {
   title: "Analyze One Lease Quote | AutoLease IQ",
   description:
-    "Enter the lease quote details you have and check them for a future single-quote analysis.",
+    "Enter your lease quote to understand its real cost and what to verify before signing.",
 };
 
 export default function AnalyzePage() {

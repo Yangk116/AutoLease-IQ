@@ -3,6 +3,7 @@
 import {
   type FormEvent,
   type ReactNode,
+  useEffect,
   useRef,
   useState,
 } from "react";
@@ -21,6 +22,9 @@ import {
   type SingleLeaseAnalysisInput,
   type UpfrontPaymentTreatment,
 } from "@/lib/singleLeaseAnalysis";
+
+import { useRouter } from "next/navigation";
+import { readSingleLeaseSession, saveSingleLeaseSession } from "./singleLeaseSession";
 
 type FormErrors = Record<string, string>;
 
@@ -720,22 +724,8 @@ function getEngineFieldErrors(error: Error): FormErrors | undefined {
   return undefined;
 }
 
-function humanizeMissingField(field: string): string {
-  const labels: Record<string, string> = {
-    "payment.paymentCountOrValidatedSchedule": "A payment count or verified schedule",
-    "payment.tax.applicableRate": "The applicable payment tax rate",
-    "payment.tax.status": "Whether the advertised payment includes tax",
-    firstPaymentAtSigning: "Whether the first payment is in the signing amount",
-    upfrontAmountsComplete: "A complete upfront-cost breakdown",
-    leaseEndFeesComplete: "A complete contractual lease-end fee list",
-    "dueAtSigning.completeBreakdown": "A complete due-at-signing breakdown",
-    leaseEndScenario: "Whether you expect to return or buy out the vehicle",
-  };
-
-  return labels[field] ?? field;
-}
-
 export function SingleLeaseQuoteForm() {
+  const router = useRouter();
   const [paymentFrequency, setPaymentFrequency] =
     useState<PaymentFrequency>("monthly");
   const [taxStatus, setTaxStatus] = useState("unknown");
@@ -744,6 +734,28 @@ export function SingleLeaseQuoteForm() {
   const [feedback, setFeedback] = useState<SubmissionFeedback | null>(null);
   const formRef = useRef<HTMLFormElement | null>(null);
   const feedbackRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    let restoreFrame = 0;
+    const frame = requestAnimationFrame(() => {
+      const stored = readSingleLeaseSession();
+      if (stored.status !== "ready") return;
+      const values = stored.session.formValues;
+      setPaymentFrequency(stored.session.input.payment.frequency);
+      setTaxStatus(values.taxStatus ?? "unknown");
+      setFinancingMethod(values.financingMethod ?? "none");
+      restoreFrame = requestAnimationFrame(() => {
+        formRef.current?.querySelectorAll<HTMLInputElement | HTMLSelectElement>("input[name], select[name]").forEach((field) => {
+          if (field instanceof HTMLInputElement && field.type === "checkbox") {
+            field.checked = values[field.name] === "on";
+          } else if (values[field.name] !== undefined) {
+            field.value = values[field.name];
+          }
+        });
+      });
+    });
+    return () => { cancelAnimationFrame(frame); cancelAnimationFrame(restoreFrame); };
+  }, []);
 
   function focusFeedback() {
     requestAnimationFrame(() => feedbackRef.current?.focus());
@@ -756,39 +768,20 @@ export function SingleLeaseQuoteForm() {
 
     try {
       const formData = new FormData(event.currentTarget);
-      const { input, vehicleName } = adaptFormToEngineInput(formData);
-      const result = analyzeSingleLease(input);
-      const paymentQuality = result.paymentBased.quality;
-      const quoteLabel = vehicleName ? ` for ${vehicleName}` : "";
-
-      if (paymentQuality.status === "unavailable") {
+      const { input } = adaptFormToEngineInput(formData);
+      analyzeSingleLease(input);
+      const formValues = Object.fromEntries(Array.from(formData.entries(), ([name, value]) => [name, String(value)]));
+      if (!saveSingleLeaseSession(input, formValues)) {
         setFeedback({
           tone: "needs-information",
-          title: "A little more information is needed",
-          message: `The quote${quoteLabel} was checked, but a reliable payment-based total is not available yet.`,
-          details: paymentQuality.missingFields.map(humanizeMissingField),
-        });
-      } else if (paymentQuality.status === "estimated") {
-        setFeedback({
-          tone: "estimate",
-          title: "Quote details checked with some unknowns",
-          message:
-            "The entered details passed the preflight check. Some information is still uncertain, so the detailed analysis in the next stage must be shown as an estimate.",
-          details: [
-            ...paymentQuality.missingFields.map(humanizeMissingField),
-            ...paymentQuality.warnings,
-          ],
-        });
-      } else {
-        setFeedback({
-          tone: "ready",
-          title: "Your quote details passed the preflight check",
-          message:
-            "The payment-based inputs are internally consistent. Detailed single-quote results will be added in the next milestone.",
+          title: "Your quote could not be stored",
+          message: "Browser session storage is unavailable. Allow session storage and try again; your entries are still here.",
           details: [],
         });
+        focusFeedback();
+        return;
       }
-      focusFeedback();
+      router.push("/analysis");
     } catch (error) {
       if (error instanceof FormInputError) {
         setErrors(error.fields);
@@ -1354,7 +1347,7 @@ export function SingleLeaseQuoteForm() {
                 </ul>
               ) : null}
               <p className="mt-3 border-t border-current/10 pt-3 text-xs leading-5 opacity-80">
-                This preflight does not save your quote or create a completed analysis. Detailed results will be added in the next milestone.
+                Your entries stay in this form so you can correct them and try again.
               </p>
             </div>
           ) : null}
@@ -1363,14 +1356,14 @@ export function SingleLeaseQuoteForm() {
             <div>
               <p className="text-sm font-semibold">Ready to check your quote details?</p>
               <p className="mt-1 text-xs leading-5 text-slate-400">
-                This validates the information and prepares it for detailed analysis in the next stage. No quote data is stored.
+                Your quote is stored in this browser tab for up to 24 hours so you can refresh results and edit it.
               </p>
             </div>
             <button
               type="submit"
               className="mt-4 inline-flex h-12 w-full items-center justify-center rounded-xl bg-teal-500 px-6 text-base font-semibold text-slate-950 shadow-sm transition hover:-translate-y-0.5 hover:bg-teal-400 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-teal-300 focus:ring-offset-2 focus:ring-offset-slate-950 active:translate-y-0 sm:mt-0 sm:w-auto"
             >
-              Check quote details
+              Analyze quote
             </button>
           </div>
         </form>
