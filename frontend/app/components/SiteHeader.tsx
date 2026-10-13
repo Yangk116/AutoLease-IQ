@@ -3,7 +3,13 @@
 import Link from "next/link";
 import { useEffect, useRef } from "react";
 
-type SiteHeaderPage = "home" | "compare" | "review" | "report" | "saved";
+type SiteHeaderPage =
+  | "home"
+  | "analyze"
+  | "compare"
+  | "review"
+  | "report"
+  | "saved";
 
 type SiteHeaderProps = {
   currentPage: SiteHeaderPage;
@@ -17,6 +23,7 @@ type NavigationItem = {
 
 const navigationItems: NavigationItem[] = [
   { label: "Home", href: "/", page: "home" },
+  { label: "Analyze", href: "/analyze", page: "analyze" },
   { label: "Compare", href: "/compare", page: "compare" },
   { label: "Review", href: "/review", page: "review" },
   { label: "Report", href: "/report", page: "report" },
@@ -31,6 +38,11 @@ const pageCtas: Record<
     href: "/compare",
     label: "Compare lease offers",
     mobileLabel: "Compare",
+  },
+  analyze: {
+    href: "#single-lease-form",
+    label: "Enter your quote",
+    mobileLabel: "Enter quote",
   },
   compare: {
     href: "#comparison-offers-inputs",
