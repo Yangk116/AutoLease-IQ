@@ -108,7 +108,7 @@ const mainFields: MainFieldConfig[] = [
   },
   {
     name: "annualMileage",
-    label: "Annual mileage",
+    label: "Annual kilometres",
     min: 1,
     step: 1_000,
   },
@@ -150,7 +150,7 @@ const advancedFeeFields: AdvancedFeeFieldConfig[] = [
     name: "leaseEndFee",
     label: "Lease-end fee",
     helperText:
-      "Leave this as 0 unless the quote clearly shows a separate lease-end or disposition fee.",
+      "Enter a separate lease-end or disposition fee if shown; do not count fees already included elsewhere.",
   },
 ];
 
@@ -192,289 +192,180 @@ export function ComparisonQuoteCard({
   onTaxIncludedChange,
 }: ComparisonQuoteCardProps) {
   const isTaxIncludedInPayment = !quote.addTaxToMonthlyPayment;
+  const hasAdvancedDetails =
+    vehicleDealFields.some((field) => quote[field.name] !== undefined) ||
+    dealerQuoteContextFields.some((field) => quote[field.name] !== undefined) ||
+    advancedFeeFields.some((field) => quote[field.name] !== 0) ||
+    quote.dealerNotes.trim().length > 0;
+  const labelClasses =
+    "flex min-w-0 flex-col gap-2 text-sm font-medium text-slate-700";
 
   return (
-    <article className="min-w-0 rounded-[1.35rem] border border-slate-200 bg-white p-4 shadow-[0_20px_55px_-40px_rgba(15,23,42,0.6)] transition-all duration-300 hover:border-slate-300 hover:shadow-[0_24px_60px_-38px_rgba(15,23,42,0.5)] sm:p-6">
-      <div className="-mx-4 -mt-4 mb-5 flex items-center justify-between gap-3 rounded-t-[1.25rem] border-b border-slate-800 bg-slate-950 p-4 sm:-mx-6 sm:-mt-6 sm:mb-6 sm:p-6">
-        <h3 className="text-lg font-semibold text-white">
-          {quote.label}
-        </h3>
-        <span className="rounded-full border border-teal-300/20 bg-teal-300/10 px-3 py-1 text-xs font-semibold text-teal-200">
-          Offer
-        </span>
-      </div>
-
-      <div className="grid gap-4">
-        <label className="flex min-w-0 flex-col gap-2 text-sm font-medium text-slate-700 sm:col-span-2">
+    <article
+      aria-labelledby={`${quote.id}-title`}
+      className="min-w-0 self-start rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5"
+    >
+      <h3 id={`${quote.id}-title`} className="mb-4 text-lg font-semibold text-slate-950">
+        {quote.label}
+      </h3>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <label className={labelClasses}>
           Quote name
           <input
             type="text"
             value={quote.quoteName}
-            onChange={(event) =>
-              onQuoteNameChange(quote.id, event.target.value)
-            }
+            onChange={(event) => onQuoteNameChange(quote.id, event.target.value)}
             className={fieldInputClasses}
           />
         </label>
-      </div>
-
-      <section className="mt-5 min-w-0 rounded-2xl border border-slate-200 bg-slate-50/70 p-3 sm:p-4">
-        <div>
-          <p className="text-sm font-semibold text-slate-950">
-            Dealer quote details
+        <label className={labelClasses}>
+          Vehicle name / label
+          <input
+            type="text"
+            value={quote.vehicleName ?? ""}
+            onChange={(event) => onVehicleNameChange(quote.id, event.target.value)}
+            placeholder="2026 Toyota RAV4 XLE"
+            className={fieldInputClasses}
+          />
+        </label>
+        {mainFields.map((field) => (
+          <label key={field.name} className={labelClasses}>
+            {field.label}
+            <input
+              type="number"
+              min={field.min}
+              step={field.step}
+              value={quote[field.name]}
+              onChange={(event) => onNumericChange(quote.id, field.name, event.target.value)}
+              className={fieldInputClasses}
+            />
+          </label>
+        ))}
+        <label className={labelClasses}>
+          Cash down
+          <input
+            type="number"
+            min={0}
+            step={100}
+            value={quote.downPayment}
+            onChange={(event) => onNumericChange(quote.id, "downPayment", event.target.value)}
+            className={fieldInputClasses}
+          />
+          <span className="text-xs font-normal leading-5 text-slate-600">
+            Actual down payment, not the full amount due on delivery.
+          </span>
+        </label>
+        <div className="sm:col-span-2">
+          <label className="flex min-h-11 cursor-pointer items-center gap-3 rounded-lg focus-within:ring-2 focus-within:ring-teal-700">
+            <input
+              type="checkbox"
+              role="switch"
+              checked={isTaxIncludedInPayment}
+              onChange={(event) => onTaxIncludedChange(quote.id, event.target.checked)}
+              className="h-5 w-5 shrink-0 accent-teal-700"
+            />
+            <span className="text-sm font-semibold text-slate-800">
+              Tax included in monthly payment?
+            </span>
+          </label>
+          <p className="mt-1 text-xs leading-5 text-slate-600">
+            Use the quoted monthly payment. Turn this off only for before-tax
+            payments; the tax rate below will be added.
           </p>
-          <p className="mt-1 text-xs leading-5 text-slate-500">
-            Enter the fields as they appear on the dealer quote. Cash down,
-            monthly payment, term, mileage, dealer fees, and lease-end fee feed
-            the cost calculation.
-          </p>
-        </div>
-
-        <div className="mt-5 space-y-6">
-          <section>
-            <h4 className="flex items-center gap-3 text-xs font-semibold uppercase tracking-widest text-teal-700 after:h-px after:flex-1 after:bg-slate-200">
-              Vehicle and price
-            </h4>
-            <div className="mt-3 grid gap-4 sm:grid-cols-2">
-              <label className="flex min-w-0 flex-col gap-2 text-sm font-medium text-slate-700 sm:col-span-2">
-                Vehicle name / label
-                <input
-                  type="text"
-                  value={quote.vehicleName ?? ""}
-                  onChange={(event) =>
-                    onVehicleNameChange(quote.id, event.target.value)
-                  }
-                  placeholder="2026 Toyota RAV4 XLE"
-                  className={`${fieldInputClasses} placeholder:text-slate-400`}
-                />
-              </label>
-
-              {vehicleDealFields.map((field) => (
-                <label
-                  key={field.name}
-                  className="flex min-w-0 flex-col gap-2 text-sm font-medium text-slate-700"
-                >
-                  {field.label}
-                  <input
-                    type="number"
-                    min={0}
-                    step={100}
-                    value={quote[field.name] ?? ""}
-                    onChange={(event) =>
-                      onOptionalNumericChange(
-                        quote.id,
-                        field.name,
-                        event.target.value,
-                      )
-                    }
-                    className={fieldInputClasses}
-                  />
-                  {field.helperText ? (
-                    <span className="text-xs leading-5 text-slate-500">
-                      {field.helperText}
-                    </span>
-                  ) : null}
-                </label>
-              ))}
-            </div>
-          </section>
-
-          <section>
-            <h4 className="flex items-center gap-3 text-xs font-semibold uppercase tracking-widest text-teal-700 after:h-px after:flex-1 after:bg-slate-200">
-              Lease terms
-            </h4>
-            <div className="mt-3 grid gap-4 sm:grid-cols-2">
-              {mainFields.map((field) => (
-                <label
-                  key={field.name}
-                  className="flex min-w-0 flex-col gap-2 text-sm font-medium text-slate-700"
-                >
-                  {field.label}
-                  <input
-                    type="number"
-                    min={field.min}
-                    step={field.step}
-                    value={quote[field.name]}
-                    onChange={(event) =>
-                      onNumericChange(quote.id, field.name, event.target.value)
-                    }
-                    className={fieldInputClasses}
-                  />
-                  {field.name === "monthlyPayment" ? (
-                    <span className="text-xs leading-5 text-slate-500">
-                      Use the dealer&apos;s monthly payment exactly as shown.
-                    </span>
-                  ) : null}
-                </label>
-              ))}
-
-              <div className="rounded-lg border border-slate-200 bg-white p-3 sm:col-span-2">
-                <label className="flex cursor-pointer items-start gap-3">
-                  <input
-                    type="checkbox"
-                    role="switch"
-                    checked={isTaxIncludedInPayment}
-                    onChange={(event) =>
-                      onTaxIncludedChange(quote.id, event.target.checked)
-                    }
-                    className="peer sr-only"
-                  />
-                  <span className="mt-0.5 h-6 w-11 shrink-0 rounded-full bg-slate-300 p-1 transition-colors after:block after:h-4 after:w-4 after:rounded-full after:bg-white after:shadow-sm after:transition-transform peer-checked:bg-teal-700 peer-checked:after:translate-x-5 peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-teal-700" />
-                  <span className="text-sm font-semibold text-slate-800">
-                    Tax included in monthly payment
-                    <span className="mt-1 block text-xs font-normal leading-5 text-slate-500">
-                      Most dealer quotes show monthly payment with tax. Turn
-                      this off only for before-tax payments.
-                    </span>
-                  </span>
-                </label>
-
-                {!isTaxIncludedInPayment ? (
-                  <label className="mt-4 flex w-full max-w-40 min-w-0 flex-col gap-2 text-sm font-medium text-slate-700">
-                    Tax rate (%)
-                    <input
-                      type="number"
-                      min={0}
-                      step={0.1}
-                      value={quote.taxRate}
-                      onChange={(event) =>
-                        onNumericChange(quote.id, "taxRate", event.target.value)
-                      }
-                      className={fieldInputClasses}
-                    />
-                  </label>
-                ) : null}
-              </div>
-
-              {dealerQuoteContextFields
-                .filter((field) => field.name !== "dueOnDelivery")
-                .map((field) => (
-                  <label
-                    key={field.name}
-                    className="flex min-w-0 flex-col gap-2 text-sm font-medium text-slate-700"
-                  >
-                    {field.label}
-                    <input
-                      type="number"
-                      min={field.min}
-                      step={field.step}
-                      value={quote[field.name] ?? ""}
-                      onChange={(event) =>
-                        onOptionalNumericChange(
-                          quote.id,
-                          field.name,
-                          event.target.value,
-                        )
-                      }
-                      className={fieldInputClasses}
-                    />
-                    <span className="text-xs leading-5 text-slate-500">
-                      {field.helperText}
-                    </span>
-                  </label>
-                ))}
-            </div>
-          </section>
-
-          <section>
-            <h4 className="flex items-center gap-3 text-xs font-semibold uppercase tracking-widest text-teal-700 after:h-px after:flex-1 after:bg-slate-200">
-              Cash and fees
-            </h4>
-            <div className="mt-3 grid gap-4 sm:grid-cols-2">
-              <label className="flex min-w-0 flex-col gap-2 text-sm font-medium text-slate-700">
-                Cash down
-                <input
-                  type="number"
-                  min={0}
-                  step={100}
-                  value={quote.downPayment}
-                  onChange={(event) =>
-                    onNumericChange(quote.id, "downPayment", event.target.value)
-                  }
-                  className={fieldInputClasses}
-                />
-                <span className="text-xs leading-5 text-slate-500">
-                  Included in total cost calculation.
-                </span>
-              </label>
-
-              {dealerQuoteContextFields
-                .filter((field) => field.name === "dueOnDelivery")
-                .map((field) => (
-                  <label
-                    key={field.name}
-                    className="flex min-w-0 flex-col gap-2 text-sm font-medium text-slate-700"
-                  >
-                    {field.label}
-                    <input
-                      type="number"
-                      min={field.min}
-                      step={field.step}
-                      value={quote[field.name] ?? ""}
-                      onChange={(event) =>
-                        onOptionalNumericChange(
-                          quote.id,
-                          field.name,
-                          event.target.value,
-                        )
-                      }
-                      className={fieldInputClasses}
-                    />
-                    <span className="text-xs leading-5 text-slate-500">
-                      {field.helperText}
-                    </span>
-                  </label>
-                ))}
-
-              {advancedFeeFields.map((field) => (
-                <label
-                  key={field.name}
-                  className="flex min-w-0 flex-col gap-2 text-sm font-medium text-slate-700"
-                >
-                  {field.label}
-                  <input
-                    type="number"
-                    min={0}
-                    step={50}
-                    value={quote[field.name]}
-                    onChange={(event) =>
-                      onNumericChange(quote.id, field.name, event.target.value)
-                    }
-                    className={fieldInputClasses}
-                  />
-                  <span className="text-xs leading-5 text-slate-500">
-                    {field.helperText}
-                  </span>
-                </label>
-              ))}
-            </div>
-            <p className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs leading-5 text-amber-900">
-              Due on delivery may include first payment, taxes, deposit,
-              license, or fees. It is saved for review context and is not
-              double-counted unless you also enter those amounts as cash down or
-              fees.
-            </p>
-          </section>
-
-          <section>
-            <h4 className="flex items-center gap-3 text-xs font-semibold uppercase tracking-widest text-teal-700 after:h-px after:flex-1 after:bg-slate-200">
-              Notes
-            </h4>
-            <label className="mt-3 flex min-w-0 flex-col gap-2 text-sm font-medium text-slate-700">
-              Dealer quote notes
-              <textarea
-                value={quote.dealerNotes}
-                onChange={(event) =>
-                  onDealerNotesChange(quote.id, event.target.value)
-                }
-                rows={3}
-                placeholder="Incentives, add-ons, quote expiry, included taxes, or dealer comments."
-                className="min-h-24 w-full min-w-0 resize-y rounded-xl border border-slate-300 bg-white px-3 py-2 text-base text-slate-950 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-teal-700 focus:ring-2 focus:ring-teal-700/20"
+          {!isTaxIncludedInPayment && (
+            <label className={`mt-3 max-w-40 ${labelClasses}`}>
+              Tax rate (%)
+              <input
+                type="number"
+                min={0}
+                step={0.1}
+                value={quote.taxRate}
+                onChange={(event) => onNumericChange(quote.id, "taxRate", event.target.value)}
+                className={fieldInputClasses}
               />
             </label>
-          </section>
+          )}
         </div>
-      </section>
+      </div>
+
+      <details className="mt-5 border border-slate-200 bg-slate-50">
+        <summary className="min-h-12 cursor-pointer rounded-xl px-3 py-3 text-sm font-semibold text-teal-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700">
+          Advanced quote details
+          <span className="sr-only"> for {quote.label}</span>
+          {hasAdvancedDetails && (
+            <span className="mt-1 block pl-4 text-xs font-normal text-slate-600">
+              Additional quote details present
+            </span>
+          )}
+        </summary>
+        <div className="grid gap-4 border-t border-slate-200 p-3 sm:grid-cols-2">
+          {vehicleDealFields.map((field) => (
+            <label key={field.name} className={labelClasses}>
+              {field.label}
+              <input
+                type="number"
+                min={0}
+                step={100}
+                value={quote[field.name] ?? ""}
+                onChange={(event) => onOptionalNumericChange(quote.id, field.name, event.target.value)}
+                className={fieldInputClasses}
+              />
+              {field.helperText && (
+                <span className="text-xs font-normal leading-5 text-slate-600">{field.helperText}</span>
+              )}
+            </label>
+          ))}
+          {dealerQuoteContextFields.map((field) => (
+            <label key={field.name} className={labelClasses}>
+              {field.label}
+              <input
+                type="number"
+                min={field.min}
+                step={field.step}
+                value={quote[field.name] ?? ""}
+                onChange={(event) => onOptionalNumericChange(quote.id, field.name, event.target.value)}
+                className={fieldInputClasses}
+              />
+              <span className="text-xs font-normal leading-5 text-slate-600">{field.helperText}</span>
+            </label>
+          ))}
+          {advancedFeeFields.map((field) => (
+            <label key={field.name} className={labelClasses}>
+              {field.label}
+              <input
+                type="number"
+                min={0}
+                step={50}
+                value={quote[field.name]}
+                onChange={(event) => onNumericChange(quote.id, field.name, event.target.value)}
+                className={fieldInputClasses}
+              />
+              <span className="text-xs font-normal leading-5 text-slate-600">{field.helperText}</span>
+            </label>
+          ))}
+          <p className="text-xs leading-5 text-slate-600 sm:col-span-2">
+            Due on delivery can include the first payment, taxes, deposits, and
+            fees. It is saved for context, not added to calculated costs. Enter
+            actual cash down and separate fees in their own fields, without
+            counting any amount twice.
+          </p>
+          <label className={`${labelClasses} sm:col-span-2`}>
+            Dealer quote notes
+            <textarea
+              value={quote.dealerNotes}
+              onChange={(event) => onDealerNotesChange(quote.id, event.target.value)}
+              rows={3}
+              placeholder="Incentives, add-ons, quote expiry, or dealer comments."
+              className="min-h-24 w-full min-w-0 resize-y rounded-xl border border-slate-300 bg-white px-3 py-2 text-base text-slate-950 outline-none focus:border-teal-700 focus:ring-2 focus:ring-teal-700/20"
+            />
+          </label>
+        </div>
+      </details>
+      <p className="mt-3 text-xs leading-5 text-slate-600">
+        Missing dealer or lease-end fees may affect the comparison. A displayed
+        zero does not confirm that no fee applies. Check the quote for fees not
+        already included in another amount.
+      </p>
     </article>
   );
 }
