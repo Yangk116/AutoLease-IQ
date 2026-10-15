@@ -25,20 +25,14 @@ const navigationItems: NavigationItem[] = [
   { label: "Home", href: "/", page: "home" },
   { label: "Analyze", href: "/analyze", page: "analyze" },
   { label: "Compare", href: "/compare", page: "compare" },
-  { label: "Review", href: "/review", page: "review" },
-  { label: "Report", href: "/report", page: "report" },
   { label: "Saved", href: "/saved", page: "saved" },
 ];
 
 const pageCtas: Record<
   SiteHeaderPage,
-  { href: string; label: string; mobileLabel: string }
+  { href: string; label: string; mobileLabel: string } | null
 > = {
-  home: {
-    href: "/compare",
-    label: "Compare lease offers",
-    mobileLabel: "Compare",
-  },
+  home: null,
   analyze: {
     href: "#single-lease-form",
     label: "Enter your quote",
@@ -107,7 +101,7 @@ export function SiteHeader({ currentPage }: SiteHeaderProps) {
               AutoLease IQ
             </span>
             <span className="hidden truncate text-xs text-slate-500 sm:block">
-              Lease comparison workspace
+              Understand and compare leases
             </span>
           </span>
         </Link>
@@ -138,14 +132,16 @@ export function SiteHeader({ currentPage }: SiteHeaderProps) {
           })}
         </nav>
 
-        <Link
-          href={pageCta.href}
-          aria-label={pageCta.label}
-          className="inline-flex h-11 shrink-0 items-center justify-center rounded-xl bg-teal-700 px-3 text-sm font-semibold text-white shadow-[0_8px_20px_-10px_rgba(13,148,136,0.9)] transition-all hover:-translate-y-0.5 hover:bg-teal-800 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-teal-700 focus:ring-offset-2 active:translate-y-0 sm:px-4"
-        >
-          <span className="min-[360px]:hidden">{pageCta.mobileLabel}</span>
-          <span className="hidden min-[360px]:inline">{pageCta.label}</span>
-        </Link>
+        {pageCta && (
+          <Link
+            href={pageCta.href}
+            aria-label={pageCta.label}
+            className="inline-flex h-11 shrink-0 items-center justify-center rounded-xl bg-teal-700 px-3 text-sm font-semibold text-white shadow-[0_8px_20px_-10px_rgba(13,148,136,0.9)] transition-all hover:-translate-y-0.5 hover:bg-teal-800 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-teal-700 focus:ring-offset-2 active:translate-y-0 sm:px-4"
+          >
+            <span className="min-[360px]:hidden">{pageCta.mobileLabel}</span>
+            <span className="hidden min-[360px]:inline">{pageCta.label}</span>
+          </Link>
+        )}
       </div>
     </header>
   );
