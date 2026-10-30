@@ -6,15 +6,13 @@ import { useEffect, useState } from "react";
 import { ComparisonResults } from "../components/ComparisonResults";
 import {
   buildCurrentComparisonAnalysis,
-  createSavedComparisonFromCurrent,
+  saveComparisonAnalysis,
   readCurrentComparison,
   type CurrentComparisonAnalysis,
 } from "../components/comparisonStorage";
 import {
-  MAX_SAVED_COMPARISONS,
-  readSavedComparisons,
+  getSavedComparisonStatusClasses,
   type SavedComparisonStatus,
-  writeSavedComparisons,
 } from "../components/SavedComparisonsPanel";
 import { SiteHeader } from "../components/SiteHeader";
 
@@ -23,30 +21,6 @@ type ReviewState =
   | { status: "empty" }
   | { status: "ready"; analysis: CurrentComparisonAnalysis }
   | { status: "error"; message: string };
-
-function buildSavedComparisonFingerprint(
-  comparison: Pick<
-    CurrentComparisonAnalysis["currentComparison"],
-    "decisionMode" | "quotes"
-  >,
-): string {
-  return JSON.stringify({
-    decisionMode: comparison.decisionMode,
-    quotes: comparison.quotes,
-  });
-}
-
-function getStatusClasses(tone: SavedComparisonStatus["tone"]): string {
-  if (tone === "error") {
-    return "border-red-200 bg-red-50 text-red-800";
-  }
-
-  if (tone === "info") {
-    return "border-sky-200 bg-sky-50 text-sky-900";
-  }
-
-  return "border-teal-200 bg-teal-50 text-teal-900";
-}
 
 export default function ReviewPage() {
   const [reviewState, setReviewState] = useState<ReviewState>({
@@ -91,59 +65,7 @@ export default function ReviewPage() {
       return;
     }
 
-    const savedComparison = createSavedComparisonFromCurrent(
-      reviewState.analysis.currentComparison,
-      reviewState.analysis.comparisonResult,
-    );
-
-    if (!savedComparison) {
-      setSaveStatus({
-        tone: "error",
-        message: "This comparison could not be saved.",
-      });
-      return;
-    }
-
-    const savedComparisons = readSavedComparisons();
-    const currentFingerprint = buildSavedComparisonFingerprint(
-      reviewState.analysis.currentComparison,
-    );
-    const duplicateComparison = savedComparisons.find(
-      (comparison) =>
-        buildSavedComparisonFingerprint(comparison) === currentFingerprint,
-    );
-
-    if (duplicateComparison) {
-      setSaveStatus({
-        tone: "info",
-        message: "This comparison is already saved.",
-      });
-      return;
-    }
-
-    const uncappedComparisons = [savedComparison, ...savedComparisons];
-    const nextComparisons = uncappedComparisons.slice(
-      0,
-      MAX_SAVED_COMPARISONS,
-    );
-    const removedOldest =
-      uncappedComparisons.length > MAX_SAVED_COMPARISONS;
-
-    if (!writeSavedComparisons(nextComparisons)) {
-      setSaveStatus({
-        tone: "error",
-        message:
-          "The comparison could not be saved. This browser may have blocked local storage.",
-      });
-      return;
-    }
-
-    setSaveStatus({
-      tone: "success",
-      message: removedOldest
-        ? "Comparison saved. Oldest saved item was removed."
-        : "Comparison saved.",
-    });
+    setSaveStatus(saveComparisonAnalysis(reviewState.analysis));
   }
 
   return (
@@ -247,7 +169,7 @@ export default function ReviewPage() {
 
               {saveStatus ? (
                 <p
-                  className={`rounded-xl border px-4 py-3 text-sm font-medium shadow-sm ${getStatusClasses(
+                  className={`rounded-xl border px-4 py-3 text-sm font-medium shadow-sm ${getSavedComparisonStatusClasses(
                     saveStatus.tone,
                   )}`}
                   role="status"

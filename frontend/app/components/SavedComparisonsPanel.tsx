@@ -304,7 +304,7 @@ function getVerdictLabel(comparison: SavedComparison): string {
   return "Mixed result";
 }
 
-function getStatusClasses(tone: SavedComparisonStatus["tone"]): string {
+export function getSavedComparisonStatusClasses(tone: SavedComparisonStatus["tone"]): string {
   if (tone === "error") {
     return "border-red-200 bg-red-50 text-red-800";
   }
@@ -352,7 +352,7 @@ export function SavedComparisonsPanel({
 
       {status ? (
         <p
-          className={`mt-4 rounded-xl border px-4 py-3 text-sm font-medium shadow-sm ${getStatusClasses(
+          className={`mt-4 rounded-xl border px-4 py-3 text-sm font-medium shadow-sm ${getSavedComparisonStatusClasses(
             status.tone,
           )}`}
           role="status"

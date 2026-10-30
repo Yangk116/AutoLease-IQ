@@ -5,6 +5,7 @@ import {
   buildCurrentComparisonAnalysis,
   CURRENT_COMPARISON_STORAGE_KEY,
   readCurrentComparison,
+  saveComparisonAnalysis,
   writeCurrentComparison,
   type CurrentComparison,
 } from "./comparisonStorage";
@@ -175,6 +176,81 @@ describe("comparison local storage", () => {
 
     expect(analysis.paymentSummaries[0]?.monthlyPaymentUsed).toBeCloseTo(452);
     expect(analysis.comparisonResult.results[0]?.totalCost).toBeCloseTo(13_548);
+  });
+
+  it("saves the loaded analysis and preserves existing records", () => {
+    storage.setItem(
+      SAVED_COMPARISONS_STORAGE_KEY,
+      JSON.stringify([{ ...makeSavedComparison(0), decisionMode: "lowest-upfront-cash" }]),
+    );
+    const previous = readSavedComparisons();
+    const analysis = buildCurrentComparisonAnalysis(makeCurrentComparison());
+
+    expect(saveComparisonAnalysis(analysis)).toEqual({
+      tone: "success",
+      message: "Comparison saved.",
+    });
+    const saved = readSavedComparisons();
+    expect(saved).toHaveLength(2);
+    expect(saved[0].quotes).toEqual(analysis.currentComparison.quotes);
+    expect(saved[0].decisionMode).toBe(analysis.currentComparison.decisionMode);
+    expect(saved.slice(1)).toEqual(previous);
+  });
+
+  it("does not rewrite or duplicate a comparison saved from either page", () => {
+    writeCurrentComparison(makeCurrentComparison());
+    const analysis = buildCurrentComparisonAnalysis(readCurrentComparison()!);
+    saveComparisonAnalysis(analysis);
+    const stored = storage.getItem(SAVED_COMPARISONS_STORAGE_KEY);
+
+    const reloaded = buildCurrentComparisonAnalysis({
+      ...analysis.currentComparison,
+      updatedAt: "2026-10-29T12:00:00.000Z",
+    });
+    expect(saveComparisonAnalysis(reloaded)).toEqual({
+      tone: "info",
+      message: "This comparison is already saved.",
+    });
+    expect(storage.getItem(SAVED_COMPARISONS_STORAGE_KEY)).toBe(stored);
+  });
+
+  it("retains the save limit and reports removal of the oldest item", () => {
+    storage.setItem(
+      SAVED_COMPARISONS_STORAGE_KEY,
+      JSON.stringify(Array.from({ length: MAX_SAVED_COMPARISONS }, (_, index) => ({
+        ...makeSavedComparison(index),
+        decisionMode: "lowest-upfront-cash",
+      }))),
+    );
+    const previous = readSavedComparisons();
+
+    expect(saveComparisonAnalysis(buildCurrentComparisonAnalysis(makeCurrentComparison()))).toEqual({
+      tone: "success",
+      message: "Comparison saved. Oldest saved item was removed.",
+    });
+    const saved = readSavedComparisons();
+    expect(saved).toHaveLength(MAX_SAVED_COMPARISONS);
+    expect(saved.slice(1)).toEqual(previous.slice(0, -1));
+  });
+
+  it("reports a failed save without changing existing records", () => {
+    storage.setItem(SAVED_COMPARISONS_STORAGE_KEY, JSON.stringify([{
+      ...makeSavedComparison(0),
+      decisionMode: "lowest-upfront-cash",
+    }]));
+    const stored = storage.getItem(SAVED_COMPARISONS_STORAGE_KEY);
+    const spy = vi.spyOn(storage, "setItem").mockImplementation(() => {
+      throw new Error("Quota exceeded");
+    });
+    try {
+      expect(saveComparisonAnalysis(buildCurrentComparisonAnalysis(makeCurrentComparison()))).toEqual({
+        tone: "error",
+        message: "The comparison could not be saved. This browser may have blocked local storage.",
+      });
+      expect(storage.getItem(SAVED_COMPARISONS_STORAGE_KEY)).toBe(stored);
+    } finally {
+      spy.mockRestore();
+    }
   });
 
   it("filters malformed saved entries, reads older entries, and enforces the cap", () => {

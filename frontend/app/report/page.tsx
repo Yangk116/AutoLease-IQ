@@ -7,8 +7,13 @@ import { ComparisonResults } from "../components/ComparisonResults";
 import {
   buildCurrentComparisonAnalysis,
   readCurrentComparison,
+  saveComparisonAnalysis,
   type CurrentComparisonAnalysis,
 } from "../components/comparisonStorage";
+import {
+  getSavedComparisonStatusClasses,
+  type SavedComparisonStatus,
+} from "../components/SavedComparisonsPanel";
 import { SiteHeader } from "../components/SiteHeader";
 
 type ReportState =
@@ -21,6 +26,14 @@ export default function ReportPage() {
   const [reportState, setReportState] = useState<ReportState>({
     status: "loading",
   });
+
+  const [saveStatus, setSaveStatus] = useState<SavedComparisonStatus | null>(null);
+
+  function saveComparison(): void {
+    if (reportState.status === "ready") {
+      setSaveStatus(saveComparisonAnalysis(reportState.analysis));
+    }
+  }
 
   useEffect(() => {
     const frame = requestAnimationFrame(() => {
@@ -116,7 +129,7 @@ export default function ReportPage() {
 
           {reportState.status === "ready" ? (
             <div className="space-y-5">
-              <div className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-[0_18px_45px_-38px_rgba(15,23,42,0.55)] sm:flex-row sm:items-center sm:justify-between sm:p-5">
+              <div className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-[0_18px_45px_-38px_rgba(15,23,42,0.55)] sm:p-5 lg:flex-row lg:items-center lg:justify-between">
                 <div>
                   <p className="text-sm font-semibold text-slate-950">
                     Report workspace
@@ -125,7 +138,14 @@ export default function ReportPage() {
                     Use the controls below to copy, print, or save as PDF.
                   </p>
                 </div>
-                <div className="grid gap-2 sm:flex sm:shrink-0">
+                <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+                  <button
+                    type="button"
+                    onClick={saveComparison}
+                    className="inline-flex h-11 items-center justify-center rounded-xl bg-teal-700 px-4 text-sm font-semibold text-white shadow-sm transition-all hover:-translate-y-0.5 hover:bg-teal-800 focus:outline-none focus:ring-2 focus:ring-teal-700 focus:ring-offset-2"
+                  >
+                    Save comparison
+                  </button>
                   <Link
                     href="/review"
                     className="inline-flex h-11 items-center justify-center rounded-xl border border-teal-700 bg-white px-4 text-sm font-semibold text-teal-800 shadow-sm transition-all hover:-translate-y-0.5 hover:bg-teal-50 focus:outline-none focus:ring-2 focus:ring-teal-700 focus:ring-offset-2"
@@ -140,6 +160,18 @@ export default function ReportPage() {
                   </Link>
                 </div>
               </div>
+
+              {saveStatus ? (
+                <p
+                  className={`rounded-xl border px-4 py-3 text-sm font-medium shadow-sm ${getSavedComparisonStatusClasses(
+                    saveStatus.tone,
+                  )}`}
+                  role="status"
+                  aria-live="polite"
+                >
+                  {saveStatus.message}
+                </p>
+              ) : null}
 
               <ComparisonResults
                 comparisonResult={reportState.analysis.comparisonResult}

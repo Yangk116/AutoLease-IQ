@@ -8,7 +8,6 @@ import {
 
 import { InsightSummary, type DealInsight } from "./InsightSummary";
 import { MetricCard } from "./MetricCard";
-import { DataBackedDealReview } from "./DataBackedDealReview";
 import {
   buildQuoteStructureIntelligence,
   QuoteStructureIntelligencePanel,
@@ -2409,14 +2408,6 @@ export function ComparisonResults({
 
             <CollapsibleSection
               eyebrow="Advanced"
-              title="Future premium layer"
-              description="Planned data-backed review for market listings, lease programs, quote parsing, and AI negotiation guidance."
-            >
-              <DataBackedDealReview />
-            </CollapsibleSection>
-
-            <CollapsibleSection
-              eyebrow="Advanced"
               title="Supporting details"
               description="Additional trade-off notes for users who want deeper comparison context."
             >
@@ -2434,14 +2425,6 @@ export function ComparisonResults({
               description="Rule-based structure review, dealer questions, and trust notes."
             >
               <QuoteStructureIntelligencePanel intelligence={quoteIntelligence} />
-            </CollapsibleSection>
-
-            <CollapsibleSection
-              eyebrow="Coming soon"
-              title="Future premium review layer"
-              description="Planned data-backed review for market listings, lease programs, quote parsing, and AI negotiation guidance."
-            >
-              <DataBackedDealReview />
             </CollapsibleSection>
 
             <CollapsibleSection

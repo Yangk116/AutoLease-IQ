@@ -6,7 +6,13 @@ import {
   type ComparisonPaymentSummary,
   type DecisionMode,
 } from "./ComparisonResults";
-import type { SavedComparison } from "./SavedComparisonsPanel";
+import {
+  MAX_SAVED_COMPARISONS,
+  readSavedComparisons,
+  writeSavedComparisons,
+  type SavedComparison,
+  type SavedComparisonStatus,
+} from "./SavedComparisonsPanel";
 
 export const CURRENT_COMPARISON_STORAGE_KEY =
   "autolease-iq:current-comparison";
@@ -307,5 +313,72 @@ export function createSavedComparisonFromCurrent(
         },
       ],
     },
+  };
+}
+
+function buildSavedComparisonFingerprint(
+  comparison: Pick<
+    CurrentComparisonAnalysis["currentComparison"],
+    "decisionMode" | "quotes"
+  >,
+): string {
+  return JSON.stringify({
+    decisionMode: comparison.decisionMode,
+    quotes: comparison.quotes,
+  });
+}
+
+export function saveComparisonAnalysis(
+  analysis: CurrentComparisonAnalysis,
+): SavedComparisonStatus {
+  const savedComparison = createSavedComparisonFromCurrent(
+    analysis.currentComparison,
+    analysis.comparisonResult,
+  );
+
+  if (!savedComparison) {
+    return {
+      tone: "error",
+      message: "This comparison could not be saved.",
+    };
+  }
+
+  const savedComparisons = readSavedComparisons();
+  const currentFingerprint = buildSavedComparisonFingerprint(
+    analysis.currentComparison,
+  );
+  const duplicateComparison = savedComparisons.find(
+    (comparison) =>
+      buildSavedComparisonFingerprint(comparison) === currentFingerprint,
+  );
+
+  if (duplicateComparison) {
+    return {
+      tone: "info",
+      message: "This comparison is already saved.",
+    };
+  }
+
+  const uncappedComparisons = [savedComparison, ...savedComparisons];
+  const nextComparisons = uncappedComparisons.slice(
+    0,
+    MAX_SAVED_COMPARISONS,
+  );
+  const removedOldest =
+    uncappedComparisons.length > MAX_SAVED_COMPARISONS;
+
+  if (!writeSavedComparisons(nextComparisons)) {
+    return {
+      tone: "error",
+      message:
+        "The comparison could not be saved. This browser may have blocked local storage.",
+    };
+  }
+
+  return {
+    tone: "success",
+    message: removedOldest
+      ? "Comparison saved. Oldest saved item was removed."
+      : "Comparison saved.",
   };
 }
